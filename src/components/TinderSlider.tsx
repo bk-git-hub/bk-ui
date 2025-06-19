@@ -155,10 +155,8 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
           <div
             // key 속성 덕분에 React가 DOM 요소를 재사용하여 깜빡임이 발생하지 않음
             key={card.id}
-            // --- ⬇️ 수정된 부분 ⬇️ ---
             // 여기에 transition 관련 클래스들을 추가하여 팝업 애니메이션을 구현합니다.
             className="absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out"
-            // --- ⬆️ 수정된 부분 ⬆️ ---
             // 현재 카드일 때만 ref와 이벤트 핸들러를 적용
             ref={isTopCard ? topCardRef : null}
             onPointerDown={isTopCard ? handlePointerDown : undefined}
@@ -208,13 +206,33 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
           onClick={() => animateSwipe("left")}
           className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
         >
-          {/* ... SVG ... */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 text-red-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
         </button>
         <button
           onClick={() => animateSwipe("right")}
           className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
         >
-          {/* ... SVG ... */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 text-green-500"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg>
         </button>
       </div>
     </div>
