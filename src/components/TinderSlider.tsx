@@ -16,7 +16,7 @@ interface TinderSliderProps {
 const SWIPE_THRESHOLD = 100;
 
 const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
-  const [cards, setCards] = useState(initialCards); //eslint-dsiable-line no-unused-vars
+  const [cards] = useState(initialCards);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const topCardRef = useRef<HTMLDivElement>(null);
