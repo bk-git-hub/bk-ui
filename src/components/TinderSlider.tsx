@@ -20,6 +20,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const topCardRef = useRef<HTMLDivElement>(null);
+  const nextCardRef = useRef<HTMLDivElement>(null);
 
   const likeIndicatorRef = useRef<HTMLDivElement>(null);
   const nopeIndicatorRef = useRef<HTMLDivElement>(null);
@@ -28,10 +29,16 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const startPosRef = useRef(0);
   const currentTranslateRef = useRef(0);
 
-  const currentCard = cards[currentIndex];
-
   const animateSwipe = useCallback((direction: "left" | "right") => {
     if (!topCardRef.current) return;
+
+    if (nextCardRef.current) {
+      // 1. 다음 카드의 transition을 다시 활성화합니다.
+      nextCardRef.current.style.transition = "transform 0.3s ease-out";
+      // 2. 다음 카드의 transform을 최종 상태(scale 1, translateY 0)로 설정하여
+      //    애니메이션을 명령합니다.
+      nextCardRef.current.style.transform = `none`;
+    }
 
     const flyOutX =
       (direction === "right" ? 1 : -1) * (window.innerWidth + 200);
@@ -64,14 +71,19 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     if (likeIndicatorRef.current) likeIndicatorRef.current.style.opacity = "0";
     if (nopeIndicatorRef.current) nopeIndicatorRef.current.style.opacity = "0";
 
+    if (nextCardRef.current) {
+      nextCardRef.current.style.transition = "transform 0.3s ease-out";
+      nextCardRef.current.style.transform = "scale(0.8) translateY(10px)";
+    }
+
     const handleTransitionEnd = () => {
       if (topCardRef.current) {
         topCardRef.current.style.transition = "";
-        topCardRef.current.removeEventListener(
-          "transitionend",
-          handleTransitionEnd,
-        );
       }
+      if (nextCardRef.current) {
+        nextCardRef.current.style.transition = "";
+      }
+      // ... (기존 removeEventListener 로직) ...
     };
     topCardRef.current.addEventListener("transitionend", handleTransitionEnd);
   }, []);
@@ -81,7 +93,6 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
 
     const deltaX = e.clientX - startPosRef.current;
     currentTranslateRef.current = deltaX;
-
     const rotation = deltaX / 15;
     topCardRef.current.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
 
@@ -91,6 +102,15 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
       likeIndicatorRef.current.style.opacity = `${likeOpacity}`;
     if (nopeIndicatorRef.current)
       nopeIndicatorRef.current.style.opacity = `${nopeOpacity}`;
+
+    if (nextCardRef.current) {
+      const progress = Math.min(Math.abs(deltaX) / SWIPE_THRESHOLD, 1);
+      const newScale = 0.8 + (1 - 0.81) * progress;
+      const newTranslateY = 10 - 10 * progress;
+      nextCardRef.current.style.transform = `scale(${newScale}) translateY(${newTranslateY}px)`;
+      // 드래그 중에는 다음 카드의 transition을 제거하여 즉각 반응하도록 함
+      nextCardRef.current.style.transition = "none";
+    }
   }, []);
 
   const handleWindowPointerUp = useCallback(() => {
@@ -150,6 +170,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
         if (index > currentIndex + 2) return null;
 
         const isTopCard = index === currentIndex;
+        const isNextCard = index === currentIndex + 1;
 
         return (
           <div
@@ -158,14 +179,14 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
             // 여기에 transition 관련 클래스들을 추가하여 팝업 애니메이션을 구현합니다.
             className="absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out"
             // 현재 카드일 때만 ref와 이벤트 핸들러를 적용
-            ref={isTopCard ? topCardRef : null}
+            ref={isTopCard ? topCardRef : isNextCard ? nextCardRef : null}
             onPointerDown={isTopCard ? handlePointerDown : undefined}
             style={{
               zIndex: cards.length - index,
               // 현재 카드가 아닐 때만 스택 효과(scale, translate)를 적용
               transform: isTopCard
                 ? "none"
-                : `scale(${1 - (index - currentIndex) * 0.05}) translateY(${(index - currentIndex) * 10}px)`,
+                : `scale(${1 - (index - currentIndex) * 0.2}) translateY(${(index - currentIndex) * 10}px)`,
             }}
           >
             <img
