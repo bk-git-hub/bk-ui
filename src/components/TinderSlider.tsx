@@ -129,7 +129,8 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     };
   }, [handleWindowPointerMove, handleWindowPointerUp]);
 
-  if (!currentCard) {
+  if (currentIndex >= cards.length) {
+    // 모든 카드를 다 넘겼을 때의 조건 수정
     return (
       <div className="relative flex h-[450px] w-80 items-center justify-center">
         <div className="p-4 text-center">
@@ -141,95 +142,79 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
 
   return (
     <div className="relative flex h-[450px] w-80 items-center justify-center select-none">
-      {/* --- ⬇️ 배경 카드 렌더링 로직 ⬇️ --- */}
+      {/* --- ⬇️ 렌더링 로직 통합 (핵심 수정 부분) ⬇️ --- */}
       {cards.map((card, index) => {
-        // 현재 카드(currentIndex)는 렌더링에서 제외하도록 '<=' 로 수정
-        if (index <= currentIndex || index > currentIndex + 2) return null;
+        // 이미 지나간 카드는 렌더링하지 않음
+        if (index < currentIndex) return null;
+        // 너무 많은 카드를 렌더링하지 않도록 제한 (성능 최적화)
+        if (index > currentIndex + 2) return null;
+
+        const isTopCard = index === currentIndex;
+
         return (
           <div
+            // key 속성 덕분에 React가 DOM 요소를 재사용하여 깜빡임이 발생하지 않음
             key={card.id}
-            className="absolute h-full w-full overflow-hidden rounded-xl bg-white shadow-lg"
+            // --- ⬇️ 수정된 부분 ⬇️ ---
+            // 여기에 transition 관련 클래스들을 추가하여 팝업 애니메이션을 구현합니다.
+            className="absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out"
+            // --- ⬆️ 수정된 부분 ⬆️ ---
+            // 현재 카드일 때만 ref와 이벤트 핸들러를 적용
+            ref={isTopCard ? topCardRef : null}
+            onPointerDown={isTopCard ? handlePointerDown : undefined}
             style={{
-              transform: `scale(${
-                1 - (index - currentIndex) * 0.05
-              }) translateY(${(index - currentIndex) * 10}px)`,
               zIndex: cards.length - index,
+              // 현재 카드가 아닐 때만 스택 효과(scale, translate)를 적용
+              transform: isTopCard
+                ? "none"
+                : `scale(${1 - (index - currentIndex) * 0.05}) translateY(${(index - currentIndex) * 10}px)`,
             }}
           >
             <img
               src={card.image}
               alt={card.name}
-              className="h-full w-full object-cover"
+              className="pointer-events-none h-full w-full object-cover"
             />
+            {/* 현재 카드일 때만 이름, 나이, 인디케이터를 표시 */}
+            {isTopCard && (
+              <>
+                <div className="pointer-events-none absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
+                  <h3 className="text-2xl font-bold">
+                    {card.name}, {card.age}
+                  </h3>
+                </div>
+                <div
+                  ref={likeIndicatorRef}
+                  className="pointer-events-none absolute top-10 left-10 -rotate-12 transform rounded-xl border-4 border-green-500 p-2 text-4xl font-bold text-green-500 opacity-0"
+                >
+                  LIKE
+                </div>
+                <div
+                  ref={nopeIndicatorRef}
+                  className="pointer-events-none absolute top-10 right-10 rotate-12 transform rounded-xl border-4 border-red-500 p-2 text-4xl font-bold text-red-500 opacity-0"
+                >
+                  NOPE
+                </div>
+              </>
+            )}
           </div>
         );
       })}
-      {/* --- ⬆️ 배경 카드 렌더링 로직 ⬆️ --- */}
+      {/* --- ⬆️ 렌더링 로직 통합 (핵심 수정 부분) ⬆️ --- */}
 
-      {/* 맨 위 카드 (상호작용 가능) */}
-      <div
-        ref={topCardRef}
-        key={currentCard.id}
-        className="absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg"
-        style={{ zIndex: cards.length }}
-        onPointerDown={handlePointerDown}
-      >
-        <img
-          src={currentCard.image}
-          alt={currentCard.name}
-          className="pointer-events-none h-full w-full object-cover"
-        />
-        <div className="pointer-events-none absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
-          <h3 className="text-2xl font-bold">
-            {currentCard.name}, {currentCard.age}
-          </h3>
-        </div>
-        <div
-          ref={likeIndicatorRef}
-          className="pointer-events-none absolute top-10 left-10 -rotate-12 transform rounded-xl border-4 border-green-500 p-2 text-4xl font-bold text-green-500 opacity-0"
-        >
-          LIKE
-        </div>
-        <div
-          ref={nopeIndicatorRef}
-          className="pointer-events-none absolute top-10 right-10 rotate-12 transform rounded-xl border-4 border-red-500 p-2 text-4xl font-bold text-red-500 opacity-0"
-        >
-          NOPE
-        </div>
-      </div>
-
+      {/* 컨트롤 버튼은 그대로 유지 */}
       <div className="absolute -bottom-20 flex space-x-8">
         <button
           onClick={() => animateSwipe("left")}
           className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-red-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          {/* ... SVG ... */}
         </button>
         <button
           onClick={() => animateSwipe("right")}
           className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-green-500"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-          </svg>
+          {/* ... SVG ... */}
         </button>
       </div>
     </div>
