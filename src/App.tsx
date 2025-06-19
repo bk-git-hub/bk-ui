@@ -48,7 +48,7 @@ const SAMPLE_CARDS: CardData[] = [
 
 function App() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gray-100">
+    <div className="flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-gray-100">
       <TinderSlider cards={SAMPLE_CARDS} />
     </div>
   );
