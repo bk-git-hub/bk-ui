@@ -16,14 +16,13 @@ interface TinderSliderProps {
 const SWIPE_THRESHOLD = 100;
 
 const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
-  const [cards, setCards] = useState(initialCards);
+  const [cards, setCards] = useState(initialCards); //eslint-dsiable-line no-unused-vars
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const topCardRef = useRef<HTMLDivElement>(null);
-  const likeNopeIndicatorRef = useRef<{
-    like: HTMLDivElement | null;
-    nope: HTMLDivElement | null;
-  }>({ like: null, nope: null });
+
+  const likeIndicatorRef = useRef<HTMLDivElement>(null);
+  const nopeIndicatorRef = useRef<HTMLDivElement>(null);
 
   const isDraggingRef = useRef(false);
   const startPosRef = useRef(0);
@@ -38,7 +37,9 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
       (direction === "right" ? 1 : -1) * (window.innerWidth + 200);
     topCardRef.current.style.transition =
       "transform 0.5s ease-out, opacity 0.5s ease-out";
-    topCardRef.current.style.transform = `translateX(${flyOutX}px) rotate(${flyOutX / 15}deg)`;
+    topCardRef.current.style.transform = `translateX(${flyOutX}px) rotate(${
+      flyOutX / 15
+    }deg)`;
     topCardRef.current.style.opacity = "0";
 
     const handleTransitionEnd = () => {
@@ -60,10 +61,8 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     topCardRef.current.style.transition = "transform 0.3s ease-out";
     topCardRef.current.style.transform = "translateX(0px) rotate(0deg)";
 
-    if (likeNopeIndicatorRef.current.like)
-      likeNopeIndicatorRef.current.like.style.opacity = "0";
-    if (likeNopeIndicatorRef.current.nope)
-      likeNopeIndicatorRef.current.nope.style.opacity = "0";
+    if (likeIndicatorRef.current) likeIndicatorRef.current.style.opacity = "0";
+    if (nopeIndicatorRef.current) nopeIndicatorRef.current.style.opacity = "0";
 
     const handleTransitionEnd = () => {
       if (topCardRef.current) {
@@ -88,10 +87,10 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
 
     const likeOpacity = Math.max(0, Math.min(1, deltaX / SWIPE_THRESHOLD));
     const nopeOpacity = Math.max(0, Math.min(1, -deltaX / SWIPE_THRESHOLD));
-    if (likeNopeIndicatorRef.current.like)
-      likeNopeIndicatorRef.current.like.style.opacity = `${likeOpacity}`;
-    if (likeNopeIndicatorRef.current.nope)
-      likeNopeIndicatorRef.current.nope.style.opacity = `${nopeOpacity}`;
+    if (likeIndicatorRef.current)
+      likeIndicatorRef.current.style.opacity = `${likeOpacity}`;
+    if (nopeIndicatorRef.current)
+      nopeIndicatorRef.current.style.opacity = `${nopeOpacity}`;
   }, []);
 
   const handleWindowPointerUp = useCallback(() => {
@@ -111,6 +110,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
       isDraggingRef.current = true;
       startPosRef.current = e.clientX;
       if (topCardRef.current) {
@@ -122,7 +122,6 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     [handleWindowPointerMove, handleWindowPointerUp],
   );
 
-  // 안전장치: 컴포넌트가 사라질 때 window에 등록된 이벤트 리스너를 반드시 제거
   useEffect(() => {
     return () => {
       window.removeEventListener("pointermove", handleWindowPointerMove);
@@ -141,27 +140,33 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   }
 
   return (
-    <div className="relative flex h-[450px] w-80 items-center justify-center">
+    <div className="relative flex h-[450px] w-80 items-center justify-center select-none">
+      {/* --- ⬇️ 배경 카드 렌더링 로직 ⬇️ --- */}
       {cards.map((card, index) => {
-        if (index < currentIndex || index > currentIndex + 2) return null;
+        // 현재 카드(currentIndex)는 렌더링에서 제외하도록 '<=' 로 수정
+        if (index <= currentIndex || index > currentIndex + 2) return null;
         return (
           <div
             key={card.id}
             className="absolute h-full w-full overflow-hidden rounded-xl bg-white shadow-lg"
             style={{
-              transform: `scale(${1 - (index - currentIndex) * 0.05}) translateY(${(index - currentIndex) * 10}px)`,
+              transform: `scale(${
+                1 - (index - currentIndex) * 0.05
+              }) translateY(${(index - currentIndex) * 10}px)`,
               zIndex: cards.length - index,
             }}
           >
             <img
               src={card.image}
               alt={card.name}
-              className="h-full w-full object-cover opacity-50"
+              className="h-full w-full object-cover"
             />
           </div>
         );
       })}
+      {/* --- ⬆️ 배경 카드 렌더링 로직 ⬆️ --- */}
 
+      {/* 맨 위 카드 (상호작용 가능) */}
       <div
         ref={topCardRef}
         key={currentCard.id}
@@ -180,13 +185,13 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
           </h3>
         </div>
         <div
-          ref={(el) => (likeNopeIndicatorRef.current.like = el)}
+          ref={likeIndicatorRef}
           className="pointer-events-none absolute top-10 left-10 -rotate-12 transform rounded-xl border-4 border-green-500 p-2 text-4xl font-bold text-green-500 opacity-0"
         >
           LIKE
         </div>
         <div
-          ref={(el) => (likeNopeIndicatorRef.current.nope = el)}
+          ref={nopeIndicatorRef}
           className="pointer-events-none absolute top-10 right-10 rotate-12 transform rounded-xl border-4 border-red-500 p-2 text-4xl font-bold text-red-500 opacity-0"
         >
           NOPE
