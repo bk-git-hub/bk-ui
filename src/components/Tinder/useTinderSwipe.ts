@@ -160,7 +160,7 @@ export const useTinderSwipe = ({
       window.removeEventListener("pointerup", handleWindowPointerUp);
     };
   }, [handleWindowPointerMove, handleWindowPointerUp]);
-
+  const isFinished = currentIndex >= itemCount;
   return {
     currentIndex,
     itemCount,
@@ -170,5 +170,6 @@ export const useTinderSwipe = ({
     nopeIndicatorRef,
     handlePointerDown,
     animateSwipe,
+    isFinished,
   };
 };
