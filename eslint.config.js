@@ -25,6 +25,7 @@ export default tseslint.config(
       ],
       // 여기에 no-unused-vars 규칙을 추가하고 'warn'으로 설정
       "no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       // TypeScript 관련 no-unused-vars는 @typescript-eslint/no-unused-vars로 오버라이드해야 할 수도 있음
       // 기본 tseslint.configs.recommended에 포함되어 있을 가능성이 높음
       "@typescript-eslint/no-unused-vars": "warn",
