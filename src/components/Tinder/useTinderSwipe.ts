@@ -24,14 +24,6 @@ export const useTinderSwipe = ({
   const currentTranslateRef = useRef(0);
   const dragOriginYRef = useRef<"top" | "bottom">("top");
 
-  const swipe = useCallback(
-    (direction: "left" | "right") => {
-      if (currentIndex >= itemCount) return;
-      animateSwipe(direction);
-    },
-    [currentIndex, itemCount],
-  );
-
   const animateSwipe = useCallback((direction: "left" | "right") => {
     if (!topCardRef.current) return;
 
@@ -177,6 +169,6 @@ export const useTinderSwipe = ({
     likeIndicatorRef,
     nopeIndicatorRef,
     handlePointerDown,
-    swipe,
+    animateSwipe,
   };
 };

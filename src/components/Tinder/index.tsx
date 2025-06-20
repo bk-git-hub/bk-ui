@@ -112,15 +112,15 @@ const TinderCard = ({
 const TinderNopeButton = (
   props: React.ButtonHTMLAttributes<HTMLButtonElement>,
 ) => {
-  const { swipe } = useTinderContext();
-  return <button onClick={() => swipe("left")} {...props} />;
+  const { animateSwipe } = useTinderContext();
+  return <button onClick={() => animateSwipe("left")} {...props} />;
 };
 
 const TinderLikeButton = (
   props: React.ButtonHTMLAttributes<HTMLButtonElement>,
 ) => {
-  const { swipe } = useTinderContext();
-  return <button onClick={() => swipe("right")} {...props} />;
+  const { animateSwipe } = useTinderContext();
+  return <button onClick={() => animateSwipe("right")} {...props} />;
 };
 
 export const Tinder = {
