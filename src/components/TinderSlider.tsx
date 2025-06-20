@@ -26,7 +26,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const nopeIndicatorRef = useRef<HTMLDivElement>(null);
 
   const isDraggingRef = useRef(false);
-  const startPosRef = useRef(0);
+  const startPosRef = useRef({ x: 0, y: 0 });
   const currentTranslateRef = useRef(0);
   const dragOriginYRef = useRef<"top" | "bottom">("top");
 
@@ -67,7 +67,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const snapBack = useCallback(() => {
     if (!topCardRef.current) return;
     topCardRef.current.style.transition = "transform 0.3s ease-out";
-    topCardRef.current.style.transform = "translateX(0px) rotate(0deg)";
+    topCardRef.current.style.transform = "none";
     topCardRef.current.style.transformOrigin = "center center";
 
     if (likeIndicatorRef.current) likeIndicatorRef.current.style.opacity = "0";
@@ -93,7 +93,8 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const handleWindowPointerMove = useCallback((e: PointerEvent) => {
     if (!isDraggingRef.current || !topCardRef.current) return;
 
-    const deltaX = e.clientX - startPosRef.current;
+    const deltaX = e.clientX - startPosRef.current.x;
+    const deltaY = e.clientY - startPosRef.current.y;
 
     currentTranslateRef.current = deltaX;
 
@@ -101,7 +102,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     const rotationMultiplier = dragOriginYRef.current === "top" ? 1 : -1;
     const rotation = (deltaX / 15) * rotationMultiplier;
 
-    topCardRef.current.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+    topCardRef.current.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px) rotate(${rotation}deg)`;
     const likeOpacity = Math.max(0, Math.min(1, deltaX / SWIPE_THRESHOLD));
     const nopeOpacity = Math.max(0, Math.min(1, -deltaX / SWIPE_THRESHOLD));
     if (likeIndicatorRef.current)
@@ -150,7 +151,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
       }
 
       isDraggingRef.current = true;
-      startPosRef.current = e.clientX;
+      startPosRef.current = { x: e.clientX, y: e.clientY };
       if (topCardRef.current) {
         topCardRef.current.style.transition = "";
       }
