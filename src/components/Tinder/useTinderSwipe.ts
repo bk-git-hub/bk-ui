@@ -38,7 +38,7 @@ export const useTinderSwipe = ({
     const flyOutX =
       (direction === "right" ? 1 : -1) * (window.innerWidth + 200);
     topCardRef.current.style.transition =
-      "transform 0.5s ease-out, opacity 0.5s ease-out";
+      "transform 0.3s ease-out, opacity 0.3s ease-out";
     topCardRef.current.style.transform = `translateX(${flyOutX}px) rotate(${
       flyOutX / 15
     }deg)`;
