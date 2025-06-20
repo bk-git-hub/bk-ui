@@ -21,15 +21,25 @@ const useTinderContext = () => {
 interface TinderRootProps {
   cards: any[];
   children: React.ReactNode;
+  className?: string;
 }
 
-const TinderRoot = ({ cards, children }: TinderRootProps) => {
+const TinderRoot = ({ cards, children, className = "" }: TinderRootProps) => {
   const swipeApi = useTinderSwipe({ itemCount: cards.length });
   if (swipeApi.currentIndex >= cards.length) {
     return (
-      <div className="relative flex h-[450px] w-80 items-center justify-center">
+      <div
+        className={twMerge(
+          clsx(
+            "relative flex h-[450px] w-80 items-center justify-center",
+            className, // 사용자가 전달한 className
+          ),
+        )}
+      >
         <div className="p-4 text-center">
-          <h2 className="text-xl font-bold">더 이상 카드가 없습니다.</h2>
+          <h2 className="text-xl font-bold text-black">
+            더 이상 카드가 없습니다.
+          </h2>
         </div>
       </div>
     );
