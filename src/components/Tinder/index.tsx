@@ -23,7 +23,7 @@ interface TinderRootProps {
   children: React.ReactNode;
 }
 
-const TinderRoot = ({ cards, children }: TinderRootProps) => {
+export const TinderRoot = ({ cards, children }: TinderRootProps) => {
   const swipeApi = useTinderSwipe({ itemCount: cards.length });
 
   return (
@@ -38,7 +38,7 @@ interface TinderCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
 }
 
-const TinderCard = ({
+export const TinderCard = ({
   index,
   children,
   className,
@@ -101,7 +101,7 @@ const TinderCard = ({
   );
 };
 
-const TinderNopeButton = (
+export const TinderNopeButton = (
   props: React.ButtonHTMLAttributes<HTMLButtonElement>,
 ) => {
   const { animateSwipe, isFinished } = useTinderContext();
@@ -109,7 +109,7 @@ const TinderNopeButton = (
   return <button onClick={() => animateSwipe("left")} {...props} />;
 };
 
-const TinderLikeButton = (
+export const TinderLikeButton = (
   props: React.ButtonHTMLAttributes<HTMLButtonElement>,
 ) => {
   const { animateSwipe, isFinished } = useTinderContext();
@@ -117,7 +117,7 @@ const TinderLikeButton = (
   return <button onClick={() => animateSwipe("right")} {...props} />;
 };
 
-const TinderEmptyFallback = ({
+export const TinderEmptyFallback = ({
   children,
   className,
 }: {
@@ -167,12 +167,4 @@ export const TinderResetButton = ({
       {children}
     </button>
   );
-};
-
-export const Tinder = {
-  Root: TinderRoot,
-  Card: TinderCard,
-  NopeButton: TinderNopeButton,
-  LikeButton: TinderLikeButton,
-  EmptyFallback: TinderEmptyFallback,
 };

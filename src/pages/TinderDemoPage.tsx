@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Tinder, TinderResetButton } from "@/components/Tinder";
+import {
+  TinderRoot,
+  TinderLikeButton,
+  TinderCard,
+  TinderNopeButton,
+  TinderResetButton,
+  TinderEmptyFallback,
+} from "@/components/Tinder";
 
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -96,14 +103,14 @@ const YourComponent = () => {
 // 미리보기 UI를 위한 내부 컴포넌트
 const TinderDemoPreview = () => {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center overflow-x-hidden bg-gray-100 p-4">
+    <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gray-100 p-4">
       {/* 1. Tinder.Root가 모든 것을 감싸고, cards 데이터를 주입합니다. */}
-      <Tinder.Root cards={SAMPLE_CARDS}>
+      <TinderRoot cards={SAMPLE_CARDS}>
         {/* 카드가 표시될 영역의 크기와 위치를 지정합니다. */}
         <div className="relative h-[450px] w-80 md:h-[550px] md:w-96">
           {/* 2. 데이터를 map으로 순회하며 Tinder.Card를 렌더링합니다. */}
           {SAMPLE_CARDS.map((card, i) => (
-            <Tinder.Card
+            <TinderCard
               key={card.id}
               index={i} // ◀️ 카드의 순서를 알려주는 index prop은 필수입니다.
               className="h-full w-full bg-cover bg-center" // ◀️ 커스텀 스타일링
@@ -115,9 +122,9 @@ const TinderDemoPreview = () => {
                   {card.name}, {card.age}
                 </h3>
               </div>
-            </Tinder.Card>
+            </TinderCard>
           ))}
-          <Tinder.EmptyFallback>
+          <TinderEmptyFallback>
             <div className="p-4 text-center">
               <h2 className="text-xl font-bold text-black">
                 모든 카드를 확인했습니다!
@@ -126,12 +133,12 @@ const TinderDemoPreview = () => {
                 RESET
               </TinderResetButton>
             </div>
-          </Tinder.EmptyFallback>
+          </TinderEmptyFallback>
         </div>
 
         {/* 4. 컨트롤 버튼들을 원하는 위치에 배치합니다. */}
         <div className="mt-8 flex space-x-8">
-          <Tinder.NopeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
+          <TinderNopeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 text-red-500"
@@ -146,8 +153,8 @@ const TinderDemoPreview = () => {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </Tinder.NopeButton>
-          <Tinder.LikeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
+          </TinderNopeButton>
+          <TinderLikeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 text-green-500"
@@ -156,9 +163,9 @@ const TinderDemoPreview = () => {
             >
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
             </svg>
-          </Tinder.LikeButton>
+          </TinderLikeButton>
         </div>
-      </Tinder.Root>
+      </TinderRoot>
     </div>
   );
 };
@@ -206,9 +213,9 @@ export default function TinderDemoPage() {
         {/* 미리보기 / 코드 영역 */}
         <div className="flex min-h-[650px] items-center justify-center p-4 md:p-6">
           {activeTab === "preview" ? (
-            <Tinder.Root cards={SAMPLE_CARDS}>
+            <TinderRoot cards={SAMPLE_CARDS}>
               <TinderDemoPreview />
-            </Tinder.Root>
+            </TinderRoot>
           ) : (
             <div className="relative w-full">
               <button
