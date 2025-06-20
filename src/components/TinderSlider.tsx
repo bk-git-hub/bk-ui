@@ -28,6 +28,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const isDraggingRef = useRef(false);
   const startPosRef = useRef(0);
   const currentTranslateRef = useRef(0);
+  const dragOriginYRef = useRef<"top" | "bottom">("top");
 
   const animateSwipe = useCallback((direction: "left" | "right") => {
     if (!topCardRef.current) return;
@@ -67,6 +68,7 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     if (!topCardRef.current) return;
     topCardRef.current.style.transition = "transform 0.3s ease-out";
     topCardRef.current.style.transform = "translateX(0px) rotate(0deg)";
+    topCardRef.current.style.transformOrigin = "center center";
 
     if (likeIndicatorRef.current) likeIndicatorRef.current.style.opacity = "0";
     if (nopeIndicatorRef.current) nopeIndicatorRef.current.style.opacity = "0";
@@ -92,10 +94,14 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
     if (!isDraggingRef.current || !topCardRef.current) return;
 
     const deltaX = e.clientX - startPosRef.current;
-    currentTranslateRef.current = deltaX;
-    const rotation = deltaX / 15;
-    topCardRef.current.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
 
+    currentTranslateRef.current = deltaX;
+
+    // 3. 회전 방향 동적 조절
+    const rotationMultiplier = dragOriginYRef.current === "top" ? 1 : -1;
+    const rotation = (deltaX / 15) * rotationMultiplier;
+
+    topCardRef.current.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
     const likeOpacity = Math.max(0, Math.min(1, deltaX / SWIPE_THRESHOLD));
     const nopeOpacity = Math.max(0, Math.min(1, -deltaX / SWIPE_THRESHOLD));
     if (likeIndicatorRef.current)
@@ -131,6 +137,18 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault();
+      if (!topCardRef.current) return;
+      const cardRect = topCardRef.current.getBoundingClientRect();
+      const clickOffsetY = e.clientY - cardRect.top;
+
+      if (clickOffsetY > cardRect.height / 2) {
+        dragOriginYRef.current = "bottom";
+        topCardRef.current.style.transformOrigin = "top center";
+      } else {
+        dragOriginYRef.current = "top";
+        topCardRef.current.style.transformOrigin = "bottom center";
+      }
+
       isDraggingRef.current = true;
       startPosRef.current = e.clientX;
       if (topCardRef.current) {
