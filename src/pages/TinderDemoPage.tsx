@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tinder } from "@/components/Tinder";
+import { Tinder, TinderResetButton } from "@/components/Tinder";
 
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -122,16 +122,16 @@ const TinderDemoPreview = () => {
               <h2 className="text-xl font-bold text-black">
                 모든 카드를 확인했습니다!
               </h2>
-              <p className="mt-2 text-sm text-gray-500">
-                새로운 사람들을 곧 추천해 드릴게요.
-              </p>
+              <TinderResetButton className="mt-10 cursor-pointer rounded-full bg-black p-4">
+                RESET
+              </TinderResetButton>
             </div>
           </Tinder.EmptyFallback>
         </div>
 
         {/* 4. 컨트롤 버튼들을 원하는 위치에 배치합니다. */}
         <div className="mt-8 flex space-x-8">
-          <Tinder.NopeButton className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
+          <Tinder.NopeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 text-red-500"
@@ -147,7 +147,7 @@ const TinderDemoPreview = () => {
               />
             </svg>
           </Tinder.NopeButton>
-          <Tinder.LikeButton className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
+          <Tinder.LikeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 text-green-500"
@@ -206,7 +206,7 @@ export default function TinderDemoPage() {
         {/* 미리보기 / 코드 영역 */}
         <div className="flex min-h-[650px] items-center justify-center p-4 md:p-6">
           {activeTab === "preview" ? (
-            <Tinder.Root cards={SAMPLE_CARDS} className="h-[550px] w-96">
+            <Tinder.Root cards={SAMPLE_CARDS}>
               <TinderDemoPreview />
             </Tinder.Root>
           ) : (

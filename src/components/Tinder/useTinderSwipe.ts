@@ -154,6 +154,14 @@ export const useTinderSwipe = ({
     [handleWindowPointerMove, handleWindowPointerUp],
   );
 
+  const undo = useCallback(() => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1)); // 0 밑으로 내려가지 않도록 함
+  }, []);
+
+  const reset = useCallback(() => {
+    setCurrentIndex(0);
+  }, []);
+
   useEffect(() => {
     return () => {
       window.removeEventListener("pointermove", handleWindowPointerMove);
@@ -171,5 +179,8 @@ export const useTinderSwipe = ({
     handlePointerDown,
     animateSwipe,
     isFinished,
+    setCurrentIndex,
+    undo,
+    reset,
   };
 };

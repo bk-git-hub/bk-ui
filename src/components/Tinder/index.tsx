@@ -130,6 +130,45 @@ const TinderEmptyFallback = ({
   return isFinished ? <div className={className}>{children}</div> : null;
 };
 
+export const TinderUndoButton = ({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
+  const { undo, currentIndex } = useTinderContext();
+  // 첫 번째 카드이거나 애니메이션 중일 때는 비활성화
+  const isDisabled = currentIndex === 0;
+  return (
+    <button
+      onClick={undo}
+      disabled={isDisabled}
+      className={twMerge("...", className)}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+export const TinderResetButton = ({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
+  const { reset, currentIndex } = useTinderContext();
+  const isDisabled = currentIndex === 0;
+  return (
+    <button
+      onClick={reset}
+      disabled={isDisabled}
+      className={twMerge("...", className)}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
 export const Tinder = {
   Root: TinderRoot,
   Card: TinderCard,
