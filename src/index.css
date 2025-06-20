@@ -1,1 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Praise&display=swap");
 @import "tailwindcss";
+@theme {
+  --font-praise: "Praise", "cursive";
+  --font-sans: "Inter", "sans-serif";
+}

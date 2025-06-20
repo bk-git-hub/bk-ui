@@ -129,7 +129,7 @@ const TinderDemoPreview = () => {
               <h2 className="text-xl font-bold text-black">
                 모든 카드를 확인했습니다!
               </h2>
-              <TinderResetButton className="mt-10 cursor-pointer rounded-full bg-black p-4">
+              <TinderResetButton className="mt-10 cursor-pointer rounded-full bg-black p-4 text-white">
                 RESET
               </TinderResetButton>
             </div>
@@ -193,7 +193,7 @@ export default function TinderDemoPage() {
       </section>
 
       {/* 데모 영역 */}
-      <div className="w-full rounded-xl border border-slate-700 bg-slate-900">
+      <div className="white w-full rounded-xl border border-slate-700">
         {/* 탭 버튼 */}
         <div className="flex border-b border-slate-700">
           <button
