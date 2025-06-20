@@ -1,7 +1,8 @@
 // src/App.tsx
-import { Tinder } from "./components/TinderSlider"; // 경로 수정
 
-// 샘플 데이터
+import { Tinder } from "@/components/Tinder";
+
+// 재사용을 위해 샘플 데이터를 정의합니다.
 const SAMPLE_CARDS = [
   {
     id: "1",
@@ -42,16 +43,20 @@ const SAMPLE_CARDS = [
 
 function App() {
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gray-100 p-4">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden bg-gray-100 p-4">
+      {/* 1. Tinder.Root가 모든 것을 감싸고, cards 데이터를 주입합니다. */}
       <Tinder.Root cards={SAMPLE_CARDS}>
+        {/* 카드가 표시될 영역의 크기와 위치를 지정합니다. */}
         <div className="relative h-[450px] w-80 md:h-[550px] md:w-96">
+          {/* 2. 데이터를 map으로 순회하며 Tinder.Card를 렌더링합니다. */}
           {SAMPLE_CARDS.map((card, i) => (
             <Tinder.Card
               key={card.id}
-              index={i}
-              className="bg-cover bg-center"
+              index={i} // ◀️ 카드의 순서를 알려주는 index prop은 필수입니다.
+              className="h-full w-full bg-cover bg-center" // ◀️ 커스텀 스타일링
               style={{ backgroundImage: `url(${card.image})` }}
             >
+              {/* 3. Card 내부에 원하는 컨텐츠를 자유롭게 넣을 수 있습니다. */}
               <div className="pointer-events-none absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
                 <h3 className="text-2xl font-bold">
                   {card.name}, {card.age}
@@ -60,6 +65,8 @@ function App() {
             </Tinder.Card>
           ))}
         </div>
+
+        {/* 4. 컨트롤 버튼들을 원하는 위치에 배치합니다. */}
         <div className="mt-8 flex space-x-8">
           <Tinder.NopeButton className="rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
             <svg
