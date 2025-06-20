@@ -15,7 +15,7 @@ interface TinderSliderProps {
 
 const SWIPE_THRESHOLD = 100;
 
-const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
+const TinderSlider = ({ cards: initialCards }: TinderSliderProps) => {
   const [cards] = useState(initialCards);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -279,4 +279,4 @@ const TinderSliderNoLib = ({ cards: initialCards }: TinderSliderProps) => {
   );
 };
 
-export default TinderSliderNoLib;
+export default TinderSlider;
