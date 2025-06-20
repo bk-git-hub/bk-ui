@@ -21,10 +21,9 @@ const useTinderContext = () => {
 interface TinderRootProps {
   cards: any[];
   children: React.ReactNode;
-  className?: string;
 }
 
-const TinderRoot = ({ cards, children, className = "" }: TinderRootProps) => {
+const TinderRoot = ({ cards, children }: TinderRootProps) => {
   const swipeApi = useTinderSwipe({ itemCount: cards.length });
 
   return (
