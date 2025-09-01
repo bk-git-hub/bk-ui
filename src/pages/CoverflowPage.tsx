@@ -26,17 +26,6 @@ function CoverflowPage() {
           ))}
         </Coverflow>
       </div>
-      <div className="bg-opacity-30 fixed top-2.5 right-2.5 rounded-2xl bg-black p-4 text-center font-mono text-white backdrop-blur-2xl">
-        credit:{" "}
-        <a
-          href="https://github.com/lee-donghyun/react-coverflow"
-          target="_blank"
-          rel="noreferrer"
-          className="text-white underline"
-        >
-          github@lee-donghyun
-        </a>
-      </div>
     </div>
   );
 }
