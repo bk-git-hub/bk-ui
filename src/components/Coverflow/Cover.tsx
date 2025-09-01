@@ -1,4 +1,5 @@
 // src/coverflow/cover.tsx
+import React from "react";
 
 export const Cover = ({
   size,
@@ -20,10 +21,11 @@ export const Cover = ({
     >
       <img
         className="pointer-events-none select-none"
+        // **The Fix:** Add the loading="lazy" attribute
+        loading="lazy"
         style={{
           width: size,
           height: size,
-          // This creates the reflection effect
           WebkitBoxReflect:
             "below 0 linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4))",
         }}

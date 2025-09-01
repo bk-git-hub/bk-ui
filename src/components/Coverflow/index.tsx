@@ -3,6 +3,9 @@ import React, { useMemo, useState } from "react";
 import { Cover } from "./Cover";
 import { Util as CoverUtil } from "./util";
 
+// **Optimization:** We'll only render the current cover + 5 on each side
+const RENDER_RANGE = 5;
+
 export const Coverflow = ({
   covers: coverData,
   size,
@@ -22,14 +25,19 @@ export const Coverflow = ({
       }}
     >
       {coverData.map((cover, index) => {
-        const score = index - current;
+        // **The Fix:** Check if the current cover is within our render range
+        const isVisible = Math.abs(current - index) <= RENDER_RANGE;
 
-        // The type `React.CSSProperties` is added here for better type safety
+        // If it's not visible, we render nothing (or a placeholder)
+        if (!isVisible) {
+          return null;
+        }
+
+        const score = index - current;
         const style: React.CSSProperties = {
           ...coverUtil.getTransform(score),
           zIndex: coverData.length - Math.abs(score),
           transition: "transform 0.5s ease-out",
-          // **The Fix:** We tell TypeScript this is a constant, specific value.
           position: "absolute",
           top: 0,
           left: `calc(50% - ${size / 2}px)`,
