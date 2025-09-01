@@ -3,9 +3,10 @@ import { useCoverflowItem } from "./coverflow-context";
 interface LazyImageProps {
   src: string;
   alt: string;
+  isPriority?: boolean;
 }
 
-export const LazyImage = ({ src, alt }: LazyImageProps) => {
+export const LazyImage = ({ src, alt, isPriority = false }: LazyImageProps) => {
   const { signalReady } = useCoverflowItem();
 
   return (
@@ -13,7 +14,8 @@ export const LazyImage = ({ src, alt }: LazyImageProps) => {
       src={src}
       alt={alt}
       onLoad={signalReady}
-      loading="lazy"
+      // The loading strategy is now controlled directly by the prop
+      loading={isPriority ? "eager" : "lazy"}
       className="pointer-events-none h-full w-full rounded-md object-cover select-none"
       style={{
         WebkitBoxReflect:

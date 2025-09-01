@@ -21,7 +21,11 @@ function CoverflowPage() {
         <Coverflow size={size}>
           {covers.map((cover, index) => (
             <CoverflowItem key={index}>
-              <LazyImage src={cover.src} alt={cover.title} />
+              <LazyImage
+                src={cover.src}
+                alt={cover.title}
+                isPriority={index < 2}
+              />
             </CoverflowItem>
           ))}
         </Coverflow>
