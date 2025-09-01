@@ -45,6 +45,14 @@ function App() {
           >
             Tinder Slider
           </NavLink>
+          <NavLink
+            to="/components/coverflow"
+            className={({ isActive }) =>
+              isActive ? `${linkClass} ${activeLinkClass}` : linkClass
+            }
+          >
+            Coverflow
+          </NavLink>
         </nav>
       </aside>
 
@@ -54,7 +62,7 @@ function App() {
           // ⬇️ md:hidden -> sm:hidden
           className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-sm sm:hidden"
         >
-          <span className="font-praise text-2xl">B k - u i</span>
+          <span className="font-praise text-2xl">Bk ui</span>
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
