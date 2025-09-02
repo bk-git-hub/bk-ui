@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 
-// --- Physics Constants ---
-const STIFFNESS = 0.1;
-const DAMPING = 0.8;
+// Default physics configuration
+const DEFAULT_CONFIG = {
+  stiffness: 0.1,
+  damping: 0.8,
+};
 const PRECISION = 0.01;
 
-export const useInertia = (targetValue: number) => {
+// The hook now accepts an optional config object
+export const useInertia = (targetValue: number, config = DEFAULT_CONFIG) => {
   const [currentValue, setCurrentValue] = useState(targetValue);
 
   const position = useRef(targetValue);
@@ -13,10 +16,13 @@ export const useInertia = (targetValue: number) => {
   const animationFrame = useRef<number | null>(null);
 
   useEffect(() => {
+    // Use the passed-in config or the default
+    const { stiffness, damping } = config;
+
     const animate = () => {
-      const springForce = (targetValue - position.current) * STIFFNESS;
+      const springForce = (targetValue - position.current) * stiffness;
       velocity.current += springForce;
-      velocity.current *= DAMPING;
+      velocity.current *= damping;
       position.current += velocity.current;
 
       if (
@@ -29,7 +35,6 @@ export const useInertia = (targetValue: number) => {
 
         if (animationFrame.current) {
           cancelAnimationFrame(animationFrame.current);
-          animationFrame.current = null;
         }
         return;
       }
@@ -45,7 +50,7 @@ export const useInertia = (targetValue: number) => {
         cancelAnimationFrame(animationFrame.current);
       }
     };
-  }, [targetValue]);
+  }, [targetValue, config]); // Re-run effect if the config changes
 
   return currentValue;
 };
