@@ -31,14 +31,11 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => observer.disconnect();
   }, []);
 
-  // Effect to handle the wheel event
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      // **This is the key fix:**
-      // We prevent the default browser action (page scrolling)
       e.preventDefault();
 
       if (isScrolling.current) return;
@@ -48,24 +45,34 @@ export const Coverflow = ({ children }: CoverflowProps) => {
         isScrolling.current = false;
       }, 100);
 
-      if (e.deltaY > 0) {
-        setCurrent((prev) => Math.min(prev + 1, childrenArray.length - 1));
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        // **This is the corrected logic:**
+        // A swipe from left-to-right (natural scrolling) produces a negative deltaX.
+        if (e.deltaX > 0) {
+          // Swiped right: move to the next cover
+          setCurrent((prev) => Math.min(prev + 1, childrenArray.length - 1));
+        } else {
+          // Swiped left: move to the previous cover
+          setCurrent((prev) => Math.max(prev - 1, 0));
+        }
       } else {
-        setCurrent((prev) => Math.max(prev - 1, 0));
+        // Vertical scroll
+        if (e.deltaY > 0) {
+          setCurrent((prev) => Math.min(prev + 1, childrenArray.length - 1));
+        } else {
+          setCurrent((prev) => Math.max(prev - 1, 0));
+        }
       }
     };
 
-    // Add the event listener with the passive option set to false
     container.addEventListener("wheel", handleWheel, { passive: false });
 
-    // Cleanup function to remove the listener
     return () => {
       container.removeEventListener("wheel", handleWheel);
     };
-  }, [childrenArray.length]); // Re-run effect if the number of children changes
+  }, [childrenArray.length]);
 
   return (
-    // We remove the onWheel prop from here and use the ref instead
     <div ref={containerRef} className="w-full">
       <div
         className="relative mx-auto touch-none"
