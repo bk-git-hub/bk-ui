@@ -102,6 +102,28 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => container.removeEventListener("wheel", handleWheel);
   }, [size, childrenArray.length]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      let newTarget = target;
+      if (e.key === "ArrowRight") {
+        newTarget = Math.min(target + 1, childrenArray.length - 1);
+      } else if (e.key === "ArrowLeft") {
+        newTarget = Math.max(target - 1, 0);
+      }
+
+      if (newTarget !== target) {
+        scrollPosition.current = newTarget;
+        setPhysicsConfig(SNAP_CONFIG);
+        setTarget(newTarget);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [target, childrenArray.length]);
+
   return (
     <div ref={containerRef} className="w-full">
       <div
