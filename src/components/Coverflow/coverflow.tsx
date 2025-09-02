@@ -7,35 +7,33 @@ const RENDER_RANGE = 5;
 const SNAP_CONFIG = { stiffness: 0.1, damping: 0.5 };
 
 const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
-
 export const Coverflow = ({ children }: CoverflowProps) => {
   const [size, setSize] = useState(200);
-  const [target, setTarget] = useState(0);
-  const [physicsConfig, setPhysicsConfig] = useState(SNAP_CONFIG);
-
-  const animatedPosition = useInertia(target, physicsConfig);
+  // **The single source of truth for the visual position**
+  const [renderedPosition, setRenderedPosition] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollPosition = useRef(0);
   const scrollEndTimer = useRef<number | null>(null);
-  // **Ref to store the last scroll direction**
   const lastScrollDelta = useRef(0);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPosition = useRef({ x: 0, initialScore: 0 });
 
   const coverUtil = useMemo(() => new CoverUtil(size), [size]);
   const childrenArray = Children.toArray(children);
 
-  useEffect(() => {
-    scrollPosition.current = target;
-  }, []);
+  // --- The Animation Engine ---
+  const { startAnimation, setPosition } = useInertia(
+    setRenderedPosition,
+    SNAP_CONFIG,
+  );
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const observer = new ResizeObserver((entries) => {
       setSize(getSize(entries[0].contentRect.width));
     });
-
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
@@ -43,118 +41,143 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
-      }
+      if (isDragging) return;
+      if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
 
       let currentDelta = 0;
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        const scrollAmount = e.deltaX / (size * 1.5);
-        scrollPosition.current += scrollAmount;
-        currentDelta = scrollAmount; // Store the normalized delta
+        currentDelta = e.deltaX / (size * 1.5);
       } else {
-        const scrollAmount = (e.deltaY * 1.5) / size;
-        scrollPosition.current += scrollAmount;
-        currentDelta = scrollAmount; // Store the normalized delta
+        currentDelta = e.deltaY / size;
       }
-
-      // **Remember the last scroll direction**
       lastScrollDelta.current = currentDelta;
 
-      scrollPosition.current = Math.max(
+      const newPosition = Math.max(
         0,
-        Math.min(scrollPosition.current, childrenArray.length - 1),
+        Math.min(renderedPosition + currentDelta, childrenArray.length - 1),
       );
-      setTarget(scrollPosition.current);
+      setPosition(newPosition); // Update position directly
 
       scrollEndTimer.current = window.setTimeout(() => {
-        // **New, more precise snapping logic**
-        const position = scrollPosition.current;
         const momentum = lastScrollDelta.current;
-
-        let snappedTarget;
-        // If there was momentum, snap in the direction of the momentum
-        if (Math.abs(momentum) > 0.01) {
-          snappedTarget =
-            momentum > 0 ? Math.ceil(position) : Math.floor(position);
-        } else {
-          // Otherwise, snap to the nearest
-          snappedTarget = Math.round(position);
-        }
-
-        // Clamp the final target to the bounds
+        const snappedTarget =
+          Math.abs(momentum) > 0.01
+            ? momentum > 0
+              ? Math.ceil(newPosition)
+              : Math.floor(newPosition)
+            : Math.round(newPosition);
         const finalTarget = Math.max(
           0,
           Math.min(snappedTarget, childrenArray.length - 1),
         );
-
-        scrollPosition.current = finalTarget;
-        setPhysicsConfig(SNAP_CONFIG);
-        setTarget(finalTarget);
-      }, 50);
+        startAnimation(finalTarget); // Start the final snap animation
+      }, 80);
     };
-
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [size, childrenArray.length]);
+  }, [
+    size,
+    childrenArray.length,
+    isDragging,
+    renderedPosition,
+    startAnimation,
+    setPosition,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      let newTarget = target;
+      if (isDragging) return;
+      let newTarget = Math.round(renderedPosition);
       if (e.key === "ArrowRight") {
-        newTarget = Math.min(target + 1, childrenArray.length - 1);
+        newTarget = Math.min(newTarget + 1, childrenArray.length - 1);
       } else if (e.key === "ArrowLeft") {
-        newTarget = Math.max(target - 1, 0);
+        newTarget = Math.max(newTarget - 1, 0);
       }
-
-      if (newTarget !== target) {
-        scrollPosition.current = newTarget;
-        setPhysicsConfig(SNAP_CONFIG);
-        setTarget(newTarget);
-      }
+      startAnimation(newTarget);
     };
-
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [renderedPosition, childrenArray.length, isDragging, startAnimation]);
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const startPos = "touches" in e ? e.touches[0].clientX : e.clientX;
+    dragStartPosition.current = { x: startPos, initialScore: renderedPosition };
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    let newPosition = renderedPosition;
+    const handleDragMove = (e: MouseEvent | TouchEvent) => {
+      const currentPos = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const deltaX = currentPos - dragStartPosition.current.x;
+      const dragAmount = deltaX / (size * 0.5);
+      lastScrollDelta.current = -dragAmount * 0.1;
+      newPosition = dragStartPosition.current.initialScore - dragAmount;
+      setPosition(newPosition); // Update position directly
     };
-  }, [target, childrenArray.length]);
+    const handleDragEnd = () => {
+      setIsDragging(false);
+      const momentum = lastScrollDelta.current;
+      const snappedTarget =
+        Math.abs(momentum) > 0.01
+          ? momentum > 0
+            ? Math.ceil(newPosition)
+            : Math.floor(newPosition)
+          : Math.round(newPosition);
+      const finalTarget = Math.max(
+        0,
+        Math.min(snappedTarget, childrenArray.length - 1),
+      );
+      startAnimation(finalTarget); // Start the final snap animation
+    };
+    window.addEventListener("mousemove", handleDragMove);
+    window.addEventListener("touchmove", handleDragMove);
+    window.addEventListener("mouseup", handleDragEnd);
+    window.addEventListener("touchend", handleDragEnd);
+    return () => {
+      window.removeEventListener("mousemove", handleDragMove);
+      window.removeEventListener("touchmove", handleDragMove);
+      window.removeEventListener("mouseup", handleDragEnd);
+      window.removeEventListener("touchend", handleDragEnd);
+    };
+  }, [isDragging, size, startAnimation, setPosition]);
 
   return (
     <div ref={containerRef} className="w-full">
       <div
         className="relative mx-auto touch-none"
         style={{ height: size, width: size, perspective: "600px" }}
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
       >
         {childrenArray.map((child, index) => {
-          const isVisible = Math.abs(animatedPosition - index) <= RENDER_RANGE;
+          const position = renderedPosition; // Always use the single source of truth
+          const isVisible = Math.abs(position - index) <= RENDER_RANGE;
           if (!isVisible) return null;
 
-          const score = index - animatedPosition;
+          const score = index - position;
           const style: React.CSSProperties = {
             ...coverUtil.getTransform(score),
             zIndex:
-              childrenArray.length -
-              Math.abs(Math.round(animatedPosition) - index),
+              childrenArray.length - Math.abs(Math.round(position) - index),
             position: "absolute",
             top: 0,
             left: 0,
             width: size,
             height: size,
+            transition: isDragging ? "none" : undefined,
           };
-
           return (
             <div
               key={index}
               style={style}
               onClick={() => {
-                scrollPosition.current = index;
-                setPhysicsConfig(SNAP_CONFIG);
-                setTarget(index);
+                if (isDragging) return;
+                startAnimation(index);
               }}
               className="cursor-pointer"
             >

@@ -1,61 +1,76 @@
-// src/coverflow/use-inertia.ts
+import { useEffect, useRef } from "react";
 
-import { useState, useEffect, useRef } from "react";
-
-// --- 물리 상수 (임계 감쇠 튜닝) ---
-// 탄성을 약간 낮추고, 마찰력을 매우 높여 바운스를 완전히 제거합니다.
-// 이 설정이 'ease-out' 베지어 곡선과 가장 유사한 느낌을 줍니다.
 const STIFFNESS = 0.17;
-const DAMPING = 0.96; // 1에 매우 가깝게 설정하여 흔들림을 없앰
+const DAMPING = 0.96;
 const PRECISION = 0.01;
+const MAX_DURATION = 500;
 
 export const useInertia = (
-  targetValue: number,
-  config = { stiffness: STIFFNESS, damping: DAMPING }, // 기본 설정을 여기서 사용
+  onUpdate: (value: number) => void, // Callback to update the parent's state
+  config = { stiffness: STIFFNESS, damping: DAMPING },
 ) => {
-  const [currentValue, setCurrentValue] = useState(targetValue);
-
-  const position = useRef(targetValue);
+  const position = useRef(0);
   const velocity = useRef(0);
   const animationFrame = useRef<number | null>(null);
+  const startTime = useRef(Date.now());
+  const target = useRef(0);
 
-  useEffect(() => {
-    // 이제 config prop을 통해 외부에서 물리 값을 받아올 수 있습니다.
-    const { stiffness, damping } = config;
+  const startAnimation = (newTarget: number) => {
+    target.current = newTarget;
+    startTime.current = Date.now();
 
     const animate = () => {
-      const springForce = (targetValue - position.current) * stiffness;
-      velocity.current += springForce;
-      velocity.current *= damping;
-      position.current += velocity.current;
+      const elapsed = Date.now() - startTime.current;
 
-      if (
-        Math.abs(position.current - targetValue) < PRECISION &&
-        Math.abs(velocity.current) < PRECISION
-      ) {
-        position.current = targetValue;
+      if (elapsed > MAX_DURATION) {
+        position.current = target.current;
         velocity.current = 0;
-        setCurrentValue(targetValue);
-
-        if (animationFrame.current) {
+        onUpdate(target.current);
+        if (animationFrame.current)
           cancelAnimationFrame(animationFrame.current);
-          animationFrame.current = null;
-        }
         return;
       }
 
-      setCurrentValue(position.current);
+      const springForce =
+        (target.current - position.current) * config.stiffness;
+      velocity.current += springForce;
+      velocity.current *= config.damping;
+      position.current += velocity.current;
+
+      if (
+        Math.abs(position.current - target.current) < PRECISION &&
+        Math.abs(velocity.current) < PRECISION
+      ) {
+        position.current = target.current;
+        velocity.current = 0;
+        onUpdate(target.current);
+        if (animationFrame.current)
+          cancelAnimationFrame(animationFrame.current);
+        return;
+      }
+
+      onUpdate(position.current);
       animationFrame.current = requestAnimationFrame(animate);
     };
 
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
     animate();
+  };
 
-    return () => {
-      if (animationFrame.current) {
-        cancelAnimationFrame(animationFrame.current);
-      }
-    };
-  }, [targetValue, config]);
+  // Expose a way to set the position instantly, without animation
+  const setPosition = (newPosition: number) => {
+    position.current = newPosition;
+    target.current = newPosition;
+    onUpdate(newPosition);
+  };
 
-  return currentValue;
+  // Cleanup on unmount
+  useEffect(
+    () => () => {
+      if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
+    },
+    [],
+  );
+
+  return { startAnimation, setPosition };
 };
