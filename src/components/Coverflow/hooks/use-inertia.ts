@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
 
 const STIFFNESS = 0.17;
-const DAMPING = 0.96;
+const DAMPING = 0.1;
 const PRECISION = 0.01;
-const MAX_DURATION = 500;
 
 export const useInertia = (
   onUpdate: (value: number) => void, // Callback to update the parent's state
@@ -20,17 +19,6 @@ export const useInertia = (
     startTime.current = Date.now();
 
     const animate = () => {
-      const elapsed = Date.now() - startTime.current;
-
-      if (elapsed > MAX_DURATION) {
-        position.current = target.current;
-        velocity.current = 0;
-        onUpdate(target.current);
-        if (animationFrame.current)
-          cancelAnimationFrame(animationFrame.current);
-        return;
-      }
-
       const springForce =
         (target.current - position.current) * config.stiffness;
       velocity.current += springForce;

@@ -6,10 +6,13 @@ interface WheelScrollConfig {
   containerRef: React.RefObject<HTMLDivElement | null>;
   size: number;
   isEnabled: boolean;
+  // 상한선을 설정하기 위한 maxIndex 파라미터 추가
+  maxIndex: number;
 }
 
 export const useWheelScroll = (config: WheelScrollConfig) => {
-  const { onScroll, onScrollEnd, containerRef, size, isEnabled } = config;
+  const { onScroll, onScrollEnd, containerRef, size, isEnabled, maxIndex } =
+    config;
   const scrollEndTimer = useRef<number | null>(null);
   const lastScrollDelta = useRef(0);
   const scrollPosition = useRef(0);
@@ -29,7 +32,12 @@ export const useWheelScroll = (config: WheelScrollConfig) => {
         currentDelta = (e.deltaY * 1.5) / size;
       }
       lastScrollDelta.current = currentDelta;
-      scrollPosition.current += currentDelta;
+
+      const newPosition = scrollPosition.current + currentDelta;
+
+      // **수정된 부분:** 스크롤 위치가 0과 maxIndex 사이를 벗어나지 않도록 제한합니다.
+      scrollPosition.current = Math.max(0, Math.min(newPosition, maxIndex));
+
       onScroll(scrollPosition.current);
 
       scrollEndTimer.current = window.setTimeout(() => {
@@ -39,9 +47,9 @@ export const useWheelScroll = (config: WheelScrollConfig) => {
 
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [containerRef, size, isEnabled, onScroll, onScrollEnd]);
+    // 의존성 배열에 maxIndex 추가
+  }, [containerRef, size, isEnabled, onScroll, onScrollEnd, maxIndex]);
 
-  // Expose the internal position for synchronization
   return {
     setScrollPosition: (pos: number) => {
       scrollPosition.current = pos;

@@ -57,6 +57,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     isEnabled: !isDragging,
     onScroll: setPosition,
     onScrollEnd: handleSnap,
+    maxIndex: childrenArray.length - 1,
   });
 
   useKeyboardNavigation({
