@@ -101,50 +101,107 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [renderedPosition, childrenArray.length, isDragging, startAnimation]);
 
+  const dragRenderPosition = useRef(0);
+
+  // ... (handleDragStart function is the same as the previous turn)
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     const startPos = "touches" in e ? e.touches[0].clientX : e.clientX;
     dragStartPosition.current = { x: startPos, initialScore: renderedPosition };
+    dragRenderPosition.current = renderedPosition;
     setIsDragging(true);
   };
 
   useEffect(() => {
     if (!isDragging) return;
-    let newPosition = renderedPosition;
+
+    let animationFrame: number | null = null;
+    const targetDragPosition = dragRenderPosition;
+
+    // --- The key change is in this function ---
     const handleDragMove = (e: MouseEvent | TouchEvent) => {
       const currentPos = "touches" in e ? e.touches[0].clientX : e.clientX;
       const deltaX = currentPos - dragStartPosition.current.x;
       const dragAmount = deltaX / (size * 0.5);
+
+      const momentum = Math.abs(dragAmount * 0.1);
       lastScrollDelta.current = -dragAmount * 0.1;
-      newPosition = dragStartPosition.current.initialScore - dragAmount;
-      setPosition(newPosition); // Update position directly
+
+      const newPosition = dragStartPosition.current.initialScore - dragAmount;
+
+      // **The Conditional Logic:**
+      // If momentum is low, we update the position directly for a 1:1 feel.
+      if (momentum < 0.5) {
+        // You can tweak this threshold value
+        // Stop any ongoing easing animation to switch to direct control.
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+          animationFrame = null;
+        }
+        dragRenderPosition.current = newPosition;
+        setPosition(newPosition);
+      } else {
+        // If momentum is high, we update the target for the smooth animation.
+        targetDragPosition.current = newPosition;
+        // If the animation loop isn't running, start it.
+        if (!animationFrame) {
+          animateDrag();
+        }
+      }
     };
+
+    const animateDrag = () => {
+      const distance = targetDragPosition.current - dragRenderPosition.current;
+
+      if (Math.abs(distance) < 0.01) {
+        animationFrame = requestAnimationFrame(animateDrag);
+        return;
+      }
+
+      const newRenderPosition = dragRenderPosition.current + distance * 0.2;
+      dragRenderPosition.current = newRenderPosition;
+      setPosition(newRenderPosition);
+
+      animationFrame = requestAnimationFrame(animateDrag);
+    };
+
     const handleDragEnd = () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
       setIsDragging(false);
+
       const momentum = lastScrollDelta.current;
+      // Use the final target position for accuracy.
+      const finalPosition = targetDragPosition.current;
+
       const snappedTarget =
         Math.abs(momentum) > 0.01
           ? momentum > 0
-            ? Math.ceil(newPosition)
-            : Math.floor(newPosition)
-          : Math.round(newPosition);
+            ? Math.ceil(finalPosition)
+            : Math.floor(finalPosition)
+          : Math.round(finalPosition);
+
       const finalTarget = Math.max(
         0,
         Math.min(snappedTarget, childrenArray.length - 1),
       );
-      startAnimation(finalTarget); // Start the final snap animation
+      startAnimation(finalTarget);
     };
+
+    // Add listeners when the effect starts
     window.addEventListener("mousemove", handleDragMove);
     window.addEventListener("touchmove", handleDragMove);
     window.addEventListener("mouseup", handleDragEnd);
     window.addEventListener("touchend", handleDragEnd);
+
     return () => {
+      // Cleanup: remove listeners and cancel animation frame
+      if (animationFrame) cancelAnimationFrame(animationFrame);
       window.removeEventListener("mousemove", handleDragMove);
       window.removeEventListener("touchmove", handleDragMove);
       window.removeEventListener("mouseup", handleDragEnd);
       window.removeEventListener("touchend", handleDragEnd);
     };
-  }, [isDragging, size, startAnimation, setPosition]);
+  }, [isDragging, size, startAnimation, setPosition, childrenArray.length]);
 
   return (
     <div ref={containerRef} className="w-full">

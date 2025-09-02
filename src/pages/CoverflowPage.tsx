@@ -14,6 +14,7 @@ function CoverflowPage() {
               alt={cover.title}
               isPriority={index < 3}
             />
+            <h1 className="absolute text-[100px] text-white">{index}</h1>
           </CoverflowItem>
         ))}
       </Coverflow>
