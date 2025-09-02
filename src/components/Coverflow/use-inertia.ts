@@ -11,7 +11,8 @@ const PRECISION = 0.01;
 
 export const useInertia = (
   targetValue: number,
-  config = { stiffness: STIFFNESS, damping: DAMPING }, // 기본 설정을 여기서 사용
+  setAnimatedPosition: (value: number) => void,
+  config = { stiffness: STIFFNESS, damping: DAMPING },
 ) => {
   const [currentValue, setCurrentValue] = useState(targetValue);
 
@@ -44,7 +45,7 @@ export const useInertia = (
         return;
       }
 
-      setCurrentValue(position.current);
+      setAnimatedPosition(position.current);
       animationFrame.current = requestAnimationFrame(animate);
     };
 
@@ -55,7 +56,7 @@ export const useInertia = (
         cancelAnimationFrame(animationFrame.current);
       }
     };
-  }, [targetValue, config]);
+  }, [targetValue, config, setAnimatedPosition]);
 
   return currentValue;
 };
