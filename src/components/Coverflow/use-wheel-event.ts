@@ -46,11 +46,6 @@ export const useWheelEvent = (config: WheelEventConfig) => {
       // 부모 컴포넌트의 target 상태를 업데이트합니다.
       setTarget(scrollPosition.current);
 
-      if (scrollPosition.current < 0 || scrollPosition.current > maxIndex) {
-        setTarget(scrollPosition.current < 0 ? 0 : maxIndex);
-        return;
-      }
-
       scrollEndTimer.current = window.setTimeout(() => {
         const position = scrollPosition.current;
         const snappedTarget = Math.round(position);

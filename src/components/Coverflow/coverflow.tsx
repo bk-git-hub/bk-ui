@@ -1,116 +1,49 @@
 import React, { useMemo, useState, Children, useEffect, useRef } from "react";
 import { Util as CoverUtil } from "./coverflow.util.ts";
 import { useInertia } from "./use-inertia";
+import { useWheelEvent } from "./use-wheel-event";
+import { useKeyNavigation } from "./use-key-navigation.ts";
 
 const RENDER_RANGE = 8;
-
 const SNAP_CONFIG = { stiffness: 0.1, damping: 0.5 };
-
 const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
 
 export const Coverflow = ({ children }: CoverflowProps) => {
   const [size, setSize] = useState(200);
   const [target, setTarget] = useState(0);
-  const [physicsConfig, setPhysicsConfig] = useState(SNAP_CONFIG);
   const [animatedPosition, setAnimatedPosition] = useState(0);
-  useInertia(target, setAnimatedPosition, physicsConfig);
+
+  useInertia(target, setAnimatedPosition, SNAP_CONFIG);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollPosition = useRef(0);
-  const scrollEndTimer = useRef<number | null>(null);
-  // **Ref to store the last scroll direction**
-  const lastScrollDelta = useRef(0);
-
-  const coverUtil = useMemo(() => new CoverUtil(size), [size]);
   const childrenArray = Children.toArray(children);
+  const coverUtil = useMemo(() => new CoverUtil(size), [size]);
 
+  // --- 크기 조절 로직 ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const observer = new ResizeObserver((entries) => {
       setSize(getSize(entries[0].contentRect.width));
     });
-
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  // --- 스크롤 이벤트 로직 (훅으로 분리됨) ---
+  useWheelEvent({
+    containerRef,
+    setTarget,
+    size,
+    maxIndex: childrenArray.length - 1,
+  });
 
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
-      }
-
-      let currentDelta = 0;
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        const scrollAmount = e.deltaX / size;
-        scrollPosition.current += scrollAmount;
-        currentDelta = scrollAmount; // Store the normalized delta
-      } else {
-        const scrollAmount = (e.deltaY * 1.5) / size;
-        scrollPosition.current += scrollAmount;
-        currentDelta = scrollAmount; // Store the normalized delta
-      }
-
-      // **Remember the last scroll direction**
-      lastScrollDelta.current = currentDelta;
-
-      scrollPosition.current = Math.max(
-        -0.4,
-        Math.min(scrollPosition.current, childrenArray.length - 0.6),
-      );
-      setTarget(scrollPosition.current);
-
-      scrollEndTimer.current = window.setTimeout(() => {
-        // **New, more precise snapping logic**
-        const position = scrollPosition.current;
-
-        // If there was momentum, snap in the direction of the momentum
-
-        const snappedTarget = Math.round(position);
-
-        // Clamp the final target to the bounds
-        const finalTarget = Math.max(
-          0,
-          Math.min(snappedTarget, childrenArray.length - 1),
-        );
-
-        scrollPosition.current = finalTarget;
-        setTarget(finalTarget);
-      }, 20);
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [size, childrenArray.length]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      let newTarget = target;
-      if (e.key === "ArrowRight") {
-        newTarget = Math.min(target + 1, childrenArray.length - 1);
-      } else if (e.key === "ArrowLeft") {
-        newTarget = Math.max(target - 1, 0);
-      }
-
-      if (newTarget !== target) {
-        scrollPosition.current = newTarget;
-        setPhysicsConfig(SNAP_CONFIG);
-        setTarget(newTarget);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [target, childrenArray.length]);
+  // --- 키보드 이벤트 로직 (이제 단 한 줄로 호출) ---
+  useKeyNavigation({
+    setTarget,
+    target,
+    maxIndex: childrenArray.length - 1,
+  });
 
   return (
     <div ref={containerRef} className="w-full">
@@ -121,7 +54,6 @@ export const Coverflow = ({ children }: CoverflowProps) => {
         {childrenArray.map((child, index) => {
           const isVisible = Math.abs(animatedPosition - index) <= RENDER_RANGE;
           if (!isVisible) return null;
-
           const score = index - animatedPosition;
           const style: React.CSSProperties = {
             ...coverUtil.getTransform(score),
@@ -134,16 +66,11 @@ export const Coverflow = ({ children }: CoverflowProps) => {
             width: size,
             height: size,
           };
-
           return (
             <div
               key={index}
               style={style}
-              onClick={() => {
-                scrollPosition.current = index;
-                setPhysicsConfig(SNAP_CONFIG);
-                setTarget(index);
-              }}
+              onClick={() => setTarget(index)}
               className="cursor-pointer"
             >
               {child}
