@@ -1,71 +1,27 @@
-import React, {
-  useMemo,
-  useState,
-  Children,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useMemo, useState, Children, useEffect, useRef } from "react";
 import { Util as CoverUtil } from "./coverflow.util.ts";
-import { useInertia } from "./hooks/use-inertia.ts";
-import { useWheelScroll } from "./hooks/use-wheel-scroll.ts";
-import { useKeyboardNavigation } from "./hooks/use-keyboard-navigation.ts";
-import { useDrag } from "./hooks/use-drag.ts";
 
-const RENDER_RANGE = 5;
+import { useInertia } from "./use-inertia";
+import { useWheelEvent } from "./use-wheel-event";
+import { useKeyNavigation } from "./use-key-navigation.ts";
+import { useDrag } from "./use-drag"; // 새로 만든 훅을 import
+
+const RENDER_RANGE = 8;
+
 const SNAP_CONFIG = { stiffness: 0.1, damping: 0.5 };
 const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
 
 export const Coverflow = ({ children }: CoverflowProps) => {
   const [size, setSize] = useState(200);
-  const [renderedPosition, setRenderedPosition] = useState(0);
+
+  const [target, setTarget] = useState(0);
+  const [animatedPosition, setAnimatedPosition] = useState(0);
+
+  useInertia(target, setAnimatedPosition, SNAP_CONFIG);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const childrenArray = Children.toArray(children);
-
-  const { startAnimation, setPosition } = useInertia(
-    setRenderedPosition,
-    SNAP_CONFIG,
-  );
-
-  const handleSnap = useCallback(
-    (position: number, momentum: number) => {
-      const snappedTarget =
-        Math.abs(momentum) > 0.01
-          ? momentum > 0
-            ? Math.ceil(position)
-            : Math.floor(position)
-          : Math.round(position);
-      const finalTarget = Math.max(
-        0,
-        Math.min(snappedTarget, childrenArray.length - 1),
-      );
-      startAnimation(finalTarget);
-    },
-    [startAnimation, childrenArray.length],
-  );
-
-  const { isDragging, dragPosition, handleDragStart } = useDrag({
-    size,
-    onDrag: setPosition,
-    onDragEnd: handleSnap,
-  });
-
-  const { setScrollPosition } = useWheelScroll({
-    containerRef,
-    size,
-    isEnabled: !isDragging,
-    onScroll: setPosition,
-    onScrollEnd: handleSnap,
-    maxIndex: childrenArray.length - 1,
-  });
-
-  useKeyboardNavigation({
-    isEnabled: !isDragging,
-    target: renderedPosition,
-    maxIndex: childrenArray.length - 1,
-    onNavigate: startAnimation,
-  });
+  const coverUtil = useMemo(() => new CoverUtil(size), [size]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -77,28 +33,41 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => observer.disconnect();
   }, []);
 
-  const coverUtil = useMemo(() => new CoverUtil(size), [size]);
+  const { isDragging, handleDragStart } = useDrag({
+    size,
+    onDrag: setTarget, // 드래그 중에는 target을 직접 업데이트하여 물리엔진이 따라오도록 함
+    maxIndex: childrenArray.length - 1,
+  });
+
+  useWheelEvent({
+    containerRef,
+    setTarget,
+    size,
+
+    maxIndex: childrenArray.length - 1,
+  });
+
+  useKeyNavigation({
+    setTarget,
+    target,
+    maxIndex: childrenArray.length - 1,
+  });
 
   return (
     <div ref={containerRef} className="w-full">
       <div
         className="relative mx-auto touch-none"
         style={{ height: size, width: size, perspective: "600px" }}
-        onMouseDown={(e) => {
-          setScrollPosition(renderedPosition);
-          handleDragStart(e, renderedPosition);
-        }}
-        onTouchStart={(e) => {
-          setScrollPosition(renderedPosition);
-          handleDragStart(e, renderedPosition);
-        }}
+        onMouseDown={(e) => handleDragStart(e, animatedPosition)}
+        onTouchStart={(e) => handleDragStart(e, animatedPosition)}
       >
         {childrenArray.map((child, index) => {
-          const position = isDragging ? dragPosition : renderedPosition;
+          const position = animatedPosition;
           const isVisible = Math.abs(position - index) <= RENDER_RANGE;
           if (!isVisible) return null;
 
-          const score = index - position;
+          const score = index - animatedPosition;
+
           const style: React.CSSProperties = {
             ...coverUtil.getTransform(score),
             zIndex:
@@ -108,15 +77,15 @@ export const Coverflow = ({ children }: CoverflowProps) => {
             left: 0,
             width: size,
             height: size,
-            transition: isDragging ? "none" : undefined,
-          };
 
+            // 드래그 중에는 물리 애니메이션이 계속 부드럽게 따라오므로 transition은 필요 없음
+          };
           return (
             <div
               key={index}
               style={style}
               onClick={() => {
-                if (!isDragging) startAnimation(index);
+                if (!isDragging) setTarget(index);
               }}
               className="cursor-pointer"
             >
