@@ -1,8 +1,16 @@
-import React, { useMemo, useState, Children, useEffect, useRef } from "react";
+import React, {
+  useMemo,
+  useState,
+  Children,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { Util as CoverUtil } from "./coverflow.util.ts";
 import { useInertia } from "./use-inertia";
 import { useWheelEvent } from "./use-wheel-event";
 import { useKeyNavigation } from "./use-key-navigation.ts";
+import { useDrag } from "./use-drag"; // 새로 만든 훅을 import
 
 const RENDER_RANGE = 8;
 const SNAP_CONFIG = { stiffness: 0.1, damping: 0.5 };
@@ -19,7 +27,6 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   const childrenArray = Children.toArray(children);
   const coverUtil = useMemo(() => new CoverUtil(size), [size]);
 
-  // --- 크기 조절 로직 ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -30,15 +37,20 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => observer.disconnect();
   }, []);
 
-  // --- 스크롤 이벤트 로직 (훅으로 분리됨) ---
+  const { isDragging, handleDragStart } = useDrag({
+    size,
+    onDrag: setTarget, // 드래그 중에는 target을 직접 업데이트하여 물리엔진이 따라오도록 함
+    maxIndex: childrenArray.length - 1,
+  });
+
   useWheelEvent({
     containerRef,
     setTarget,
     size,
+
     maxIndex: childrenArray.length - 1,
   });
 
-  // --- 키보드 이벤트 로직 (이제 단 한 줄로 호출) ---
   useKeyNavigation({
     setTarget,
     target,
@@ -50,6 +62,8 @@ export const Coverflow = ({ children }: CoverflowProps) => {
       <div
         className="relative mx-auto touch-none"
         style={{ height: size, width: size, perspective: "600px" }}
+        onMouseDown={(e) => handleDragStart(e, animatedPosition)}
+        onTouchStart={(e) => handleDragStart(e, animatedPosition)}
       >
         {childrenArray.map((child, index) => {
           const isVisible = Math.abs(animatedPosition - index) <= RENDER_RANGE;
@@ -65,12 +79,15 @@ export const Coverflow = ({ children }: CoverflowProps) => {
             left: 0,
             width: size,
             height: size,
+            // 드래그 중에는 물리 애니메이션이 계속 부드럽게 따라오므로 transition은 필요 없음
           };
           return (
             <div
               key={index}
               style={style}
-              onClick={() => setTarget(index)}
+              onClick={() => {
+                if (!isDragging) setTarget(index);
+              }}
               className="cursor-pointer"
             >
               {child}
