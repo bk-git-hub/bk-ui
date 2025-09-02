@@ -1,5 +1,6 @@
 import React, { useMemo, useState, Children, useEffect, useRef } from "react";
 import { Util as CoverUtil } from "./coverflow.util.ts";
+import { useInertia } from "./use-inertia.ts";
 
 const RENDER_RANGE = 5;
 
@@ -12,6 +13,9 @@ interface CoverflowProps {
 export const Coverflow = ({ children }: CoverflowProps) => {
   const [size, setSize] = useState(200);
   const [current, setCurrent] = useState(0);
+  // Updated hook name
+  const animatedPosition = useInertia(current);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const isScrolling = useRef(false);
 
@@ -37,7 +41,6 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-
       if (isScrolling.current) return;
 
       isScrolling.current = true;
@@ -45,23 +48,13 @@ export const Coverflow = ({ children }: CoverflowProps) => {
         isScrolling.current = false;
       }, 100);
 
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        // **This is the corrected logic:**
-        // A swipe from left-to-right (natural scrolling) produces a negative deltaX.
-        if (e.deltaX > 0) {
-          // Swiped right: move to the next cover
-          setCurrent((prev) => Math.min(prev + 1, childrenArray.length - 1));
-        } else {
-          // Swiped left: move to the previous cover
-          setCurrent((prev) => Math.max(prev - 1, 0));
-        }
+      const scrollAmount =
+        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+
+      if (scrollAmount > 0) {
+        setCurrent((prev) => Math.min(prev + 1, childrenArray.length - 1));
       } else {
-        // Vertical scroll
-        if (e.deltaY > 0) {
-          setCurrent((prev) => Math.min(prev + 1, childrenArray.length - 1));
-        } else {
-          setCurrent((prev) => Math.max(prev - 1, 0));
-        }
+        setCurrent((prev) => Math.max(prev - 1, 0));
       }
     };
 
@@ -83,14 +76,15 @@ export const Coverflow = ({ children }: CoverflowProps) => {
         }}
       >
         {childrenArray.map((child, index) => {
-          const isVisible = Math.abs(current - index) <= RENDER_RANGE;
+          const isVisible = Math.abs(animatedPosition - index) <= RENDER_RANGE;
           if (!isVisible) return null;
 
-          const score = index - current;
+          const score = index - animatedPosition;
           const style: React.CSSProperties = {
             ...coverUtil.getTransform(score),
-            zIndex: childrenArray.length - Math.abs(score),
-            transition: "transform 0.5s ease-out",
+            zIndex:
+              childrenArray.length -
+              Math.abs(Math.round(animatedPosition) - index),
             position: "absolute",
             top: 0,
             left: 0,
