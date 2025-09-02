@@ -4,8 +4,6 @@ import { useInertia } from "./use-inertia";
 
 const RENDER_RANGE = 5;
 
-const VERTICAL_SCROLL_CONFIG = { stiffness: 0.05, damping: 0.8 };
-const HORIZONTAL_SCROLL_CONFIG = { stiffness: 0.15, damping: 0.5 };
 const SNAP_CONFIG = { stiffness: 0.1, damping: 0.5 };
 
 const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
@@ -55,13 +53,11 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
       let currentDelta = 0;
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        setPhysicsConfig(HORIZONTAL_SCROLL_CONFIG);
         const scrollAmount = e.deltaX / (size * 1.5);
         scrollPosition.current += scrollAmount;
         currentDelta = scrollAmount; // Store the normalized delta
       } else {
-        setPhysicsConfig(VERTICAL_SCROLL_CONFIG);
-        const scrollAmount = e.deltaY / size;
+        const scrollAmount = (e.deltaY * 1.5) / size;
         scrollPosition.current += scrollAmount;
         currentDelta = scrollAmount; // Store the normalized delta
       }
