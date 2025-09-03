@@ -1,23 +1,20 @@
 import React, { useMemo, useState, Children, useEffect, useRef } from "react";
 import { Util as CoverUtil } from "./coverflow.util.ts";
 
-import { useInertia } from "./use-inertia";
 import { useWheelEvent } from "./use-wheel-event";
 import { useKeyNavigation } from "./use-key-navigation.ts";
-import { useDrag } from "./use-drag"; // 새로 만든 훅을 import
+import { useDrag } from "./use-drag";
 
 const RENDER_RANGE = 8;
 
-const SNAP_CONFIG = { stiffness: 0.1, damping: 0.5 };
 const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
 
 export const Coverflow = ({ children }: CoverflowProps) => {
   const [size, setSize] = useState(200);
 
+  // target과 position을 따로 안 쓰고, animatedPosition = target
   const [target, setTarget] = useState(0);
   const [animatedPosition, setAnimatedPosition] = useState(0);
-
-  useInertia(target, setAnimatedPosition, SNAP_CONFIG);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const childrenArray = Children.toArray(children);
@@ -35,7 +32,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
   const { isDragging, handleDragStart } = useDrag({
     size,
-    onDrag: setTarget, // 드래그 중에는 target을 직접 업데이트하여 물리엔진이 따라오도록 함
+    onDrag: setTarget,
     maxIndex: childrenArray.length - 1,
   });
 
@@ -43,7 +40,6 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     containerRef,
     setTarget,
     size,
-
     maxIndex: childrenArray.length - 1,
   });
 
@@ -52,6 +48,11 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     target,
     maxIndex: childrenArray.length - 1,
   });
+
+  // target 값이 바뀌면 transition 애니메이션으로 position 이동
+  useEffect(() => {
+    setAnimatedPosition(target);
+  }, [target]);
 
   return (
     <div ref={containerRef} className="w-full">
@@ -77,9 +78,11 @@ export const Coverflow = ({ children }: CoverflowProps) => {
             left: 0,
             width: size,
             height: size,
-
-            // 드래그 중에는 물리 애니메이션이 계속 부드럽게 따라오므로 transition은 필요 없음
+            transition: isDragging
+              ? "none" // 드래그 중에는 transition 제거
+              : "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)", // 부드러운 spring-like easing
           };
+
           return (
             <div
               key={index}

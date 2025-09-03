@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// 스와이프로 간주할 최소 속도 (밀리초당 픽셀)
-const DRAG_SENSITIVITY = 0.6;
+const DRAG_SENSITIVITY = 0.4;
 
 interface DragConfig {
   onDrag: (position: number) => void;
