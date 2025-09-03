@@ -2,18 +2,17 @@ import { useEffect, useRef } from "react";
 
 interface WheelEventConfig {
   containerRef: React.RefObject<HTMLDivElement | null>;
-  setTarget: (updater: number | ((prev: number) => number)) => void;
+  onScroll: (position: number) => void; // 스크롤 중 DOM 업데이트
+  onScrollEnd?: (index: number) => void; // 스크롤 끝났을 때 React state 업데이트
   size: number;
   maxIndex: number;
 }
 
 export const useWheelEvent = (config: WheelEventConfig) => {
-  const { containerRef, setTarget, size, maxIndex } = config;
+  const { containerRef, onScroll, onScrollEnd, size, maxIndex } = config;
 
-  // 이 훅은 스크롤 위치와 관련된 상태를 내부적으로 모두 관리합니다.
   const scrollPosition = useRef(0);
   const scrollEndTimer = useRef<number | null>(null);
-  const lastScrollDelta = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -26,36 +25,34 @@ export const useWheelEvent = (config: WheelEventConfig) => {
         clearTimeout(scrollEndTimer.current);
       }
 
-      let currentDelta = 0;
+      let scrollAmount = 0;
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        const scrollAmount = e.deltaX / (size * 1.5);
-        scrollPosition.current += scrollAmount;
-        currentDelta = scrollAmount;
+        scrollAmount = e.deltaX / (size * 1.5);
       } else {
-        const scrollAmount = (e.deltaY * 1.5) / size;
-        scrollPosition.current += scrollAmount;
-        currentDelta = scrollAmount;
+        scrollAmount = (e.deltaY * 1.5) / size;
       }
 
-      lastScrollDelta.current = currentDelta;
+      scrollPosition.current += scrollAmount;
       scrollPosition.current = Math.max(
         -0.4,
         Math.min(scrollPosition.current, maxIndex + 0.4),
       );
 
-      // 부모 컴포넌트의 target 상태를 업데이트합니다.
-      setTarget(scrollPosition.current);
+      // ✅ 스크롤 중에는 DOM만 업데이트
+      onScroll(scrollPosition.current);
 
+      // ✅ 스크롤이 끝난 후 스냅 처리 (React state 업데이트)
       scrollEndTimer.current = window.setTimeout(() => {
-        const position = scrollPosition.current;
-        const snappedTarget = Math.round(position);
-        const finalTarget = Math.max(0, Math.min(snappedTarget, maxIndex));
+        const snapped = Math.round(scrollPosition.current);
+        const finalTarget = Math.max(0, Math.min(snapped, maxIndex));
         scrollPosition.current = finalTarget;
-        setTarget(finalTarget);
-      }, 20);
+        if (onScrollEnd) {
+          onScrollEnd(finalTarget);
+        }
+      }, 100); // 100ms 후 스냅
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [size, maxIndex, containerRef, setTarget]);
+  }, [size, maxIndex, containerRef, onScroll, onScrollEnd]);
 };

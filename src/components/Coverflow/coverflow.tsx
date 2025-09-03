@@ -48,9 +48,15 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
   useWheelEvent({
     containerRef,
-    setTarget: (newIndex) => setIndex(newIndex),
     size,
     maxIndex: childrenArray.length - 1,
+    onScroll: (pos) => {
+      positionRef.current = pos;
+      updateTransforms(); // DOM 업데이트만 수행
+    },
+    onScrollEnd: (index) => {
+      setIndex(index); // 최종 index만 React state로 반영
+    },
   });
 
   useKeyNavigation({
