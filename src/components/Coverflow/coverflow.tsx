@@ -6,17 +6,19 @@ import { useKeyNavigation } from "./use-key-navigation.ts";
 import { useDrag } from "./use-drag";
 
 const RENDER_RANGE = 8;
-
 const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
 
 export const Coverflow = ({ children }: CoverflowProps) => {
   const [size, setSize] = useState(200);
 
-  // target과 position을 따로 안 쓰고, animatedPosition = target
-  const [target, setTarget] = useState(0);
-  const [animatedPosition, setAnimatedPosition] = useState(0);
+  // 🔹 React는 "index" 상태만 관리 → 리렌더 최소화
+  const [index, setIndex] = useState(0);
 
+  // 🔹 실시간 위치는 ref로 관리 → DOM 직접 업데이트
+  const positionRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<any[]>([]);
+
   const childrenArray = Children.toArray(children);
   const coverUtil = useMemo(() => new CoverUtil(size), [size]);
 
@@ -30,72 +32,88 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => observer.disconnect();
   }, []);
 
+  // 🔹 드래그 훅: 드래그 중에는 ref 업데이트, 끝났을 때만 setIndex
   const { isDragging, handleDragStart } = useDrag({
     size,
-    onDrag: setTarget,
+    onDrag: (pos) => {
+      positionRef.current = pos;
+      updateTransforms(); // DOM 직접 업데이트
+    },
     maxIndex: childrenArray.length - 1,
+    onDragEnd: (pos) => {
+      const finalIndex = Math.round(pos);
+      setIndex(finalIndex); // 이때만 리렌더
+    },
   });
 
   useWheelEvent({
     containerRef,
-    setTarget,
+    setTarget: (newIndex) => setIndex(newIndex),
     size,
     maxIndex: childrenArray.length - 1,
   });
 
   useKeyNavigation({
-    setTarget,
-    target,
+    setTarget: setIndex,
+    target: index,
     maxIndex: childrenArray.length - 1,
   });
 
-  // target 값이 바뀌면 transition 애니메이션으로 position 이동
+  // 🔹 transform 업데이트 함수
+  const updateTransforms = () => {
+    const pos = positionRef.current;
+    childrenArray.forEach((_, i) => {
+      const item = itemRefs.current[i];
+      if (!item) return;
+
+      const isVisible = Math.abs(pos - i) <= RENDER_RANGE;
+      if (!isVisible) {
+        item.style.display = "none";
+        return;
+      }
+      item.style.display = "block";
+
+      const score = i - pos;
+      const transform = coverUtil.getTransform(score);
+
+      item.style.transform = transform.transform;
+      item.style.zIndex = String(
+        childrenArray.length - Math.abs(Math.round(pos) - i),
+      );
+    });
+  };
+
+  // 🔹 index가 바뀌면 positionRef를 갱신하고 transform 업데이트
   useEffect(() => {
-    setAnimatedPosition(target);
-  }, [target]);
+    positionRef.current = index;
+    updateTransforms();
+  }, [index, size]);
 
   return (
     <div ref={containerRef} className="w-full">
       <div
         className="relative mx-auto touch-none"
         style={{ height: size, width: size, perspective: "600px" }}
-        onMouseDown={(e) => handleDragStart(e, animatedPosition)}
-        onTouchStart={(e) => handleDragStart(e, animatedPosition)}
+        onMouseDown={(e) => handleDragStart(e, positionRef.current)}
+        onTouchStart={(e) => handleDragStart(e, positionRef.current)}
       >
-        {childrenArray.map((child, index) => {
-          const position = animatedPosition;
-          const isVisible = Math.abs(position - index) <= RENDER_RANGE;
-          if (!isVisible) return null;
-
-          const score = index - animatedPosition;
-
-          const style: React.CSSProperties = {
-            ...coverUtil.getTransform(score),
-            zIndex:
-              childrenArray.length - Math.abs(Math.round(position) - index),
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: size,
-            height: size,
-            transition: isDragging
-              ? "none" // 드래그 중에는 transition 제거
-              : "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)", // 부드러운 spring-like easing
-          };
-
-          return (
-            <div
-              key={index}
-              style={style}
-              onClick={() => {
-                if (!isDragging) setTarget(index);
-              }}
-              className="cursor-pointer"
-            >
-              {child}
-            </div>
-          );
-        })}
+        {childrenArray.map((child, i) => (
+          <div
+            key={i}
+            ref={(el: any) => (itemRefs.current[i] = el)}
+            className="absolute top-0 left-0 cursor-pointer"
+            style={{
+              width: size,
+              height: size,
+              willChange: "transform",
+            }}
+            onClick={() => {
+              if (!isDragging) setIndex(i);
+            }}
+          >
+            {child}
+          </div>
+        ))}
       </div>
     </div>
   );
