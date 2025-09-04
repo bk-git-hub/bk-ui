@@ -83,13 +83,12 @@ export const useDrag = (config: DragConfig) => {
         animationFrameRef.current = null;
       }
 
-      const { onDrag, onDragEnd, maxIndex } = configRef.current; // ✅ onDragEnd 사용
+      const { onDragEnd, maxIndex } = configRef.current; // ✅ onDragEnd 사용
 
       const finalPosition = Math.max(
         0,
         Math.round(Math.min(lastPositionRef.current, maxIndex)),
       );
-      onDrag(finalPosition);
       onDragEnd(finalPosition); // ✅ 최종 위치로 상태 업데이트
 
       setIsDragging(false);

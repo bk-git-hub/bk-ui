@@ -44,10 +44,12 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     size,
     onDrag: (pos) => {
       positionRef.current = pos;
-      updateTransforms(); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
+      updateTransforms(true); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
     },
     // ✅ onDragEnd를 사용하여 드래그가 끝났을 때만 React 상태를 업데이트
     onDragEnd: (finalIndex) => {
+      positionRef.current = finalIndex;
+      updateTransforms(true);
       setIndex(finalIndex);
     },
     maxIndex: childrenArray.length - 1,
@@ -85,7 +87,6 @@ export const Coverflow = ({ children }: CoverflowProps) => {
         if (!item) return;
 
         // Define RENDER_RANGE if it's not defined elsewhere in the scope
-        const RENDER_RANGE = 3; // Example value
 
         const isVisible = Math.abs(pos - i) <= RENDER_RANGE;
         if (!isVisible) {
@@ -105,7 +106,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
         // Apply transition based on the animate flag
         if (animate) {
-          item.style.transition = "transform 0.5s ease-out";
+          item.style.transition = "transform 0.3s ease-out";
         } else {
           item.style.transition = "none";
         }
