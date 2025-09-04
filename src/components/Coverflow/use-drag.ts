@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // --- 설정 상수 ---
-const DRAG_SENSITIVITY = 0.4; // 드래그 민감도
+const DRAG_SENSITIVITY = 0.25; // 드래그 민감도
 const DRAG_THRESHOLD = 3; // 드래그 시작으로 간주하는 최소 이동 거리 (px)
 const INERTIA_MULTIPLIER = 4; // 관성 강도 계수
-const FRICTION = 0.9; // 마찰 계수 (1에 가까울수록 오래 미끄러짐)
+const FRICTION = 0.96; // 마찰 계수 (1에 가까울수록 오래 미끄러짐)
 const MIN_VELOCITY = 0.01; // 애니메이션 중지 속도 임계값
 
 interface DragConfig {
