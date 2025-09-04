@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const DRAG_SENSITIVITY = 0.4;
+// 드래그로 간주할 최소 이동 거리(px)
+const DRAG_THRESHOLD = 2;
 
 interface DragConfig {
   onDrag: (position: number) => void;
@@ -15,6 +17,7 @@ export const useDrag = (config: DragConfig) => {
   }, [config]);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [dragMoved, setDragMoved] = useState(false); // ✅ 클릭 차단 여부 플래그
 
   const gesture = useRef({
     startTime: 0,
@@ -32,6 +35,7 @@ export const useDrag = (config: DragConfig) => {
       gesture.history = [{ x: startX, time: gesture.startTime }];
 
       setIsDragging(true);
+      setDragMoved(false); // 시작 시 리셋
     },
     [gesture],
   );
@@ -49,6 +53,12 @@ export const useDrag = (config: DragConfig) => {
       }
 
       const deltaX = currentX - gesture.startPosition.x;
+
+      // ✅ 최소 이동 거리 넘었을 때만 드래그로 인정
+      if (Math.abs(deltaX) > DRAG_THRESHOLD) {
+        setDragMoved(true);
+      }
+
       const dragAmount = deltaX / (size * DRAG_SENSITIVITY);
       let newPosition = gesture.startPosition.initialScore - dragAmount;
       newPosition = Math.max(-0.4, Math.min(newPosition, maxIndex + 0.4));
@@ -87,5 +97,6 @@ export const useDrag = (config: DragConfig) => {
     };
   }, [isDragging]);
 
-  return { isDragging, handleDragStart };
+  // ✅ 외부에서 클릭 막을 수 있도록 플래그 반환
+  return { isDragging, dragMoved, handleDragStart };
 };

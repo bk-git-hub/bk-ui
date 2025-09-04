@@ -33,17 +33,13 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   }, []);
 
   // 🔹 드래그 훅: 드래그 중에는 ref 업데이트, 끝났을 때만 setIndex
-  const { isDragging, handleDragStart } = useDrag({
+  const { dragMoved, handleDragStart } = useDrag({
     size,
     onDrag: (pos) => {
       positionRef.current = pos;
-      updateTransforms(); // DOM 직접 업데이트
+      updateTransforms(true); // DOM 직접 업데이트
     },
     maxIndex: childrenArray.length - 1,
-    onDragEnd: (pos) => {
-      const finalIndex = Math.round(pos);
-      setIndex(finalIndex); // 이때만 리렌더
-    },
   });
 
   useWheelEvent({
@@ -121,7 +117,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
               willChange: "transform",
             }}
             onClick={() => {
-              if (!isDragging) setIndex(i);
+              if (!dragMoved) setIndex(i);
             }}
           >
             {child}
