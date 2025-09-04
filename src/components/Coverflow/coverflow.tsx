@@ -66,7 +66,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   });
 
   // 🔹 transform 업데이트 함수
-  const updateTransforms = () => {
+  const updateTransforms = (animate: boolean = false) => {
     const pos = positionRef.current;
     childrenArray.forEach((_, i) => {
       const item = itemRefs.current[i];
@@ -86,13 +86,20 @@ export const Coverflow = ({ children }: CoverflowProps) => {
       item.style.zIndex = String(
         childrenArray.length - Math.abs(Math.round(pos) - i),
       );
+
+      // ✅ animate 여부에 따라 transition 적용
+      if (animate) {
+        item.style.transition = "transform 0.3s ease-out";
+      } else {
+        item.style.transition = "none";
+      }
     });
   };
 
   // 🔹 index가 바뀌면 positionRef를 갱신하고 transform 업데이트
   useEffect(() => {
     positionRef.current = index;
-    updateTransforms();
+    updateTransforms(true);
   }, [index, size]);
 
   return (
