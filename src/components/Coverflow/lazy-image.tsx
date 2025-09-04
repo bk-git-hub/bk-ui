@@ -17,26 +17,14 @@ export const LazyImage = ({ src, alt, isPriority = false }: LazyImageProps) => {
         onLoad={signalReady}
         loading={isPriority ? "eager" : "lazy"}
         className="pointer-events-none h-full w-full rounded-md object-cover select-none"
+        style={{
+          // WebkitBoxReflect를 사용하여 네이티브 반사 효과를 적용합니다.
+          // 이 방법은 별도의 이미지를 렌더링하는 것보다 훨씬 효율적입니다.
+          WebkitBoxReflect:
+            "below 0px linear-gradient(to bottom, transparent, rgba(0,0,0,0.4))",
+        }}
       />
-
-      {/* 수동 반사 효과 */}
-      <div className="absolute top-full left-0 h-full w-full rounded-md bg-black">
-        {/* 이미지를 복사하고 Y축으로 뒤집습니다.
-          bg-black을 추가하여 이미지가 로드되기 전이나 투명한 부분이 있을 경우를 대비합니다.
-        */}
-        <img
-          src={src}
-          alt=""
-          className="h-full w-full scale-y-[-1] transform rounded-md object-cover brightness-60"
-          style={{
-            // mask-image를 사용해 부드럽게 사라지는 효과를 적용합니다.
-            // 이 마스크는 이미지 자체를 투명하게 만드는 것이 아니라, '가려주는' 역할을 합니다.
-            // 보이는 부분은 원본 이미지처럼 완전히 불투명하므로, 뒤의 카드가 비치지 않습니다.
-            maskImage: "linear-gradient(to top, black, transparent)",
-            WebkitMaskImage: "linear-gradient(to top, black, transparent)",
-          }}
-        />
-      </div>
+      {/* 수동 반사 효과를 위한 div와 두 번째 img 태그가 제거되었습니다. */}
     </div>
   );
 };

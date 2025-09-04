@@ -21,7 +21,7 @@ export const CoverflowItem = ({ children }: CoverflowItemProps) => {
 
   return (
     <CoverflowItemContext.Provider value={contextValue}>
-      <div className="relative h-full w-full">
+      <div className="relative aspect-1/2 w-full bg-black">
         {!isReady && (
           <div className="absolute inset-0">
             <Fallback />
