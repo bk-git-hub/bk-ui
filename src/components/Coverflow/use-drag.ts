@@ -93,7 +93,9 @@ export const useDrag = (config: DragConfig) => {
 
       setIsDragging(false);
       if (dragMoved) {
-        setDragMoved(false);
+        setTimeout(() => {
+          setDragMoved(false);
+        }, 50);
       }
     };
 
