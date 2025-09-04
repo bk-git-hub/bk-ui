@@ -37,7 +37,11 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     size,
     onDrag: (pos) => {
       positionRef.current = pos;
-      updateTransforms(true); // DOM 직접 업데이트
+      updateTransforms(true); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
+    },
+    // ✅ onDragEnd를 사용하여 드래그가 끝났을 때만 React 상태를 업데이트
+    onDragEnd: (finalIndex) => {
+      setIndex(finalIndex);
     },
     maxIndex: childrenArray.length - 1,
   });
