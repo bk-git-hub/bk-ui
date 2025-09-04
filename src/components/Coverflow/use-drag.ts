@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const DRAG_SENSITIVITY = 0.4;
-const DRAG_THRESHOLD = 5;
+const DRAG_THRESHOLD = 3;
 
 interface DragConfig {
   onDrag: (position: number) => void;
@@ -83,16 +83,19 @@ export const useDrag = (config: DragConfig) => {
         animationFrameRef.current = null;
       }
 
-      const { onDragEnd, maxIndex } = configRef.current; // ✅ onDragEnd 사용
+      const { onDrag, onDragEnd, maxIndex } = configRef.current; // ✅ onDragEnd 사용
 
       const finalPosition = Math.max(
         0,
         Math.round(Math.min(lastPositionRef.current, maxIndex)),
       );
-
+      onDrag(finalPosition);
       onDragEnd(finalPosition); // ✅ 최종 위치로 상태 업데이트
 
       setIsDragging(false);
+      if (dragMoved) {
+        setDragMoved(false);
+      }
     };
 
     // ✅ 드래그 시작 시 애니메이션 루프 시작

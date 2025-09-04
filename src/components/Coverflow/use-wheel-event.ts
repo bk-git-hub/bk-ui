@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 interface WheelEventConfig {
   containerRef: React.RefObject<HTMLDivElement | null>;
+  positionRef: React.RefObject<number>;
   onScroll: (position: number) => void; // 스크롤 중 DOM 업데이트
   onScrollEnd?: (index: number) => void; // 스크롤 끝났을 때 React state 업데이트
   size: number;
@@ -9,9 +10,15 @@ interface WheelEventConfig {
 }
 
 export const useWheelEvent = (config: WheelEventConfig) => {
-  const { containerRef, onScroll, onScrollEnd, size, maxIndex } = config;
+  const {
+    positionRef: scrollPosition,
+    containerRef,
+    onScroll,
+    onScrollEnd,
+    size,
+    maxIndex,
+  } = config;
 
-  const scrollPosition = useRef(0);
   const scrollEndTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -46,6 +53,7 @@ export const useWheelEvent = (config: WheelEventConfig) => {
         const snapped = Math.round(scrollPosition.current);
         const finalTarget = Math.max(0, Math.min(snapped, maxIndex));
         scrollPosition.current = finalTarget;
+
         if (onScrollEnd) {
           onScrollEnd(finalTarget);
         }
@@ -54,5 +62,5 @@ export const useWheelEvent = (config: WheelEventConfig) => {
 
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [size, maxIndex, containerRef, onScroll, onScrollEnd]);
+  }, [size, maxIndex, containerRef, onScroll, onScrollEnd, scrollPosition]);
 };

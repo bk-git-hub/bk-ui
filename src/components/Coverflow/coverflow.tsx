@@ -1,4 +1,11 @@
-import React, { useMemo, useState, Children, useEffect, useRef } from "react";
+import React, {
+  useMemo,
+  useState,
+  Children,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { Util as CoverUtil } from "./coverflow.util.ts";
 
 import { useWheelEvent } from "./use-wheel-event";
@@ -37,7 +44,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     size,
     onDrag: (pos) => {
       positionRef.current = pos;
-      updateTransforms(true); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
+      updateTransforms(); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
     },
     // ✅ onDragEnd를 사용하여 드래그가 끝났을 때만 React 상태를 업데이트
     onDragEnd: (finalIndex) => {
@@ -48,13 +55,17 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
   useWheelEvent({
     containerRef,
+    positionRef,
     size,
     maxIndex: childrenArray.length - 1,
+
     onScroll: (pos) => {
       positionRef.current = pos;
       updateTransforms(); // DOM 업데이트만 수행
     },
     onScrollEnd: (index) => {
+      positionRef.current = index;
+      updateTransforms(true);
       setIndex(index); // 최종 index만 React state로 반영
     },
   });
@@ -66,35 +77,42 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   });
 
   // 🔹 transform 업데이트 함수
-  const updateTransforms = (animate: boolean = false) => {
-    const pos = positionRef.current;
-    childrenArray.forEach((_, i) => {
-      const item = itemRefs.current[i];
-      if (!item) return;
+  const updateTransforms = useCallback(
+    (animate: boolean = false) => {
+      const pos = positionRef.current;
+      childrenArray.forEach((_, i) => {
+        const item = itemRefs.current[i];
+        if (!item) return;
 
-      const isVisible = Math.abs(pos - i) <= RENDER_RANGE;
-      if (!isVisible) {
-        item.style.display = "none";
-        return;
-      }
-      item.style.display = "block";
+        // Define RENDER_RANGE if it's not defined elsewhere in the scope
+        const RENDER_RANGE = 3; // Example value
 
-      const score = i - pos;
-      const transform = coverUtil.getTransform(score);
+        const isVisible = Math.abs(pos - i) <= RENDER_RANGE;
+        if (!isVisible) {
+          item.style.display = "none";
+          return;
+        }
+        item.style.display = "block";
 
-      item.style.transform = transform.transform;
-      item.style.zIndex = String(
-        childrenArray.length - Math.abs(Math.round(pos) - i),
-      );
+        const score = i - pos;
+        // Assuming coverUtil is a stable utility object defined outside the component
+        const transform = coverUtil.getTransform(score);
 
-      // ✅ animate 여부에 따라 transition 적용
-      if (animate) {
-        item.style.transition = "transform 0.3s ease-out";
-      } else {
-        item.style.transition = "none";
-      }
-    });
-  };
+        item.style.transform = transform.transform;
+        item.style.zIndex = String(
+          childrenArray.length - Math.abs(Math.round(pos) - i),
+        );
+
+        // Apply transition based on the animate flag
+        if (animate) {
+          item.style.transition = "transform 0.5s ease-out";
+        } else {
+          item.style.transition = "none";
+        }
+      });
+    },
+    [childrenArray],
+  );
 
   // 🔹 index가 바뀌면 positionRef를 갱신하고 transform 업데이트
   useEffect(() => {

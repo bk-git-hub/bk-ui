@@ -9,7 +9,7 @@ export const LazyImage = ({ src, alt, isPriority = false }: LazyImageProps) => {
   const { signalReady } = useCoverflowItem();
 
   return (
-    <div className="relative h-full w-full rounded-md">
+    <div className="aspect- relative w-full rounded-md select-none">
       {/* 원본 이미지 */}
       <img
         src={src}
