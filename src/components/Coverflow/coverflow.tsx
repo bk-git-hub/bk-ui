@@ -44,7 +44,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     size,
     onDrag: (pos) => {
       positionRef.current = pos;
-      updateTransforms(); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
+      updateTransforms(true, 0.1); // ✅ animate 플래그를 false로 유지하여 부드러운 드래그 보장
     },
     // ✅ onDragEnd를 사용하여 드래그가 끝났을 때만 React 상태를 업데이트
     onDragEnd: (finalIndex) => {
@@ -80,7 +80,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
   // 🔹 transform 업데이트 함수
   const updateTransforms = useCallback(
-    (animate: boolean = false) => {
+    (animate: boolean = false, duration: number = 0.3) => {
       const pos = positionRef.current;
       childrenArray.forEach((_, i) => {
         const item = itemRefs.current[i];
@@ -106,7 +106,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
 
         // Apply transition based on the animate flag
         if (animate) {
-          item.style.transition = "transform 0.3s ease-out";
+          item.style.transition = `transform ${duration}s ease-out`;
         } else {
           item.style.transition = "none";
         }
