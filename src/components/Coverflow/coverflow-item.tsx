@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { CoverflowItemContext } from "./coverflow-context";
 
 const Fallback = () => (
-  <div className="h-full w-full animate-pulse rounded-md bg-neutral-800" />
+  <div className="aspect-square w-full animate-pulse rounded-md bg-neutral-800" />
 );
 
 interface CoverflowItemProps {
