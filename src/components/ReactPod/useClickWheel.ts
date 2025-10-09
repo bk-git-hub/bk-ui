@@ -1,14 +1,12 @@
 import { useRef, useState, useEffect } from "react";
-import { useReactPod } from "./ReactPodContext";
 
 const SENSITIVITY = 15;
 
 interface UseClickWheelOptions {
-  setValue: any;
+  setValue: (updater: (prev: number) => number) => void;
 }
 
 export function useClickWheel({ setValue }: UseClickWheelOptions) {
-  const { setIndex } = useReactPod();
   const wheelRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const lastAngle = useRef<number>(0);
