@@ -8,6 +8,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import HomePage from "./pages/HomePage.tsx";
 import TinderDemoPage from "./pages/TinderDemoPage.tsx";
 import CoverflowPage from "./pages/CoverflowPage.tsx";
+import ReactPodPage from "./pages/ReactPodPage.tsx";
 
 // ⬇️ 라우터 설정을 생성합니다.
 const router = createBrowserRouter([
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
       {
         path: "components/coverflow", // path: '/components/tinder-slider'
         element: <CoverflowPage />,
+      },
+      {
+        path: "components/react-pod", // path: '/components/tinder-slider'
+        element: <ReactPodPage />,
       },
     ],
   },
