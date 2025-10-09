@@ -1,7 +1,11 @@
+import { useReactPod } from "./ReactPodContext";
 import { useClickWheel } from "./useClickWheel";
 
 export default function ClickWheel() {
-  const { wheelRef, wheelProps } = useClickWheel();
+  const { setIndex } = useReactPod();
+  const { wheelRef, wheelProps } = useClickWheel({
+    setValue: setIndex,
+  });
 
   return (
     <div className="flex h-[55%] items-center justify-center bg-zinc-200">

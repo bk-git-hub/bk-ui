@@ -3,7 +3,11 @@ import { useReactPod } from "./ReactPodContext";
 
 const SENSITIVITY = 15;
 
-export function useClickWheel() {
+interface UseClickWheelOptions {
+  setValue: any;
+}
+
+export function useClickWheel({ setValue }: UseClickWheelOptions) {
   const { setIndex } = useReactPod();
   const wheelRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -22,28 +26,21 @@ export function useClickWheel() {
       };
     };
 
-    updateCenter(); // 최초 실행
-
-    // --- 위치/크기 변경 감지 로직 ---
-    // 1. 요소 자체의 크기 변경 감지
+    updateCenter();
     const resizeObserver = new ResizeObserver(updateCenter);
     resizeObserver.observe(wheelElement);
 
-    // 2. 창 스크롤 감지
     window.addEventListener("scroll", updateCenter, true);
 
-    // 3. 창 크기 재조정 감지 (추가된 부분)
     window.addEventListener("resize", updateCenter);
 
-    // --- 클린업 함수 ---
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener("scroll", updateCenter, true);
-      window.removeEventListener("resize", updateCenter); // 리스너 제거
+      window.removeEventListener("resize", updateCenter);
     };
-  }, []); // 의존성 배열이 비어있으므로, 최초 1회만 실행됨
+  }, []);
 
-  // ... (getAngle, onPointerDown, onPointerMove 등 나머지 코드는 동일)
   const getAngle = (event: React.PointerEvent<HTMLDivElement>): number => {
     return (
       Math.atan2(
@@ -74,9 +71,9 @@ export function useClickWheel() {
 
     if (Math.abs(accumulatedAngle.current) >= SENSITIVITY) {
       if (accumulatedAngle.current > 0) {
-        setIndex((prev) => prev + 1); // Context의 setIndex 직접 호출
+        setValue((prev) => prev + 1);
       } else {
-        setIndex((prev) => prev - 1); // Context의 setIndex 직접 호출
+        setValue((prev) => prev - 1);
       }
       accumulatedAngle.current = 0;
     }
