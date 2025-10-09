@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useReactPod } from "./ReactPodContext";
 
 const SENSITIVITY = 15;
@@ -9,14 +9,47 @@ export function useClickWheel() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const lastAngle = useRef<number>(0);
   const accumulatedAngle = useRef<number>(0);
+  const center = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  useEffect(() => {
+    const wheelElement = wheelRef.current;
+    if (!wheelElement) return;
 
+    const updateCenter = () => {
+      const rect = wheelElement.getBoundingClientRect();
+      center.current = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    };
+
+    updateCenter(); // 최초 실행
+
+    // --- 위치/크기 변경 감지 로직 ---
+    // 1. 요소 자체의 크기 변경 감지
+    const resizeObserver = new ResizeObserver(updateCenter);
+    resizeObserver.observe(wheelElement);
+
+    // 2. 창 스크롤 감지
+    window.addEventListener("scroll", updateCenter, true);
+
+    // 3. 창 크기 재조정 감지 (추가된 부분)
+    window.addEventListener("resize", updateCenter);
+
+    // --- 클린업 함수 ---
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("scroll", updateCenter, true);
+      window.removeEventListener("resize", updateCenter); // 리스너 제거
+    };
+  }, []); // 의존성 배열이 비어있으므로, 최초 1회만 실행됨
+
+  // ... (getAngle, onPointerDown, onPointerMove 등 나머지 코드는 동일)
   const getAngle = (event: React.PointerEvent<HTMLDivElement>): number => {
-    if (!wheelRef.current) return 0;
-    const rect = wheelRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
     return (
-      Math.atan2(event.clientY - centerY, event.clientX - centerX) *
+      Math.atan2(
+        event.clientY - center.current.y,
+        event.clientX - center.current.x,
+      ) *
       (180 / Math.PI)
     );
   };
