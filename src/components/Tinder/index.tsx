@@ -21,9 +21,25 @@ const useTinderContext = () => {
 interface TinderRootProps<T> {
   cards: T[];
   children: React.ReactNode;
+  onSwipeLeft?: (item: T) => void;
+  onSwipeRight?: (item: T) => void;
 }
-export const TinderRoot = <T,>({ cards, children }: TinderRootProps<T>) => {
-  const swipeApi = useTinderSwipe({ itemCount: cards.length });
+
+export const TinderRoot = <T,>({
+  cards,
+  children,
+  onSwipeLeft,
+  onSwipeRight,
+}: TinderRootProps<T>) => {
+  const swipeApi = useTinderSwipe({
+    itemCount: cards.length,
+    onSwipeLeft: (index) => {
+      if (cards[index]) onSwipeLeft?.(cards[index]);
+    },
+    onSwipeRight: (index) => {
+      if (cards[index]) onSwipeRight?.(cards[index]);
+    },
+  });
 
   return (
     <TinderSwipeContext.Provider value={swipeApi}>
@@ -31,7 +47,6 @@ export const TinderRoot = <T,>({ cards, children }: TinderRootProps<T>) => {
     </TinderSwipeContext.Provider>
   );
 };
-
 interface TinderCardProps extends React.HTMLAttributes<HTMLDivElement> {
   index: number;
   children: React.ReactNode;
@@ -63,11 +78,10 @@ export const TinderCard = ({
     <div
       ref={isTopCard ? topCardRef : isNextCard ? nextCardRef : null}
       onPointerDown={isTopCard ? handlePointerDown : undefined}
-      // ⬇️ twMerge와 clsx를 사용하여 className을 안전하게 병합합니다.
       className={twMerge(
         clsx(
           "absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out select-none",
-          className, // 사용자가 전달한 className
+          className,
         ),
       )}
       style={{
@@ -77,7 +91,7 @@ export const TinderCard = ({
           : `scale(${1 - (index - currentIndex) * 0.1}) translateY(-${(index - currentIndex) * 12}px)`,
         ...style,
       }}
-      {...props} //
+      {...props}
     >
       {children}
       {isTopCard && (
@@ -125,7 +139,6 @@ export const TinderEmptyFallback = ({
 }) => {
   const { isFinished } = useTinderContext();
 
-  // isFinished가 true일 때만 children을 렌더링
   return isFinished ? <div className={className}>{children}</div> : null;
 };
 
@@ -135,7 +148,6 @@ export const TinderUndoButton = ({
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
   const { undo, currentIndex } = useTinderContext();
-  // 첫 번째 카드이거나 애니메이션 중일 때는 비활성화
   const isDisabled = currentIndex === 0;
   return (
     <button
