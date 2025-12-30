@@ -18,12 +18,11 @@ const useTinderContext = () => {
   return context;
 };
 
-interface TinderRootProps {
-  cards: any[];
+interface TinderRootProps<T> {
+  cards: T[];
   children: React.ReactNode;
 }
-
-export const TinderRoot = ({ cards, children }: TinderRootProps) => {
+export const TinderRoot = <T,>({ cards, children }: TinderRootProps<T>) => {
   const swipeApi = useTinderSwipe({ itemCount: cards.length });
 
   return (
