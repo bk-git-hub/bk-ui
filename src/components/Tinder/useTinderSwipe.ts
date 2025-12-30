@@ -47,7 +47,7 @@ export const useTinderSwipe = ({
         (direction === "right" ? 1 : -1) * (window.innerWidth + 200);
       topCardRef.current.style.transition =
         "transform 0.2s ease-out, opacity 0.2s ease-out";
-      topCardRef.current.style.transform = `translateX(${flyOutX}px) rotate(${flyOutX / 15}deg)`;
+      topCardRef.current.style.transform = `translate3d(${flyOutX}px, 0, 0) rotate(${flyOutX / 15}deg)`;
       topCardRef.current.style.opacity = "0";
 
       const handleTransitionEnd = () => {
@@ -69,12 +69,13 @@ export const useTinderSwipe = ({
   const snapBack = useCallback(() => {
     if (topCardRef.current) {
       topCardRef.current.style.transition = "transform 0.3s ease-out";
-      topCardRef.current.style.transform = "none";
+      topCardRef.current.style.transform = "translate3d(0, 0, 0)";
       topCardRef.current.style.transformOrigin = "center center";
     }
     if (nextCardRef.current) {
       nextCardRef.current.style.transition = "transform 0.3s ease-out";
-      nextCardRef.current.style.transform = "scale(0.8) translateY(10px)";
+      nextCardRef.current.style.transform =
+        "scale(0.8) translate3d(0, 10px, 0)";
     }
     if (likeIndicatorRef.current) likeIndicatorRef.current.style.opacity = "0";
     if (nopeIndicatorRef.current) nopeIndicatorRef.current.style.opacity = "0";
@@ -96,7 +97,7 @@ export const useTinderSwipe = ({
         const rotationMultiplier = dragOriginYRef.current === "top" ? 1 : -1;
         const rotation = (deltaX / 15) * rotationMultiplier;
 
-        topCardRef.current.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px) rotate(${rotation}deg)`;
+        topCardRef.current!.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) rotate(${rotation}deg)`;
 
         const likeOpacity = Math.max(0, Math.min(1, deltaX / swipeThreshold));
         const nopeOpacity = Math.max(0, Math.min(1, -deltaX / swipeThreshold));

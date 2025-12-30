@@ -81,6 +81,7 @@ export const TinderCard = ({
       className={twMerge(
         clsx(
           "absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out select-none",
+          (isTopCard || isNextCard) && "will-change-transform",
           className,
         ),
       )}
@@ -88,7 +89,7 @@ export const TinderCard = ({
         zIndex: itemCount - index,
         transform: isTopCard
           ? "none"
-          : `scale(${1 - (index - currentIndex) * 0.1}) translateY(-${(index - currentIndex) * 12}px)`,
+          : `scale(${1 - (index - currentIndex) * 0.1}) translate3d(0, ${(index - currentIndex) * 12}px, 0)`,
         ...style,
       }}
       {...props}
