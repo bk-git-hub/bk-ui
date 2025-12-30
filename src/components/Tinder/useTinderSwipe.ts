@@ -28,12 +28,10 @@ export const useTinderSwipe = ({
   const currentTranslateRef = useRef(0);
   const dragOriginYRef = useRef<"top" | "bottom">("top");
 
-  // 🔥 animateSwipe 내부에 콜백 로직 통합
   const animateSwipe = useCallback(
     (direction: "left" | "right") => {
       if (!topCardRef.current || currentIndex >= itemCount) return;
 
-      // 1. 현재 인덱스에 대해 콜백 실행
       if (direction === "left") {
         onSwipeLeft?.(currentIndex);
       } else {
@@ -60,15 +58,13 @@ export const useTinderSwipe = ({
             "transitionend",
             handleTransitionEnd,
           );
-
-          // 2. 애니메이션 종료 후 다음 카드로 인덱스 증가
           setCurrentIndex((prev) => prev + 1);
         }
       };
       topCardRef.current.addEventListener("transitionend", handleTransitionEnd);
     },
     [currentIndex, itemCount, onSwipeLeft, onSwipeRight],
-  ); // 의존성 추가
+  );
 
   const snapBack = useCallback(() => {
     if (topCardRef.current) {
@@ -84,33 +80,40 @@ export const useTinderSwipe = ({
     if (nopeIndicatorRef.current) nopeIndicatorRef.current.style.opacity = "0";
   }, []);
 
+  const rafIdRef = useRef<number | null>(null);
+
   const handleWindowPointerMove = useCallback(
     (e: PointerEvent) => {
       if (!isDraggingRef.current || !topCardRef.current) return;
-      const deltaX = e.clientX - startPosRef.current.x;
-      const deltaY = e.clientY - startPosRef.current.y;
-      currentTranslateRef.current = deltaX;
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
 
-      const rotationMultiplier = dragOriginYRef.current === "top" ? 1 : -1;
-      const rotation = (deltaX / 15) * rotationMultiplier;
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (topCardRef.current == null) return;
+        const deltaX = e.clientX - startPosRef.current.x;
+        const deltaY = e.clientY - startPosRef.current.y;
+        currentTranslateRef.current = deltaX;
 
-      topCardRef.current.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px) rotate(${rotation}deg)`;
+        const rotationMultiplier = dragOriginYRef.current === "top" ? 1 : -1;
+        const rotation = (deltaX / 15) * rotationMultiplier;
 
-      const likeOpacity = Math.max(0, Math.min(1, deltaX / swipeThreshold));
-      const nopeOpacity = Math.max(0, Math.min(1, -deltaX / swipeThreshold));
+        topCardRef.current.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px) rotate(${rotation}deg)`;
 
-      if (likeIndicatorRef.current)
-        likeIndicatorRef.current.style.opacity = `${likeOpacity}`;
-      if (nopeIndicatorRef.current)
-        nopeIndicatorRef.current.style.opacity = `${nopeOpacity}`;
+        const likeOpacity = Math.max(0, Math.min(1, deltaX / swipeThreshold));
+        const nopeOpacity = Math.max(0, Math.min(1, -deltaX / swipeThreshold));
 
-      if (nextCardRef.current) {
-        nextCardRef.current.style.transition = "none";
-        const progress = Math.min(Math.abs(deltaX) / swipeThreshold, 1);
-        const newScale = 0.8 + (1 - 0.8) * progress;
-        const newTranslateY = 10 - 10 * progress;
-        nextCardRef.current.style.transform = `scale(${newScale}) translateY(${newTranslateY}px)`;
-      }
+        if (likeIndicatorRef.current)
+          likeIndicatorRef.current.style.opacity = `${likeOpacity}`;
+        if (nopeIndicatorRef.current)
+          nopeIndicatorRef.current.style.opacity = `${nopeOpacity}`;
+
+        if (nextCardRef.current) {
+          nextCardRef.current.style.transition = "none";
+          const progress = Math.min(Math.abs(deltaX) / swipeThreshold, 1);
+          const newScale = 0.8 + (1 - 0.8) * progress;
+          const newTranslateY = 10 - 10 * progress;
+          nextCardRef.current.style.transform = `scale(${newScale}) translateY(${newTranslateY}px)`;
+        }
+      });
     },
     [swipeThreshold],
   );
@@ -119,6 +122,10 @@ export const useTinderSwipe = ({
     window.removeEventListener("pointermove", handleWindowPointerMove);
     window.removeEventListener("pointerup", handleWindowPointerUp);
     isDraggingRef.current = false;
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
 
     if (Math.abs(currentTranslateRef.current) > swipeThreshold) {
       animateSwipe(currentTranslateRef.current > 0 ? "right" : "left");
@@ -166,6 +173,7 @@ export const useTinderSwipe = ({
     return () => {
       window.removeEventListener("pointermove", handleWindowPointerMove);
       window.removeEventListener("pointerup", handleWindowPointerUp);
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, [handleWindowPointerMove, handleWindowPointerUp]);
 
