@@ -1,54 +1,48 @@
-# React + TypeScript + Vite
+# BK-UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19와 Tailwind CSS v4를 기반으로 구축된 고성능 인터랙티브 UI 컴포넌트 라이브러리입니다.
 
-Currently, two official plugins are available:
+## 기술 스택
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Framework**: React 19 (Vite)
+- **Styling**: Tailwind CSS v4
+- **Language**: TypeScript
+- **Icons**: Lucide React
+- **Utility**: tailwind-merge, clsx
 
-## Expanding the ESLint configuration
+## 주요 컴포넌트
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 1. Coverflow (3D Carousel)
+- **성능 최적화**: 고빈도 드래그/휠 이벤트 발생 시 `useRef`와 직접적인 DOM 조작을 통해 리액트 리렌더링을 최소화하고 부드러운 60fps 애니메이션을 구현했습니다.
+- **인터랙션**: 마우스 드래그, 터치 스와이프, 마우스 휠, 키보드 네비게이션을 모두 지원합니다.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### 2. Tinder Swipe (Card Deck)
+- **설계 패턴**: Compound Component 패턴을 적용하여 UI 구조를 유연하게 정의할 수 있습니다.
+- **기능**: 스와이프 방향에 따른 콜백(Like/Nope), 실행 취소(Undo), 초기화(Reset) 기능을 지원합니다.
+
+### 3. ReactPod (Retro UI)
+- **구조**: `Context API`를 활용한 상태 관리로 클릭 휠 인터랙션과 디스플레이 동기화를 구현했습니다.
+
+## 프로젝트 구조
+
+- `src/components/Coverflow`: 3D 이미지 캐러셀 로직 및 컴포넌트
+- `src/components/Tinder`: 스와이프 카드 시스템 및 관련 훅
+- `src/components/ReactPod`: 아이팟 스타일 UI 컴포넌트
+- `src/components/layout`: 헤더 등 공통 레이아웃 컴포넌트
+
+## 실행 방법
+
+### 패키지 설치
+```bash
+pnpm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 개발 서버 실행
+```bash
+pnpm dev
+```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### 빌드
+```bash
+pnpm build
 ```
