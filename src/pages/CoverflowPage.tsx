@@ -1,11 +1,12 @@
 import { Coverflow } from "@/components/Coverflow/coverflow";
 import { CoverflowItem } from "@/components/Coverflow/coverflow-item";
 import { LazyImage } from "@/components/Coverflow/lazy-image";
+import ComponentViewer from "@/components/layout/component-viewer";
 import { covers } from "@/data/covers";
 
 function CoverflowPage() {
-  return (
-    <div className="relative flex h-dvh items-center overflow-hidden bg-black">
+  const preview = (
+    <div className="flex h-full w-full flex-1 overflow-hidden bg-black py-10 md:items-center">
       <Coverflow>
         {covers.map((cover, index) => (
           <CoverflowItem key={index}>
@@ -21,6 +22,15 @@ function CoverflowPage() {
         ))}
       </Coverflow>
     </div>
+  );
+
+  return (
+    <ComponentViewer
+      title="Coverflow"
+      description="3D carousel effect for browsing media items smoothly."
+      component={preview}
+      usageCode="123"
+    />
   );
 }
 

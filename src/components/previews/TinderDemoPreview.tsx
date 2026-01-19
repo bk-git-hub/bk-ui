@@ -10,11 +10,11 @@ import { SAMPLE_CARDS } from "@/mocks/tinderSwiperData";
 
 export default function TinderDemoPreview() {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gray-100 p-4">
+    <div className="flex h-full w-full flex-1 flex-col items-center justify-center overflow-hidden bg-gray-100 p-4">
       {/* 1. Tinder.Root가 모든 것을 감싸고, cards 데이터를 주입합니다. */}
       <TinderRoot cards={SAMPLE_CARDS}>
         {/* 카드가 표시될 영역의 크기와 위치를 지정합니다. */}
-        <div className="relative h-[450px] w-80 md:h-[550px] md:w-96">
+        <div className="relative aspect-[2.5/3.5] h-full max-h-120 flex-1">
           {/* 2. 데이터를 map으로 순회하며 Tinder.Card를 렌더링합니다. */}
           {SAMPLE_CARDS.map((card, i) => (
             <TinderCard

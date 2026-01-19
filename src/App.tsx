@@ -13,11 +13,10 @@ function App() {
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
-      <div className="flex flex-1 flex-col">
+      <div className="flex h-screen w-full flex-1 flex-col px-5 py-5 md:px-10">
         {/* Page Content Area */}
-        <main className="w-full flex-1 overflow-y-auto p-4 md:p-10">
-          <Outlet />
-        </main>
+
+        <Outlet />
       </div>
     </div>
   );
