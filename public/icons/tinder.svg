@@ -1,0 +1,32 @@
+<svg
+  width="64"
+  height="64"
+  viewBox="0 0 64 64"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Left card (swiped left) -->
+  <rect
+    x="10"
+    y="14"
+    width="28"
+    height="40"
+    rx="4"
+    stroke="currentColor"
+    stroke-width="2"
+    opacity="0.5"
+    transform="rotate(-6 24 34)"
+  />
+
+  <!-- Right card (swiped right / active) -->
+  <rect
+    x="26"
+    y="10"
+    width="28"
+    height="40"
+    rx="4"
+    stroke="currentColor"
+    stroke-width="3"
+    transform="rotate(6 40 30)"
+  />
+</svg>
