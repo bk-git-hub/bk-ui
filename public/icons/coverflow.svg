@@ -5,9 +5,9 @@
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
 >
-  <!-- Left card (behind, angled inward) -->
+  <!-- Left card (pulled in, behind, angled inward) -->
   <rect
-    x="6"
+    x="12"
     y="22"
     width="16"
     height="16"
@@ -16,12 +16,12 @@
     stroke-width="2"
     opacity="0.45"
     transform="skewY(10) scale(0.9)"
-    transform-origin="14px 30px"
+    transform-origin="20px 30px"
   />
 
-  <!-- Right card (behind, angled inward) -->
+  <!-- Right card (pulled in, behind, angled inward) -->
   <rect
-    x="42"
+    x="36"
     y="22"
     width="16"
     height="16"
@@ -30,7 +30,7 @@
     stroke-width="2"
     opacity="0.45"
     transform="skewY(-10) scale(0.9)"
-    transform-origin="50px 30px"
+    transform-origin="44px 30px"
   />
 
   <!-- Center card (front, focus) -->
