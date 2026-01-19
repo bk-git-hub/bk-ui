@@ -11,46 +11,8 @@ import {
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { tinderUsageCode } from "@/snippets/tinderUsageCode";
-// 데모에 사용할 샘플 데이터
-const SAMPLE_CARDS = [
-  {
-    id: "1",
-    name: "Jennifer",
-    age: 24,
-    image:
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1887&auto=format&fit=crop",
-  },
-  {
-    id: "2",
-    name: "David",
-    age: 28,
-    image:
-      "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?q=80&w=1740&auto=format&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Sophia",
-    age: 26,
-    image:
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
-  },
-  {
-    id: "4",
-    name: "Michael",
-    age: 30,
-    image:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1887&auto=format&fit=crop",
-  },
-  {
-    id: "5",
-    name: "Emily",
-    age: 22,
-    image:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1888&auto=format&fit=crop",
-  },
-];
+import { SAMPLE_CARDS } from "@/mocks/tinderSwiperData";
 
-// 미리보기 UI를 위한 내부 컴포넌트
 const TinderDemoPreview = () => {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gray-100 p-4">
