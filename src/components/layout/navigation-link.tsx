@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 const navigationLinks = [
   { to: "/", text: "Home", end: true },
-  { to: "/components/tinder-slider", text: "Tinder Slider" },
+  { to: "/components/tinder-swiper", text: "Tinder Swiper" },
   { to: "/components/coverflow", text: "Coverflow" },
   { to: "/components/react-pod", text: "reactPod" },
 ];

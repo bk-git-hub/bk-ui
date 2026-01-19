@@ -21,15 +21,15 @@ const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: "components/tinder-slider", // path: '/components/tinder-slider'
+        path: "components/tinder-swiper", // path: '/components/tinder-swiper'
         element: <TinderDemoPage />,
       },
       {
-        path: "components/coverflow", // path: '/components/tinder-slider'
+        path: "components/coverflow", // path: '/components/tinder-swiper'
         element: <CoverflowPage />,
       },
       {
-        path: "components/react-pod", // path: '/components/tinder-slider'
+        path: "components/react-pod", // path: '/components/tinder-swiper'
         element: <ReactPodPage />,
       },
     ],
