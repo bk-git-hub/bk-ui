@@ -92,59 +92,113 @@ describe("BaccaratSqueeze", () => {
     });
   }
 
-  it("keeps the free diagonal reveal from the selected corner", () => {
-    const onReveal = vi.fn();
-    const onValueCommit = vi.fn();
-    renderSqueeze({ onReveal, onValueCommit });
+  it.each([
+    {
+      corner: "top-left",
+      start: [4, 4],
+      end: [168, 168],
+      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 100% 100%, 0% 100%)",
+    },
+    {
+      corner: "top-right",
+      start: [196, 4],
+      end: [32, 168],
+      clipPath: "polygon(100% 0%, 0% 0%, 0% 100%, 0% 100%, 100% 100%)",
+    },
+    {
+      corner: "bottom-left",
+      start: [4, 276],
+      end: [168, 112],
+      clipPath: "polygon(0% 100%, 100% 100%, 100% 0%, 100% 0%, 0% 0%)",
+    },
+    {
+      corner: "bottom-right",
+      start: [196, 276],
+      end: [32, 112],
+      clipPath: "polygon(100% 100%, 0% 100%, 0% 0%, 0% 0%, 100% 0%)",
+    },
+  ] as const)(
+    "detects and reveals freely from $corner",
+    ({ corner, start, end, clipPath }) => {
+      const onReveal = vi.fn();
+      const onValueCommit = vi.fn();
+      renderSqueeze({ onReveal, onValueCommit });
+      const root = screen.getByTestId("squeeze-root");
+      const card = screen.getByTestId("squeeze-card");
+      const face = screen.getByTestId("card-face");
+      const fold = screen.getByTestId("card-fold");
+      prepareCard(card);
+
+      fireEvent.pointerDown(card, {
+        pointerId: 7,
+        pointerType: "touch",
+        clientX: start[0],
+        clientY: start[1],
+      });
+
+      expect(root).toHaveAttribute("data-corner", corner);
+      expect(root).toHaveAttribute("data-origin", "corner");
+
+      fireEvent.pointerMove(card, {
+        pointerId: 7,
+        pointerType: "touch",
+        clientX: end[0],
+        clientY: end[1],
+      });
+      fireEvent.pointerUp(card, {
+        pointerId: 7,
+        pointerType: "touch",
+        clientX: end[0],
+        clientY: end[1],
+      });
+
+      const detail = {
+        corner,
+        input: "pointer",
+        origin: "corner",
+      } as const;
+
+      expect(card).toHaveAttribute("aria-valuenow", "100");
+      expect(face).toHaveStyle({ clipPath });
+      expect(fold.style.background).toContain("linear-gradient(");
+      expect(fold.style.background).not.toContain("radial-gradient(");
+      expect(face).toHaveAttribute("aria-hidden", "false");
+      expect(onReveal).toHaveBeenCalledOnce();
+      expect(onReveal).toHaveBeenCalledWith(detail);
+      expect(onValueCommit).toHaveBeenCalledWith(1, detail);
+      expect(cancelAnimationFrameMock).toHaveBeenCalledOnce();
+      expect(animationFrames).toHaveLength(0);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "다이아몬드 8 카드가 공개됐습니다.",
+      );
+    },
+  );
+
+  it("selects a new corner for every drag on the same card", () => {
+    renderSqueeze();
     const root = screen.getByTestId("squeeze-root");
     const card = screen.getByTestId("squeeze-card");
-    const face = screen.getByTestId("card-face");
-    const fold = screen.getByTestId("card-fold");
     prepareCard(card);
 
-    fireEvent.pointerDown(card, {
-      pointerId: 7,
-      pointerType: "touch",
-      clientX: 196,
-      clientY: 276,
+    (
+      [
+        ["top-left", 4, 4],
+        ["top-right", 196, 4],
+        ["bottom-left", 4, 276],
+        ["bottom-right", 196, 276],
+      ] as const
+    ).forEach(([corner, clientX, clientY], index) => {
+      const pointerId = index + 30;
+      fireEvent.pointerDown(card, {
+        pointerId,
+        pointerType: "touch",
+        clientX,
+        clientY,
+      });
+      expect(root).toHaveAttribute("data-corner", corner);
+      expect(root).toHaveAttribute("data-origin", "corner");
+      fireEvent.pointerCancel(card, { pointerId, pointerType: "touch" });
     });
-    fireEvent.pointerMove(card, {
-      pointerId: 7,
-      pointerType: "touch",
-      clientX: 32,
-      clientY: 112,
-    });
-    fireEvent.pointerUp(card, {
-      pointerId: 7,
-      pointerType: "touch",
-      clientX: 32,
-      clientY: 112,
-    });
-
-    expect(root).toHaveAttribute("data-origin", "corner");
-    expect(card).toHaveAttribute("aria-valuenow", "100");
-    expect(face).toHaveStyle({
-      clipPath: "polygon(100% 100%, 0% 100%, 0% 0%, 0% 0%, 100% 0%)",
-    });
-    expect(fold.style.background).toContain("linear-gradient(");
-    expect(fold.style.background).not.toContain("radial-gradient(");
-    expect(face).toHaveAttribute("aria-hidden", "false");
-    expect(onReveal).toHaveBeenCalledOnce();
-    expect(onReveal).toHaveBeenCalledWith({
-      corner: "bottom-right",
-      input: "pointer",
-      origin: "corner",
-    });
-    expect(onValueCommit).toHaveBeenCalledWith(1, {
-      corner: "bottom-right",
-      input: "pointer",
-      origin: "corner",
-    });
-    expect(cancelAnimationFrameMock).toHaveBeenCalledOnce();
-    expect(animationFrames).toHaveLength(0);
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "다이아몬드 8 카드가 공개됐습니다.",
-    );
   });
 
   it.each([

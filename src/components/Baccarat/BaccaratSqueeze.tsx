@@ -153,7 +153,7 @@ export interface BaccaratSqueezeCardProps extends ComponentPropsWithRef<"div"> {
 }
 
 export function BaccaratSqueezeCard({
-  concealedLabel = "Squeeze card. Drag the marked corner diagonally, pull either long edge inward, or use the arrow keys.",
+  concealedLabel = "Squeeze card. Drag any corner diagonally, pull either long edge inward, or use the arrow keys.",
   className,
   style,
   tabIndex,
@@ -476,7 +476,7 @@ export interface BaccaratSqueezeHintProps extends ComponentPropsWithRef<"p"> {
 }
 
 export function BaccaratSqueezeHint({
-  concealedText = "모서리를 대각선으로 밀거나 좌우 옆면을 안쪽으로 당겨보세요",
+  concealedText = "네 모서리 중 하나를 대각선으로 밀거나 좌우 옆면을 안쪽으로 당겨보세요",
   squeezingText,
   revealedText = "카드가 공개되었습니다",
   className,
