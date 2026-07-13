@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import ReactPod from "./ReactPod";
-import type { ReactPodMenuItem } from "./ReactPod";
+import type { ReactPodMenuItem, ReactPodPhotoAlbum } from "./ReactPod";
 
 describe("ReactPod", () => {
   it("navigates songs and controls playback from the click wheel", () => {
@@ -76,7 +76,7 @@ describe("ReactPod", () => {
     fireEvent.pointerUp(wheel, { pointerId: 1 });
 
     expect(
-      screen.getByRole("option", { name: "Shuffle Songs" }),
+      screen.getByRole("option", { name: "Photos" }),
     ).toHaveAttribute("aria-selected", "true");
   });
 
@@ -274,5 +274,88 @@ describe("ReactPod", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Select" }));
     expect(screen.getByRole("listbox", { name: "Songs" })).toBeInTheDocument();
+  });
+
+  it("navigates photo albums and photos with the click wheel", () => {
+    const photoAlbums = [
+      {
+        id: "city",
+        title: "City Lights",
+        photos: [
+          {
+            id: "river",
+            src: "/river.webp",
+            alt: "River at night",
+            caption: "Blue Hour",
+          },
+          {
+            id: "alley",
+            src: "/alley.webp",
+            alt: "Neon alley",
+            caption: "Late Night",
+          },
+        ],
+      },
+      {
+        id: "weekend",
+        title: "Weekend Away",
+        photos: [
+          {
+            id: "sea",
+            src: "/sea.webp",
+            alt: "Sea from a train platform",
+          },
+        ],
+      },
+    ] satisfies readonly ReactPodPhotoAlbum[];
+
+    render(
+      <ReactPod
+        menuItems={[{ id: "photos", label: "Photos" }]}
+        photoAlbums={photoAlbums}
+      />,
+    );
+
+    const wheel = screen.getByLabelText(/Click wheel/);
+    const select = screen.getByRole("button", { name: "Select" });
+    const menu = screen.getByRole("button", { name: "Back to menu" });
+
+    fireEvent.click(select);
+    expect(
+      screen.getByRole("listbox", { name: "Photo albums" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /City Lights/ }),
+    ).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.click(select);
+    expect(
+      screen.getByRole("img", { name: "River at night" }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+    expect(
+      screen.getByRole("img", { name: "Neon alley" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next photo" }));
+    expect(
+      screen.getByRole("img", { name: "River at night" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(menu);
+    expect(
+      screen.getByRole("listbox", { name: "Photo albums" }),
+    ).toBeInTheDocument();
+    fireEvent.click(menu);
+    expect(screen.getByRole("option", { name: "Photos" })).toBeInTheDocument();
+  });
+
+  it("shows an empty state when no photo albums are provided", () => {
+    render(<ReactPod menuItems={[{ id: "photos", label: "Photos" }]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+
+    expect(screen.getByText("No Albums")).toBeInTheDocument();
   });
 });

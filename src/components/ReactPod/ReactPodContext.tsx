@@ -1,5 +1,9 @@
 import { createContext, useContext } from "react";
-import type { ReactPodMenuItem, ReactPodState } from "./reactPodState";
+import type {
+  ReactPodMenuItem,
+  ReactPodPhotoAlbum,
+  ReactPodState,
+} from "./reactPodState";
 
 // The base ESLint rule cannot distinguish type-only function parameters.
 // eslint-disable-next-line no-unused-vars
@@ -9,6 +13,7 @@ export interface ReactPodContextValue {
   state: ReactPodState;
   deviceName: string;
   menuItems: readonly ReactPodMenuItem[];
+  photoAlbums: readonly ReactPodPhotoAlbum[];
   rotate: RotateHandler;
   select: () => void;
   back: () => void;

@@ -5,24 +5,37 @@ import ClickWheel from "./ClickWheel";
 import Display from "./Display";
 import { ReactPodProvider } from "./ReactPodProvider";
 import { MAIN_MENU_ITEMS } from "./reactPodState";
-import type { ReactPodMenuItem } from "./reactPodState";
+import type { ReactPodMenuItem, ReactPodPhotoAlbum } from "./reactPodState";
 
-export type { ReactPodMenuItem, ReactPodMenuItemId } from "./reactPodState";
+export type {
+  ReactPodMenuItem,
+  ReactPodMenuItemId,
+  ReactPodPhoto,
+  ReactPodPhotoAlbum,
+} from "./reactPodState";
+
+const EMPTY_PHOTO_ALBUMS: readonly ReactPodPhotoAlbum[] = [];
 
 export interface ReactPodProps
   extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
   deviceName?: string;
   menuItems?: readonly ReactPodMenuItem[];
+  photoAlbums?: readonly ReactPodPhotoAlbum[];
 }
 
 function ReactPod({
   deviceName = "ReactPod",
   menuItems = MAIN_MENU_ITEMS,
+  photoAlbums = EMPTY_PHOTO_ALBUMS,
   className,
   ...rootProps
 }: ReactPodProps) {
   return (
-    <ReactPodProvider deviceName={deviceName} menuItems={menuItems}>
+    <ReactPodProvider
+      deviceName={deviceName}
+      menuItems={menuItems}
+      photoAlbums={photoAlbums}
+    >
       <div
         {...rootProps}
         className={twMerge(

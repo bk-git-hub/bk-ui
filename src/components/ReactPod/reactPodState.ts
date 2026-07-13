@@ -1,6 +1,17 @@
-export type ReactPodScreen = "menu" | "songs" | "now-playing" | "about";
+export type ReactPodScreen =
+  | "menu"
+  | "songs"
+  | "now-playing"
+  | "photo-albums"
+  | "photo-viewer"
+  | "about";
 
-export type ReactPodMenuItemId = "now-playing" | "songs" | "shuffle" | "about";
+export type ReactPodMenuItemId =
+  | "now-playing"
+  | "songs"
+  | "photos"
+  | "shuffle"
+  | "about";
 
 export interface ReactPodMenuItem {
   id: ReactPodMenuItemId;
@@ -14,6 +25,19 @@ export interface Track {
   album: string;
   duration: number;
   artwork: string;
+}
+
+export interface ReactPodPhoto {
+  id: string;
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
+export interface ReactPodPhotoAlbum {
+  id: string;
+  title: string;
+  photos: readonly ReactPodPhoto[];
 }
 
 export const TRACKS: Track[] = [
@@ -62,6 +86,7 @@ export const TRACKS: Track[] = [
 export const MAIN_MENU_ITEMS: readonly ReactPodMenuItem[] = [
   { id: "now-playing", label: "Now Playing" },
   { id: "songs", label: "Songs" },
+  { id: "photos", label: "Photos" },
   { id: "shuffle", label: "Shuffle Songs" },
   { id: "about", label: "About" },
 ];
@@ -70,6 +95,8 @@ export interface ReactPodState {
   screen: ReactPodScreen;
   menuIndex: number;
   songIndex: number;
+  albumIndex: number;
+  photoIndex: number;
   currentTrackIndex: number;
   isPlaying: boolean;
   progress: number;
@@ -81,6 +108,8 @@ export const initialReactPodState: ReactPodState = {
   screen: "menu",
   menuIndex: 0,
   songIndex: 0,
+  albumIndex: 0,
+  photoIndex: 0,
   currentTrackIndex: 0,
   isPlaying: false,
   progress: 0,
@@ -94,9 +123,11 @@ export type ReactPodAction =
   | { type: "BACK" }
   | { type: "TOGGLE_PLAY" }
   | { type: "NEXT"; trackIndex: number }
+  | { type: "ADVANCE_TRACK"; trackIndex: number }
   | { type: "PREVIOUS" }
   | { type: "TICK" }
-  | { type: "SYNC_MENU_ITEMS"; menuLength: number };
+  | { type: "SYNC_MENU_ITEMS"; menuLength: number }
+  | { type: "SYNC_PHOTO_ALBUMS" };
 
 function wrap(value: number, length: number) {
   return (value + length) % length;
@@ -105,6 +136,44 @@ function wrap(value: number, length: number) {
 function clampMenuIndex(menuIndex: number, menuLength: number) {
   if (menuLength === 0) return 0;
   return Math.min(menuIndex, menuLength - 1);
+}
+
+function clampIndex(index: number, length: number) {
+  if (length === 0) return 0;
+  return Math.min(index, length - 1);
+}
+
+function syncPhotoSelection(
+  state: ReactPodState,
+  photoAlbums: readonly ReactPodPhotoAlbum[],
+) {
+  const albumIndex = clampIndex(state.albumIndex, photoAlbums.length);
+  const photoLength = photoAlbums[albumIndex]?.photos.length ?? 0;
+  const photoIndex = clampIndex(state.photoIndex, photoLength);
+  const screen =
+    state.screen === "photo-viewer" && photoLength === 0
+      ? "photo-albums"
+      : state.screen;
+
+  if (
+    albumIndex === state.albumIndex &&
+    photoIndex === state.photoIndex &&
+    screen === state.screen
+  ) {
+    return state;
+  }
+
+  return { ...state, albumIndex, photoIndex, screen };
+}
+
+function advanceTrack(state: ReactPodState, trackIndex: number) {
+  return {
+    ...state,
+    currentTrackIndex: trackIndex,
+    songIndex: trackIndex,
+    progress: 0,
+    isPlaying: true,
+  };
 }
 
 export function getNextTrackIndex(
@@ -125,6 +194,7 @@ export function reactPodReducer(
   state: ReactPodState,
   action: ReactPodAction,
   menuItems: readonly ReactPodMenuItem[] = MAIN_MENU_ITEMS,
+  photoAlbums: readonly ReactPodPhotoAlbum[] = [],
 ): ReactPodState {
   switch (action.type) {
     case "ROTATE":
@@ -154,6 +224,29 @@ export function reactPodReducer(
         };
       }
 
+      if (state.screen === "photo-albums") {
+        if (photoAlbums.length === 0) return state;
+
+        return {
+          ...state,
+          albumIndex: wrap(
+            state.albumIndex + action.direction,
+            photoAlbums.length,
+          ),
+          photoIndex: 0,
+        };
+      }
+
+      if (state.screen === "photo-viewer") {
+        const photoLength = photoAlbums[state.albumIndex]?.photos.length ?? 0;
+        if (photoLength === 0) return state;
+
+        return {
+          ...state,
+          photoIndex: wrap(state.photoIndex + action.direction, photoLength),
+        };
+      }
+
       return state;
 
     case "SELECT": {
@@ -172,6 +265,13 @@ export function reactPodReducer(
         return { ...state, isPlaying: !state.isPlaying };
       }
 
+      if (state.screen === "photo-albums") {
+        const selectedAlbum = photoAlbums[state.albumIndex];
+        if (!selectedAlbum || selectedAlbum.photos.length === 0) return state;
+
+        return { ...state, screen: "photo-viewer", photoIndex: 0 };
+      }
+
       if (state.screen !== "menu") return state;
 
       const selectedItem = menuItems[state.menuIndex];
@@ -187,6 +287,14 @@ export function reactPodReducer(
       if (selectedItem.id === "about") {
         return { ...state, screen: "about" };
       }
+      if (selectedItem.id === "photos") {
+        return {
+          ...state,
+          screen: "photo-albums",
+          albumIndex: clampIndex(state.albumIndex, photoAlbums.length),
+          photoIndex: 0,
+        };
+      }
       if (selectedItem.id === "shuffle") {
         return {
           ...state,
@@ -201,21 +309,42 @@ export function reactPodReducer(
     }
 
     case "BACK":
-      return state.screen === "menu" ? state : { ...state, screen: "menu" };
+      if (state.screen === "menu") return state;
+      if (state.screen === "photo-viewer") {
+        return { ...state, screen: "photo-albums" };
+      }
+      return { ...state, screen: "menu" };
 
     case "TOGGLE_PLAY":
       return { ...state, isPlaying: !state.isPlaying };
 
     case "NEXT":
-      return {
-        ...state,
-        currentTrackIndex: action.trackIndex,
-        songIndex: action.trackIndex,
-        progress: 0,
-        isPlaying: true,
-      };
+      if (state.screen === "photo-viewer") {
+        const photoLength = photoAlbums[state.albumIndex]?.photos.length ?? 0;
+        if (photoLength === 0) return state;
+
+        return {
+          ...state,
+          photoIndex: wrap(state.photoIndex + 1, photoLength),
+        };
+      }
+
+      return advanceTrack(state, action.trackIndex);
+
+    case "ADVANCE_TRACK":
+      return advanceTrack(state, action.trackIndex);
 
     case "PREVIOUS":
+      if (state.screen === "photo-viewer") {
+        const photoLength = photoAlbums[state.albumIndex]?.photos.length ?? 0;
+        if (photoLength === 0) return state;
+
+        return {
+          ...state,
+          photoIndex: wrap(state.photoIndex - 1, photoLength),
+        };
+      }
+
       if (state.progress > 3) return { ...state, progress: 0 };
       return {
         ...state,
@@ -238,5 +367,8 @@ export function reactPodReducer(
       const menuIndex = clampMenuIndex(state.menuIndex, action.menuLength);
       return menuIndex === state.menuIndex ? state : { ...state, menuIndex };
     }
+
+    case "SYNC_PHOTO_ALBUMS":
+      return syncPhotoSelection(state, photoAlbums);
   }
 }

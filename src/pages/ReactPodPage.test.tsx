@@ -44,4 +44,30 @@ describe("ReactPodPage", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("opens the preview photo album from the click wheel", () => {
+    render(<ReactPodPage />);
+    const wheel = screen.getByLabelText(/Click wheel/);
+    const select = screen.getByRole("button", { name: "Select" });
+
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+
+    expect(screen.getByRole("option", { name: "Photos" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.click(select);
+    expect(
+      screen.getByRole("option", { name: /City Lights/ }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(select);
+    expect(
+      screen.getByRole("img", {
+        name: /Han River and bridge lights reflected on the water/,
+      }),
+    ).toBeInTheDocument();
+  });
 });

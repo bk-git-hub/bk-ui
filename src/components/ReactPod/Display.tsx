@@ -35,7 +35,12 @@ function StatusBar() {
 }
 
 function MainMenu() {
-  const { menuItems, state } = useReactPod();
+  const { menuItems, photoAlbums, state } = useReactPod();
+  const isPhotosSelected = menuItems[state.menuIndex]?.id === "photos";
+  const photoCovers = photoAlbums
+    .map((album) => album.photos[0])
+    .filter((photo) => photo !== undefined)
+    .slice(0, 2);
 
   return (
     <div className="grid h-full grid-cols-[62%_38%] bg-white">
@@ -47,7 +52,7 @@ function MainMenu() {
               key={`${item.id}-${index}`}
               role="option"
               aria-selected={isSelected}
-              className={`flex h-10 items-center justify-between px-2 text-[13px] font-semibold ${
+              className={`flex h-8 items-center justify-between px-2 text-[12px] font-semibold ${
                 isSelected
                   ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
                   : "text-slate-900"
@@ -61,14 +66,158 @@ function MainMenu() {
           );
         })}
       </div>
-      <div className="relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-300 to-indigo-700">
-        <div className="absolute -right-7 -bottom-7 h-32 w-32 rounded-full bg-white/20" />
-        <div className="absolute top-7 left-3 h-16 w-16 rotate-12 rounded-2xl bg-white/30 shadow-lg backdrop-blur-sm" />
+      <div
+        className={`relative overflow-hidden ${
+          isPhotosSelected
+            ? "bg-slate-900"
+            : "bg-gradient-to-br from-sky-100 via-blue-300 to-indigo-700"
+        }`}
+      >
+        {isPhotosSelected && photoCovers.length > 0 ? (
+          <div className="absolute inset-2 grid grid-cols-2 gap-1.5 rotate-2">
+            {photoCovers.map((photo) => (
+              <img
+                key={photo.id}
+                src={photo.src}
+                alt=""
+                className="h-full min-h-0 w-full rounded-sm border border-white/50 object-cover shadow-md"
+              />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="absolute -right-7 -bottom-7 h-32 w-32 rounded-full bg-white/20" />
+            <div className="absolute top-7 left-3 h-16 w-16 rotate-12 rounded-2xl bg-white/30 shadow-lg backdrop-blur-sm" />
+          </>
+        )}
         <span className="absolute right-2 bottom-2 text-[10px] font-bold tracking-widest text-white/80">
-          MUSIC
+          {isPhotosSelected ? "PHOTOS" : "MUSIC"}
         </span>
       </div>
     </div>
+  );
+}
+
+function PhotoAlbums() {
+  const { photoAlbums, state } = useReactPod();
+
+  if (photoAlbums.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-200 px-5 text-center text-slate-700">
+        <p className="text-sm font-bold">No Albums</p>
+        <p className="mt-1 text-[10px] text-slate-500">
+          Add photos with the photoAlbums prop.
+        </p>
+      </div>
+    );
+  }
+
+  const visibleAlbumCount = 3;
+  const visibleAlbumStart = Math.max(
+    0,
+    Math.min(
+      state.albumIndex - 1,
+      Math.max(0, photoAlbums.length - visibleAlbumCount),
+    ),
+  );
+  const visibleAlbums = photoAlbums.slice(
+    visibleAlbumStart,
+    visibleAlbumStart + visibleAlbumCount,
+  );
+
+  return (
+    <div
+      className="h-full overflow-hidden bg-white py-1"
+      role="listbox"
+      aria-label="Photo albums"
+    >
+      {visibleAlbums.map((album, visibleIndex) => {
+        const index = visibleAlbumStart + visibleIndex;
+        const isSelected = index === state.albumIndex;
+        const cover = album.photos[0];
+
+        return (
+          <div
+            key={album.id}
+            role="option"
+            aria-selected={isSelected}
+            aria-posinset={index + 1}
+            aria-setsize={photoAlbums.length}
+            className={`flex h-[48px] items-center gap-2 px-2 ${
+              isSelected
+                ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
+                : "text-slate-900"
+            }`}
+          >
+            {cover ? (
+              <img
+                src={cover.src}
+                alt=""
+                className="h-9 w-11 shrink-0 rounded-sm border border-black/20 object-cover shadow-sm"
+              />
+            ) : (
+              <div className="flex h-9 w-11 shrink-0 items-center justify-center rounded-sm border border-slate-300 bg-slate-100 text-[8px] text-slate-400">
+                EMPTY
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] leading-tight font-bold">
+                {album.title}
+              </p>
+              <p
+                className={`text-[9px] ${
+                  isSelected ? "text-blue-100" : "text-slate-500"
+                }`}
+              >
+                {album.photos.length} Photos
+              </p>
+            </div>
+            {isSelected && <ChevronRightIcon className="h-4 w-4 shrink-0" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PhotoViewer() {
+  const { photoAlbums, state } = useReactPod();
+  const album = photoAlbums[state.albumIndex];
+  const photo = album?.photos[state.photoIndex];
+
+  if (!album || !photo) {
+    return (
+      <div className="flex h-full items-center justify-center bg-slate-950 px-5 text-center text-xs font-semibold text-slate-300">
+        No photos in this album.
+      </div>
+    );
+  }
+
+  return (
+    <figure
+      className="relative h-full overflow-hidden bg-black"
+      aria-live="polite"
+      aria-label={`${album.title}, photo ${state.photoIndex + 1} of ${album.photos.length}`}
+    >
+      <img
+        src={photo.src}
+        alt={photo.alt}
+        className="h-full w-full object-cover"
+      />
+      <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-2 pt-5 pb-1.5 text-white">
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-[10px] font-bold">
+              {photo.caption ?? album.title}
+            </p>
+            <p className="truncate text-[8px] text-white/70">{album.title}</p>
+          </div>
+          <span className="shrink-0 text-[8px] font-semibold tabular-nums text-white/80">
+            {state.photoIndex + 1}/{album.photos.length}
+          </span>
+        </div>
+      </figcaption>
+    </figure>
   );
 }
 
@@ -201,6 +350,8 @@ export default function Display() {
         {state.screen === "menu" && <MainMenu />}
         {state.screen === "songs" && <Songs />}
         {state.screen === "now-playing" && <NowPlaying />}
+        {state.screen === "photo-albums" && <PhotoAlbums />}
+        {state.screen === "photo-viewer" && <PhotoViewer />}
         {state.screen === "about" && <About />}
       </div>
     </div>

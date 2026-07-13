@@ -10,6 +10,7 @@ import {
 import type {
   ReactPodAction,
   ReactPodMenuItem,
+  ReactPodPhotoAlbum,
   ReactPodState,
 } from "./reactPodState";
 
@@ -17,23 +18,29 @@ interface ReactPodProviderProps {
   children: ReactNode;
   deviceName: string;
   menuItems: readonly ReactPodMenuItem[];
+  photoAlbums: readonly ReactPodPhotoAlbum[];
 }
 
 export function ReactPodProvider({
   children,
   deviceName,
   menuItems,
+  photoAlbums,
 }: ReactPodProviderProps) {
   const reducer = useCallback(
     (state: ReactPodState, action: ReactPodAction) =>
-      reactPodReducer(state, action, menuItems),
-    [menuItems],
+      reactPodReducer(state, action, menuItems, photoAlbums),
+    [menuItems, photoAlbums],
   );
   const [state, dispatch] = useReducer(reducer, initialReactPodState);
 
   useEffect(() => {
     dispatch({ type: "SYNC_MENU_ITEMS", menuLength: menuItems.length });
   }, [menuItems.length]);
+
+  useEffect(() => {
+    dispatch({ type: "SYNC_PHOTO_ALBUMS" });
+  }, [photoAlbums]);
 
   const rotate = useCallback((direction: -1 | 1) => {
     dispatch({ type: "ROTATE", direction });
@@ -59,7 +66,10 @@ export function ReactPodProvider({
     const timer = window.setTimeout(() => {
       const currentTrack = TRACKS[state.currentTrackIndex];
       if (state.progress + 1 >= currentTrack.duration) {
-        dispatch({ type: "NEXT", trackIndex: getNextTrackIndex(state) });
+        dispatch({
+          type: "ADVANCE_TRACK",
+          trackIndex: getNextTrackIndex(state),
+        });
       } else {
         dispatch({ type: "TICK" });
       }
@@ -73,6 +83,7 @@ export function ReactPodProvider({
       state,
       deviceName,
       menuItems,
+      photoAlbums,
       rotate,
       select,
       back,
@@ -84,6 +95,7 @@ export function ReactPodProvider({
       state,
       deviceName,
       menuItems,
+      photoAlbums,
       rotate,
       select,
       back,
