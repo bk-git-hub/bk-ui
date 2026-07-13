@@ -115,8 +115,21 @@ describe("ShaderSliderDemoPage", () => {
     });
     expect(reactExport).toHaveTextContent('from "./components/ShaderSlider"');
     expect(
-      screen.getByText(/pnpm add clsx tailwind-merge/),
+      screen.getByText(/pnpm add clsx@\^2\.1\.1 tailwind-merge@\^3\.3\.1/),
     ).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Install Shader Slider" },
+        { timeout: 5_000 },
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Release blocked\./)).toBeInTheDocument();
+    expect(screen.getByText("React/Vite installation")).toBeInTheDocument();
+    expect(screen.getByText("React/Vite source ZIP")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Next.js App Router source ZIP"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
     const nextExport = await screen.findByRole("region", {
@@ -124,7 +137,21 @@ describe("ShaderSliderDemoPage", () => {
     });
     expect(nextExport).toHaveTextContent("'use client'");
     expect(nextExport).toHaveTextContent("if (!mounted)");
+    expect(nextExport).toHaveTextContent(
+      'from "@/components/ShaderSlider/client"',
+    );
     expect(screen.getByText(/Server Component page/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Next.js App Router installation",
+        {},
+        { timeout: 5_000 },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Next.js App Router source ZIP"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("React/Vite source ZIP")).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 });

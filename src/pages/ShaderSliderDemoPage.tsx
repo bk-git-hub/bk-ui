@@ -9,6 +9,7 @@ import {
   type ShaderSliderDemoConfig,
 } from "@/components/previews/shader-slider-demo.util";
 import { shaderSliderNextJsExport } from "@/snippets/shaderSliderNextExportCode";
+import { shaderSliderInstallDescriptor } from "@/snippets/shaderSliderInstallDescriptor";
 import { shaderSliderReactExport } from "@/snippets/shaderSliderReactExportCode";
 import { shaderSliderUsageCode } from "@/snippets/shaderSliderUsageCode";
 
@@ -56,6 +57,7 @@ export default function ShaderSliderDemoPage() {
       referenceCode={shaderSliderUsageCode}
       reactExport={shaderSliderReactExport}
       nextJsExport={shaderSliderNextJsExport}
+      installDescriptor={shaderSliderInstallDescriptor}
       showPreviewAlongsideCode
     />
   );

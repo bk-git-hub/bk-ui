@@ -3,6 +3,8 @@ import {
   SHADER_SLIDER_EXPORT_ASSET_FILES,
   SHADER_SLIDER_EXPORT_CORE_FILES,
   SHADER_SLIDER_EXPORT_DEPENDENCY_COMMAND,
+  SHADER_SLIDER_NEXT_CLIENT_FILE,
+  SHADER_SLIDER_NEXT_ROOT_APP_TAILWIND_SOURCE,
   SHADER_SLIDER_NEXT_TAILWIND_SOURCE,
   SHADER_SLIDER_REACT_TAILWIND_SOURCE,
 } from "./shaderSliderExportMeta";
@@ -39,7 +41,7 @@ describe("shader slider export snippets", () => {
       "export default function ShaderSliderExample()",
     );
     expect(SHADER_SLIDER_EXPORT_DEPENDENCY_COMMAND).toBe(
-      "pnpm add clsx tailwind-merge",
+      "pnpm add clsx@^2.1.1 tailwind-merge@^3.3.1",
     );
     expect(SHADER_SLIDER_REACT_TAILWIND_SOURCE).toContain(
       "components/ShaderSlider",
@@ -53,7 +55,7 @@ describe("shader slider export snippets", () => {
       /^['"]use client['"];?/,
     );
     expect(shaderSliderNextExportCode).toContain(
-      'from "@/components/ShaderSlider"',
+      'from "@/components/ShaderSlider/client"',
     );
     expect(shaderSliderNextExportCode).toContain(
       "export function ShaderSliderClient()",
@@ -62,6 +64,12 @@ describe("shader slider export snippets", () => {
     expect(shaderSliderNextExportCode).not.toMatch(/from ["']next\//);
     expect(SHADER_SLIDER_NEXT_TAILWIND_SOURCE).toContain(
       "components/ShaderSlider",
+    );
+    expect(SHADER_SLIDER_NEXT_ROOT_APP_TAILWIND_SOURCE).toContain(
+      "src/components/ShaderSlider",
+    );
+    expect(SHADER_SLIDER_NEXT_CLIENT_FILE).toBe(
+      "src/components/ShaderSlider/client.ts",
     );
     for (const primitive of PUBLIC_PRIMITIVES) {
       expect(shaderSliderNextExportCode).toContain(primitive);

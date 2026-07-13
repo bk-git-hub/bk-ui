@@ -72,6 +72,6 @@ export default function ShaderSliderExample() {
 
 export const shaderSliderReactExport: ComponentViewerCodeTab = {
   language: "React TSX",
-  description: `React + Vite: run \`${SHADER_SLIDER_EXPORT_DEPENDENCY_COMMAND}\`, copy ${SHADER_SLIDER_EXPORT_CORE_FILES.join(", ")}, and copy the demo textures ${SHADER_SLIDER_EXPORT_ASSET_FILES.join(", ")} (or replace their URLs with your own raster images). Save this code as src/ShaderSliderExample.tsx. Tailwind v4 scans local src files automatically; for an excluded/shared directory add \`${SHADER_SLIDER_REACT_TAILWIND_SOURCE}\` to src/index.css. Tailwind v3 must include src/components/ShaderSlider/**/*.{ts,tsx} in content.`,
+  description: `React + Vite: use the generated React ZIP and verified hashes in the install guide. For Tailwind 4 the equivalent dependency command is \`${SHADER_SLIDER_EXPORT_DEPENDENCY_COMMAND}\`; Tailwind 3 must use tailwind-merge@2.6.0. The archive contains ${SHADER_SLIDER_EXPORT_CORE_FILES.join(", ")}. Copy the optional demo textures ${SHADER_SLIDER_EXPORT_ASSET_FILES.join(", ")} or replace their URLs with same-origin/CORS-enabled raster images. Save this code as src/ShaderSliderExample.tsx. Tailwind v4 scans local src files automatically; for an excluded/shared directory add \`${SHADER_SLIDER_REACT_TAILWIND_SOURCE}\` to src/index.css. Tailwind v3 must include src/components/ShaderSlider/**/*.{ts,tsx} in content.`,
   code: shaderSliderReactExportCode,
 };
