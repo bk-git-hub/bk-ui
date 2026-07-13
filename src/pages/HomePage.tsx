@@ -1,6 +1,7 @@
 import React from "react";
 import {
   ArrowRight,
+  Blinds,
   Cherry,
   Columns3,
   Dices,
@@ -101,6 +102,13 @@ export default function HomePage() {
               description="Editorial image reveals built from staggered vertical ribbons."
               icon={<Columns3 aria-hidden="true" className="h-10 w-10" />}
               href="/components/slicer-slider"
+            />
+
+            <FeatureCard
+              title="Shutter Slider"
+              description="Cinematic image reveals composed from accessible shutter panels."
+              icon={<Blinds aria-hidden="true" className="h-10 w-10" />}
+              href="/components/shutter-slider"
             />
           </div>
         </div>
