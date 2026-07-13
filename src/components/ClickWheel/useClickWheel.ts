@@ -1,3 +1,5 @@
+"use client";
+
 import {
   useEffect,
   useRef,
@@ -9,23 +11,32 @@ const SENSITIVITY = 15;
 const INITIAL_ROTATION_THRESHOLD = 8;
 const LONG_PRESS_DELAY = 650;
 const LONG_PRESS_MOVE_TOLERANCE = 8;
-type RotationDirection = -1 | 1;
+
+export type ClickWheelDirection = -1 | 1;
+
 // The base ESLint rule cannot distinguish type-only function parameters.
 // eslint-disable-next-line no-unused-vars
-type RotateHandler = (direction: RotationDirection) => void;
+export type ClickWheelRotateHandler = (direction: ClickWheelDirection) => void;
+// eslint-disable-next-line no-unused-vars
+export type ClickWheelLongPressHandler = (button: HTMLButtonElement) => void;
 
-interface UseClickWheelOptions {
-  onRotate: RotateHandler;
-  onLongPress?: () => void;
+export interface UseClickWheelOptions {
+  onRotate?: ClickWheelRotateHandler;
+  onLongPress?: ClickWheelLongPressHandler;
+  disabled?: boolean;
 }
 
-export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
+export function useClickWheel({
+  onRotate,
+  onLongPress,
+  disabled = false,
+}: UseClickWheelOptions = {}) {
   const wheelRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const activePointerId = useRef<number | null>(null);
   const captureTarget = useRef<HTMLElement | null>(null);
-  const lastAngle = useRef<number>(0);
-  const accumulatedAngle = useRef<number>(0);
+  const lastAngle = useRef(0);
+  const accumulatedAngle = useRef(0);
   const didDrag = useRef(false);
   const suppressClick = useRef(false);
   const dragOriginButton = useRef<HTMLButtonElement | null>(null);
@@ -34,11 +45,11 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
   const longPressTimer = useRef<number | null>(null);
   const didLongPress = useRef(false);
   const pointerStart = useRef({ x: 0, y: 0 });
-  const center = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const center = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const wheelElement = wheelRef.current;
-    if (!wheelElement) return;
+    if (!wheelElement || typeof window === "undefined") return;
 
     const updateCenter = () => {
       const rect = wheelElement.getBoundingClientRect();
@@ -49,15 +60,16 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
     };
 
     updateCenter();
-    const resizeObserver = new ResizeObserver(updateCenter);
-    resizeObserver.observe(wheelElement);
-
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateCenter);
+    resizeObserver?.observe(wheelElement);
     window.addEventListener("scroll", updateCenter, true);
-
     window.addEventListener("resize", updateCenter);
 
     return () => {
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
       window.removeEventListener("scroll", updateCenter, true);
       window.removeEventListener("resize", updateCenter);
       if (clickResetTimer.current !== null) {
@@ -69,17 +81,16 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
     };
   }, []);
 
-  const getAngle = (event: ReactPointerEvent<HTMLDivElement>): number => {
-    return (
-      Math.atan2(
-        event.clientY - center.current.y,
-        event.clientX - center.current.x,
-      ) *
-      (180 / Math.PI)
-    );
-  };
+  const getAngle = (event: ReactPointerEvent<HTMLDivElement>) =>
+    Math.atan2(
+      event.clientY - center.current.y,
+      event.clientX - center.current.x,
+    ) *
+    (180 / Math.PI);
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (disabled) return;
+
     const target = event.target;
     const targetButton =
       target instanceof Element ? target.closest("button") : null;
@@ -111,7 +122,7 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
       longPressTimer.current = window.setTimeout(() => {
         longPressTimer.current = null;
         didLongPress.current = true;
-        onLongPress();
+        onLongPress(targetButton);
       }, LONG_PRESS_DELAY);
     }
 
@@ -129,14 +140,17 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
       y: rect.top + rect.height / 2,
     };
 
-    const angle = getAngle(event);
-    lastAngle.current = angle;
+    lastAngle.current = getAngle(event);
     accumulatedAngle.current = 0;
     didDrag.current = false;
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current || activePointerId.current !== event.pointerId) {
+    if (
+      disabled ||
+      !isDragging.current ||
+      activePointerId.current !== event.pointerId
+    ) {
       return;
     }
 
@@ -171,9 +185,9 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
       }
       didDrag.current = true;
       event.preventDefault();
-      const direction: RotationDirection =
+      const direction: ClickWheelDirection =
         accumulatedAngle.current > 0 ? 1 : -1;
-      onRotate(direction);
+      onRotate?.(direction);
       accumulatedAngle.current -= direction * rotationThreshold;
       rotationThreshold = SENSITIVITY;
     }
@@ -210,12 +224,11 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
     captureTarget.current = null;
   };
 
-  const onLostPointerCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const cancelDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (activePointerId.current !== event.pointerId) return;
 
     isDragging.current = false;
     activePointerId.current = null;
-    captureTarget.current = null;
     accumulatedAngle.current = 0;
     didDrag.current = false;
     didLongPress.current = false;
@@ -226,19 +239,15 @@ export function useClickWheel({ onRotate, onLongPress }: UseClickWheelOptions) {
     }
   };
 
+  const onLostPointerCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerId.current !== event.pointerId) return;
+    cancelDrag(event);
+    captureTarget.current = null;
+  };
+
   const onPointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (activePointerId.current !== event.pointerId) return;
-
-    isDragging.current = false;
-    activePointerId.current = null;
-    accumulatedAngle.current = 0;
-    didDrag.current = false;
-    didLongPress.current = false;
-    dragOriginButton.current = null;
-    if (longPressTimer.current !== null) {
-      window.clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    cancelDrag(event);
 
     if (captureTarget.current?.hasPointerCapture?.(event.pointerId)) {
       captureTarget.current.releasePointerCapture?.(event.pointerId);

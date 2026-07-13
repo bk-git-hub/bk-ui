@@ -1,7 +1,4 @@
-import type {
-  ReactPodPhoto,
-  ReactPodPhotoAlbum,
-} from "@/components/ReactPod/ReactPod";
+import type { ReactPodPhoto, ReactPodPhotoAlbum } from "@/components/ReactPod";
 
 const REACT_POD_DEMO_PHOTOS = [
   {

@@ -1,3 +1,5 @@
+"use client";
+
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { ComponentPropsWithoutRef } from "react";
@@ -23,7 +25,7 @@ export interface ReactPodProps
   photoAlbums?: readonly ReactPodPhotoAlbum[];
 }
 
-function ReactPod({
+export function ReactPod({
   deviceName = "ReactPod",
   menuItems = MAIN_MENU_ITEMS,
   photoAlbums = EMPTY_PHOTO_ALBUMS,

@@ -1,0 +1,103 @@
+# ClickWheel
+
+`ClickWheel`은 ReactPod의 원형 입력부만 분리한 React + Tailwind 컴포넌트입니다. React 상태와 Pointer Events만 사용하며, Next.js 런타임이나 별도 제스처 라이브러리에 의존하지 않습니다. MENU, 이전, 가운데 선택, 다음, 재생/일시정지 버튼은 각각 내용·ARIA·클래스·HTML 속성과 이벤트를 바꿀 수 있습니다.
+
+## 일반 React / Vite
+
+`ClickWheel` 폴더를 프로젝트의 컴포넌트 디렉터리에 복사한 뒤 폴더 진입점에서 가져옵니다.
+
+```tsx
+import { useState } from "react";
+import { ClickWheel } from "@/components/ClickWheel";
+
+export function PlayerControls() {
+  const [value, setValue] = useState(0);
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <ClickWheel
+      onRotate={(direction) => setValue((current) => current + direction)}
+      onMenu={() => setValue(0)}
+      onPrevious={() => setValue((current) => current - 1)}
+      onSelect={() => console.log("selected", value)}
+      onNext={() => setValue((current) => current + 1)}
+      onPlayPause={() => setPlaying((current) => !current)}
+      buttonProps={{
+        menu: {
+          children: "BACK",
+          "aria-label": "이전 화면",
+          className: "text-indigo-600",
+        },
+        select: {
+          children: "OK",
+          "aria-label": "선택 확인",
+          className: "grid place-items-center font-bold",
+        },
+        playPause: {
+          children: playing ? "PAUSE" : "PLAY",
+          "aria-label": playing ? "일시정지" : "재생",
+          "aria-pressed": playing,
+        },
+      }}
+    />
+  );
+}
+```
+
+루트에는 `div`의 표준 속성과 이벤트를 전달할 수 있습니다. `buttonProps`의 각 항목에는 `button` 속성, `children`, `className`, `aria-*`, `data-*`, `ref`, 네이티브 이벤트를 전달할 수 있습니다. 버튼의 `onClick`이 `preventDefault()`를 호출하면 대응하는 의미 callback은 실행하지 않습니다. `wheelDrag`를 사용하면 해당 버튼에서 시작한 포인터 이동을 휠 회전으로 처리할지 선택할 수 있습니다.
+
+## Next.js App Router
+
+코어 구현은 일반 React와 동일합니다. 이벤트 함수를 정의하는 소비자 컴포넌트만 Client Component로 만들고 명시적인 client 진입점을 사용합니다.
+
+```tsx
+// app/player/player-wheel.tsx
+"use client";
+
+import { useState } from "react";
+import { ClickWheel } from "@/components/ClickWheel/client";
+
+export function PlayerWheel() {
+  const [index, setIndex] = useState(0);
+
+  return (
+    <ClickWheel
+      onRotate={(direction) => setIndex((current) => current + direction)}
+      onMenu={() => setIndex(0)}
+      onSelect={() => console.log(index)}
+    />
+  );
+}
+```
+
+```tsx
+// app/player/page.tsx — Server Component 유지
+import { PlayerWheel } from "./player-wheel";
+
+export default function PlayerPage() {
+  return <PlayerWheel />;
+}
+```
+
+`ClickWheel.tsx`와 `client.ts`에는 `'use client'` 경계가 포함되어 있습니다. 렌더 중에는 `window`, `document`, `ResizeObserver`를 읽지 않으므로 서버 렌더링 결과가 결정적이며 hydration에 안전합니다. `next/*` import나 Next.js 의존성은 없습니다.
+
+## Tailwind CSS
+
+Tailwind CSS v4에서 폴더를 소비 앱의 `src` 또는 `app` 아래에 복사하면 클래스가 자동 탐지됩니다. 모노레포 패키지나 `node_modules` 밖의 별도 소스 경로에서 가져오는 경우에만 전역 CSS에서 실제 위치를 등록합니다.
+
+```css
+@import "tailwindcss";
+@source "../packages/bk-ui/src/components/ClickWheel";
+```
+
+클래스 병합에는 저장소 표준인 `clsx`와 `tailwind-merge`를 사용합니다. 이 저장소에는 이미 설치되어 있으며, 복사 대상 프로젝트에는 두 패키지가 필요합니다.
+
+## 입력 방식
+
+- 휠 드래그 또는 마우스 휠: `onRotate(-1 | 1)`
+- 방향키: 회전
+- `Enter`: 가운데 선택
+- `Escape`: MENU
+- `Home`: MENU 길게 누르기 동작
+- `Space`: 재생/일시정지
+- MENU 짧게 누르기와 길게 누르기, MENU·재생 버튼에서 시작한 드래그는 서로 구분됩니다.

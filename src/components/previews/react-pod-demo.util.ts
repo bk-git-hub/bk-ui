@@ -1,7 +1,7 @@
 import type {
   ReactPodMenuItem,
   ReactPodMenuItemId,
-} from "@/components/ReactPod/reactPodState";
+} from "@/components/ReactPod";
 
 export interface ReactPodDemoConfig {
   deviceName: string;
@@ -75,7 +75,10 @@ export function parseReactPodDemoCode(source: string): ParseResult {
     const label =
       typeof candidate.label === "string" ? candidate.label.trim() : "";
 
-    if (typeof id !== "string" || !MENU_ITEM_IDS.has(id as ReactPodMenuItemId)) {
+    if (
+      typeof id !== "string" ||
+      !MENU_ITEM_IDS.has(id as ReactPodMenuItemId)
+    ) {
       return {
         config: null,
         error:

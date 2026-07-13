@@ -31,4 +31,6 @@ class MockPointerEvent extends Event {
     this.pointerType = props.pointerType || "mouse";
   }
 }
-window.PointerEvent = MockPointerEvent as any;
+if (typeof window !== "undefined") {
+  window.PointerEvent = MockPointerEvent as any;
+}

@@ -6,6 +6,8 @@ describe("ReactPodPage", () => {
   it("updates the preview from the editable configuration", () => {
     render(<ReactPodPage />);
 
+    expect(screen.getByRole("tab", { name: "Usage" })).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("tab", { name: "Code" }));
     const editor = screen.getByRole("textbox", {
       name: "LIVE JSON source code editor",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ReactPod from "@/components/ReactPod/ReactPod";
+import { ReactPod } from "@/components/ReactPod";
 import ComponentViewer from "@/components/layout/component-viewer";
 import { REACT_POD_DEMO_PHOTO_ALBUMS } from "@/components/previews/react-pod-photo-albums";
 import {
@@ -8,6 +8,7 @@ import {
   parseReactPodDemoCode,
   type ReactPodDemoConfig,
 } from "@/components/previews/react-pod-demo.util";
+import { clickWheelUsageCode } from "@/snippets/clickWheelUsageCode";
 
 export default function ReactPodPage() {
   const [code, setCode] = useState(DEFAULT_REACT_POD_DEMO_CODE);
@@ -32,7 +33,7 @@ export default function ReactPodPage() {
   return (
     <ComponentViewer
       title="ReactPod"
-      description="Edit the live JSON configuration to customize the menu, then try it in the preview."
+      description="Customize the full player, or copy the standalone click wheel and replace every button."
       component={
         <div className="flex h-full w-full items-center justify-center overflow-auto bg-gradient-to-br from-slate-100 via-sky-100 to-indigo-200 p-6">
           <ReactPod
@@ -43,6 +44,7 @@ export default function ReactPodPage() {
         </div>
       }
       usageCode={code}
+      referenceCode={clickWheelUsageCode}
       codeLanguage="LIVE JSON"
       codeError={codeError}
       onUsageCodeChange={handleCodeChange}
