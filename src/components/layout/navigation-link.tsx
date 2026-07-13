@@ -12,6 +12,7 @@ const navigationLinks = [
   { to: "/components/shader-slider", text: "Shader Slider" },
   { to: "/components/slicer-slider", text: "Slicer Slider" },
   { to: "/components/shutter-slider", text: "Shutter Slider" },
+  { to: "/components/story-slider", text: "Story Slider" },
 ];
 
 const NavigationLink = React.memo(

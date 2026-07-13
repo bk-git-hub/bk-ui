@@ -5,6 +5,7 @@ import {
   Cherry,
   Columns3,
   Dices,
+  GalleryVerticalEnd,
   Layers3,
   ScanLine,
   Waves,
@@ -109,6 +110,15 @@ export default function HomePage() {
               description="Cinematic image reveals composed from accessible shutter panels."
               icon={<Blinds aria-hidden="true" className="h-10 w-10" />}
               href="/components/shutter-slider"
+            />
+
+            <FeatureCard
+              title="Story Slider"
+              description="Grouped stories with autoplay, hold-to-pause, tap, swipe, and keyboard controls."
+              icon={
+                <GalleryVerticalEnd aria-hidden="true" className="h-10 w-10" />
+              }
+              href="/components/story-slider"
             />
           </div>
         </div>
