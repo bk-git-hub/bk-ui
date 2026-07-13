@@ -1,0 +1,128 @@
+{
+  "$schema": "../schema/component-manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "lotto",
+  "title": "Lotto Draw",
+  "componentVersion": "1.0.0",
+  "description": "A configurable and accessible React lottery draw with composable primitives, controlled state, and a continuously animated layered ball machine.",
+  "repository": "https://github.com/bk-git-hub/bk-ui",
+  "sourceCommit": "8cb1677b64f5934db933c15a602ae45741c5bbd3",
+  "license": {
+    "spdx": "UNLICENSED",
+    "status": "pending"
+  },
+  "react": {
+    "range": ">=19.0.0 <20",
+    "tested": "19.2.7"
+  },
+  "next": {
+    "tested": "16.2.10",
+    "clientBoundary": "src/components/Lotto/client.ts",
+    "serializableProps": [
+      "items: an array containing only serializable ball values",
+      "drawCount: number",
+      "motionSeed: number",
+      "depthLayers: number",
+      "maxVisibleBalls: number",
+      "resultCount: number",
+      "labels and className: strings"
+    ]
+  },
+  "files": [
+    {
+      "source": "src/components/Lotto/LottoDraw.tsx",
+      "target": "@components/Lotto/LottoDraw.tsx",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Lotto/LottoMachine.tsx",
+      "target": "@components/Lotto/LottoMachine.tsx",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Lotto/useLottoDraw.ts",
+      "target": "@components/Lotto/useLottoDraw.ts",
+      "type": "registry:hook",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Lotto/useLottoMachinePhysics.ts",
+      "target": "@components/Lotto/useLottoMachinePhysics.ts",
+      "type": "registry:hook",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Lotto/lottoMachinePhysics.ts",
+      "target": "@components/Lotto/lottoMachinePhysics.ts",
+      "type": "registry:lib",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Lotto/index.ts",
+      "target": "@components/Lotto/index.ts",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Lotto/client.ts",
+      "target": "@components/Lotto/client.ts",
+      "type": "registry:component",
+      "frameworks": ["next"]
+    }
+  ],
+  "dependencies": {
+    "common": ["lucide-react@^0.542.0"],
+    "tailwind": {
+      "3": [],
+      "4": ["tailwind-merge@^3.3.1"]
+    }
+  },
+  "entrypoints": {
+    "react": "src/components/Lotto/index.ts",
+    "next": "src/components/Lotto/client.ts"
+  },
+  "tailwind": {
+    "supportedMajors": [4],
+    "3": {
+      "supported": false,
+      "reason": "The canonical Lotto source and layered machine utilities have not passed the required Tailwind 3.4 Vite and Next.js fixture matrix. BK-UI does not generate an unverified v3 artifact."
+    },
+    "4": {
+      "supported": true,
+      "range": ">=4.0.0 <5",
+      "tested": "4.3.2",
+      "itemName": "lotto",
+      "scan": "Keep components/Lotto in the locally scanned source tree; for shared or ignored source add a stylesheet-relative @source directive for that directory.",
+      "representativeClasses": [
+        "[clip-path:polygon(18%_0,82%_0,100%_100%,0_100%)]",
+        "bg-[radial-gradient(circle_at_50%_10%,#1e3a5f_0%,#0f172a_52%,#020617_100%)]",
+        "focus-visible:ring-offset-2",
+        "motion-safe:animate-pulse",
+        "rounded-[2rem]"
+      ]
+    }
+  },
+  "constraints": {
+    "ssr": [
+      "Import the Next.js entrypoint from components/Lotto/client; it re-exports the unchanged React core and contains no next/* runtime import.",
+      "Keep items, initial results, motionSeed, drawCount, and labels deterministic between the server render and the first hydration render.",
+      "Browser measurement, ResizeObserver, matchMedia, and animation frames run only after hydration; Lotto does not require ssr: false.",
+      "Define onValueChange, renderBall, getItemKey, getItemLabel, random, timers, refs, and DOM handlers inside a Client Component; pass only serializable data from a Server Component.",
+      "Random selection begins only when draw is called from an interaction and is never consumed during render."
+    ],
+    "accessibility": [
+      "Give LottoDraw or LottoMachine a meaningful accessible name and preserve the polite result status announcement.",
+      "For object items, provide stable getItemKey and meaningful getItemLabel functions inside the client boundary.",
+      "Keep LottoAction as a native button with visible focus styles, disabled behavior, and keyboard activation; do not make drawing pointer-only.",
+      "Preserve prefers-reduced-motion handling so the result appears without the mixing delay and the chamber remains static.",
+      "Keep the decorative chamber pool aria-hidden while exposing the result list and machine state through semantic regions and lists."
+    ]
+  },
+  "examples": {
+    "react": "import { useEffect, useRef, useState } from \"react\";\nimport { LottoAction, LottoMachine, useLottoDraw } from \"../components/Lotto\";\n\nconst balls = Array.from({ length: 45 }, (_, index) => index + 1);\n\nexport default function LottoExample() {\n  const [result, setResult] = useState<number[]>([]);\n  const [spinning, setSpinning] = useState(false);\n  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);\n  const { canDraw, draw, reset } = useLottoDraw({\n    items: balls,\n    drawCount: 6,\n    value: result,\n    onValueChange: setResult,\n  });\n\n  useEffect(() => () => {\n    if (timerRef.current !== null) clearTimeout(timerRef.current);\n  }, []);\n\n  const startDraw = () => {\n    if (!canDraw || spinning) return;\n    if (window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches) {\n      draw();\n      return;\n    }\n    setSpinning(true);\n    timerRef.current = setTimeout(() => {\n      draw();\n      setSpinning(false);\n      timerRef.current = null;\n    }, 4_800);\n  };\n\n  return (\n    <main className=\"mx-auto max-w-3xl space-y-6 p-6\">\n      <LottoMachine\n        items={balls}\n        drawnItems={spinning ? [] : result}\n        spinning={spinning}\n        resultCount={6}\n        motionSeed={2026}\n        getItemKey={(ball) => ball}\n        aria-label=\"Weekly lotto machine\"\n      />\n      <div className=\"flex justify-center gap-3\">\n        <LottoAction disabled={!canDraw || spinning} onClick={startDraw}>\n          {spinning ? \"Mixing...\" : \"Draw\"}\n        </LottoAction>\n        <LottoAction disabled={spinning || result.length === 0} onClick={reset}>\n          Reset\n        </LottoAction>\n      </div>\n    </main>\n  );\n}\n",
+    "nextClient": "\"use client\";\n\nimport { useEffect, useRef, useState } from \"react\";\nimport { LottoAction, LottoMachine, useLottoDraw } from \"../components/Lotto/client\";\n\nexport interface LottoMachineClientProps {\n  balls: readonly number[];\n  drawCount: number;\n}\n\nexport function LottoMachineClient({ balls, drawCount }: LottoMachineClientProps) {\n  const [result, setResult] = useState<number[]>([]);\n  const [spinning, setSpinning] = useState(false);\n  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);\n  const { canDraw, draw, reset } = useLottoDraw({\n    items: balls,\n    drawCount,\n    value: result,\n    onValueChange: setResult,\n  });\n\n  useEffect(() => () => {\n    if (timerRef.current !== null) clearTimeout(timerRef.current);\n  }, []);\n\n  const startDraw = () => {\n    if (!canDraw || spinning) return;\n    if (window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches) {\n      draw();\n      return;\n    }\n    setSpinning(true);\n    timerRef.current = setTimeout(() => {\n      draw();\n      setSpinning(false);\n      timerRef.current = null;\n    }, 4_800);\n  };\n\n  return (\n    <section className=\"mx-auto max-w-3xl space-y-6\">\n      <LottoMachine\n        items={balls}\n        drawnItems={spinning ? [] : result}\n        spinning={spinning}\n        resultCount={drawCount}\n        motionSeed={2026}\n        getItemKey={(ball) => ball}\n        aria-label=\"Weekly lotto machine\"\n      />\n      <div className=\"flex justify-center gap-3\">\n        <LottoAction disabled={!canDraw || spinning} onClick={startDraw}>\n          {spinning ? \"Mixing...\" : \"Draw\"}\n        </LottoAction>\n        <LottoAction disabled={spinning || result.length === 0} onClick={reset}>\n          Reset\n        </LottoAction>\n      </div>\n    </section>\n  );\n}\n",
+    "nextServer": "import { LottoMachineClient } from \"./client-wrapper\";\n\nconst balls = Array.from({ length: 45 }, (_, index) => index + 1);\n\nexport default function Page() {\n  return (\n    <main className=\"mx-auto max-w-4xl p-6\">\n      <LottoMachineClient balls={balls} drawCount={6} />\n    </main>\n  );\n}\n"
+  }
+}
