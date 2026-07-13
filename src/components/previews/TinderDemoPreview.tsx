@@ -20,9 +20,19 @@ export default function TinderDemoPreview() {
             <TinderCard
               key={card.id}
               index={i} // ◀️ 카드의 순서를 알려주는 index prop은 필수입니다.
-              className="h-full w-full bg-cover bg-center" // ◀️ 커스텀 스타일링
-              style={{ backgroundImage: `url(${card.image})` }}
+              className="h-full w-full" // ◀️ 커스텀 스타일링
             >
+              <img
+                src={card.image.src}
+                srcSet={card.image.srcSet}
+                sizes="(max-width: 374px) calc(100vw - 2rem), 343px"
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                decoding="async"
+                fetchPriority={i === 0 ? "high" : "auto"}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center select-none"
+              />
               {/* 3. Card 내부에 원하는 컨텐츠를 자유롭게 넣을 수 있습니다. */}
               <div className="pointer-events-none absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
                 <h3 className="text-2xl font-bold">
