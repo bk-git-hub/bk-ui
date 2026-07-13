@@ -48,6 +48,28 @@ export function AlbumGallery({ albums }: { albums: Album[] }) {
 When the source files live under the application's `src/components` directory,
 they are covered by the usual Tailwind source scan.
 
+To synchronize navigation with an external controller, use the controlled
+active-index contract. Internal wheel, drag, keyboard, and item navigation call
+`onActiveIndexChange`; updating `activeIndex` moves the same carousel state.
+
+```tsx
+const [activeIndex, setActiveIndex] = useState(0);
+
+<Coverflow
+  activeIndex={activeIndex}
+  onActiveIndexChange={setActiveIndex}
+  aria-label="Album covers"
+>
+  {albums.map((album) => (
+    <CoverflowItem key={album.id}>{album.title}</CoverflowItem>
+  ))}
+</Coverflow>;
+```
+
+Omit `activeIndex` for the existing uncontrolled behavior, or use
+`defaultActiveIndex` to choose its initial item. All index inputs are clamped to
+the available item range.
+
 `Coverflow` fills the width and height of its nearest sized parent and centers
 the largest square item that fits inside it. Give the parent a definite height
 when it should fill a fixed area. Without one, the component uses a 3.6:1
@@ -121,6 +143,8 @@ that contains the Coverflow classes.
 - Next.js entry: `@/components/Coverflow/client`
 - `Coverflow` accepts children, `className`, standard div attributes,
   ARIA/data attributes, and event handlers.
+- `activeIndex`, `defaultActiveIndex`, and `onActiveIndexChange` support
+  controlled or uncontrolled navigation without changing the rendering core.
 - `CoverflowItem` uses `children` as the front face and optional
   `backContent` as the back. `flipLabel` names its toggle button and
   `closeLabel` names the close button.

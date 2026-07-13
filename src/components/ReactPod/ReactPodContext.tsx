@@ -18,6 +18,9 @@ export interface ReactPodContextValue {
   coverflowAlbums: readonly ReactPodCoverflowAlbum[];
   coverflowAriaLabel: string;
   rotate: RotateHandler;
+  // The base ESLint rule cannot distinguish type-only function parameters.
+  // eslint-disable-next-line no-unused-vars
+  setCoverflowIndex: (index: number) => void;
   select: () => void;
   back: () => void;
   goToMainMenu: () => void;

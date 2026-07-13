@@ -56,6 +56,7 @@ describe("ReactPod SSR", () => {
           coverflowAlbums,
           coverflowAriaLabel: "Server album browser",
           rotate: noop,
+          setCoverflowIndex: noop,
           select: noop,
           back: noop,
           goToMainMenu: noop,

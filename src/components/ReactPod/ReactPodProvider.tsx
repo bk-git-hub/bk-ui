@@ -34,8 +34,8 @@ export function ReactPodProvider({
 }: ReactPodProviderProps) {
   const reducer = useCallback(
     (state: ReactPodState, action: ReactPodAction) =>
-      reactPodReducer(state, action, menuItems, photoAlbums),
-    [menuItems, photoAlbums],
+      reactPodReducer(state, action, menuItems, photoAlbums, coverflowAlbums),
+    [menuItems, photoAlbums, coverflowAlbums],
   );
   const [state, dispatch] = useReducer(reducer, initialReactPodState);
 
@@ -47,8 +47,16 @@ export function ReactPodProvider({
     dispatch({ type: "SYNC_PHOTO_ALBUMS" });
   }, [photoAlbums]);
 
+  useEffect(() => {
+    dispatch({ type: "SYNC_COVERFLOW_ALBUMS" });
+  }, [coverflowAlbums]);
+
   const rotate = useCallback((direction: -1 | 1) => {
     dispatch({ type: "ROTATE", direction });
+  }, []);
+
+  const setCoverflowIndex = useCallback((index: number) => {
+    dispatch({ type: "SET_COVERFLOW_INDEX", index });
   }, []);
 
   const select = useCallback(() => {
@@ -96,6 +104,7 @@ export function ReactPodProvider({
       coverflowAlbums,
       coverflowAriaLabel,
       rotate,
+      setCoverflowIndex,
       select,
       back,
       goToMainMenu,
@@ -111,6 +120,7 @@ export function ReactPodProvider({
       coverflowAlbums,
       coverflowAriaLabel,
       rotate,
+      setCoverflowIndex,
       select,
       back,
       goToMainMenu,

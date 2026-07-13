@@ -28,7 +28,7 @@ export function PlayerPreview() {
 }
 ```
 
-기본 메인 메뉴에는 `Coverflow` 항목이 포함됩니다. `coverflowAlbums`는 빈 배열이 기본값이며, 앨범과 트랙은 소비자가 직렬화 가능한 데이터로 주입합니다. Coverflow 화면은 좌우 방향키·마우스 휠·드래그를 지원하고, 활성 커버의 Enter/Space 또는 클릭으로 상세 면을 뒤집습니다. X와 바깥 클릭은 앞면으로 돌아가고 ReactPod의 MENU는 이전 메뉴로 복귀합니다.
+기본 메인 메뉴에는 `Coverflow` 항목이 포함됩니다. `coverflowAlbums`는 빈 배열이 기본값이며, 앨범과 트랙은 소비자가 직렬화 가능한 데이터로 주입합니다. Coverflow 화면에서는 ReactPod 클릭휠의 원형 회전·마우스 휠·방향키가 활성 앨범 인덱스를 이동하며, Coverflow 자체의 좌우 방향키·마우스 휠·드래그와 같은 상태를 공유합니다. 활성 커버의 Enter/Space 또는 클릭으로 상세 면을 뒤집고, X와 바깥 클릭은 앞면으로 돌아가며 ReactPod의 MENU는 이전 메뉴로 복귀합니다.
 
 휠만 필요한 경우에는 `@/components/ClickWheel`에서 가져오고, 버튼 내용·ARIA·클래스·이벤트는 `buttonProps`로 바꿉니다. 자세한 예시는 [ClickWheel README](../ClickWheel/README.md)에 있습니다.
 

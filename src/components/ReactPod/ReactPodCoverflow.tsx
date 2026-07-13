@@ -3,8 +3,14 @@ import { Coverflow, CoverflowItem, LazyImage } from "@/components/Coverflow";
 import { useReactPod } from "./ReactPodContext";
 
 export function ReactPodCoverflow() {
-  const { back, coverflowAlbums, coverflowAriaLabel, goToMainMenu } =
-    useReactPod();
+  const {
+    back,
+    coverflowAlbums,
+    coverflowAriaLabel,
+    goToMainMenu,
+    setCoverflowIndex,
+    state,
+  } = useReactPod();
   const screenRef = useRef<HTMLElement>(null);
   const coverflowAlbumKey = JSON.stringify(
     coverflowAlbums.map((album) => album.id),
@@ -63,6 +69,8 @@ export function ReactPodCoverflow() {
       ) : (
         <Coverflow
           aria-label={coverflowAriaLabel}
+          activeIndex={state.coverflowIndex}
+          onActiveIndexChange={setCoverflowIndex}
           className="flex h-full origin-center scale-[0.875] items-center justify-center [&_[data-slot=coverflow-close-trigger]]:size-12"
         >
           {coverflowAlbums.map((album, index) => (

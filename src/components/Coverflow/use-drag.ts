@@ -228,6 +228,16 @@ export const useDrag = (config: DragConfig) => {
     return true;
   }, []);
 
+  const cancelMotion = useCallback(() => {
+    isDraggingRef.current = false;
+    dragMovedRef.current = false;
+    cancelFrame(dragFrameRef);
+    cancelFrame(inertiaFrameRef);
+    lastFrameTimeRef.current = null;
+    snapTargetRef.current = null;
+    velocityRef.current = 0;
+  }, []);
+
   useEffect(() => {
     const handleDragMove = (event: MouseEvent | TouchEvent) => {
       if (!isDraggingRef.current) return;
@@ -325,16 +335,14 @@ export const useDrag = (config: DragConfig) => {
     window.addEventListener("touchcancel", handleDragEnd);
 
     return () => {
-      isDraggingRef.current = false;
       window.removeEventListener("mousemove", handleDragMove);
       window.removeEventListener("touchmove", handleDragMove);
       window.removeEventListener("mouseup", handleDragEnd);
       window.removeEventListener("touchend", handleDragEnd);
       window.removeEventListener("touchcancel", handleDragEnd);
-      cancelFrame(dragFrameRef);
-      cancelFrame(inertiaFrameRef);
+      cancelMotion();
     };
-  }, [finishAt, inertiaLoop]);
+  }, [cancelMotion, finishAt, inertiaLoop]);
 
-  return { consumeDragClick, handleDragStart };
+  return { cancelMotion, consumeDragClick, handleDragStart };
 };

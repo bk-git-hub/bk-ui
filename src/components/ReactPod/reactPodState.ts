@@ -115,6 +115,7 @@ export interface ReactPodState {
   songIndex: number;
   albumIndex: number;
   photoIndex: number;
+  coverflowIndex: number;
   currentTrackIndex: number;
   isPlaying: boolean;
   progress: number;
@@ -129,6 +130,7 @@ export const initialReactPodState: ReactPodState = {
   songIndex: 0,
   albumIndex: 0,
   photoIndex: 0,
+  coverflowIndex: 0,
   currentTrackIndex: 0,
   isPlaying: false,
   progress: 0,
@@ -147,7 +149,9 @@ export type ReactPodAction =
   | { type: "PREVIOUS" }
   | { type: "TICK" }
   | { type: "SYNC_MENU_ITEMS"; menuLength: number }
-  | { type: "SYNC_PHOTO_ALBUMS" };
+  | { type: "SYNC_PHOTO_ALBUMS" }
+  | { type: "SET_COVERFLOW_INDEX"; index: number }
+  | { type: "SYNC_COVERFLOW_ALBUMS" };
 
 function wrap(value: number, length: number) {
   return (value + length) % length;
@@ -159,8 +163,8 @@ function clampMenuIndex(menuIndex: number, menuLength: number) {
 }
 
 function clampIndex(index: number, length: number) {
-  if (length === 0) return 0;
-  return Math.min(index, length - 1);
+  if (length === 0 || !Number.isFinite(index)) return 0;
+  return Math.max(0, Math.min(Math.round(index), length - 1));
 }
 
 function navigateTo(
@@ -252,6 +256,7 @@ export function reactPodReducer(
   action: ReactPodAction,
   menuItems: readonly ReactPodMenuItem[] = MAIN_MENU_ITEMS,
   photoAlbums: readonly ReactPodPhotoAlbum[] = [],
+  coverflowAlbums: readonly ReactPodCoverflowAlbum[] = [],
 ): ReactPodState {
   switch (action.type) {
     case "ROTATE":
@@ -301,6 +306,21 @@ export function reactPodReducer(
         return {
           ...state,
           photoIndex: wrap(state.photoIndex + action.direction, photoLength),
+        };
+      }
+
+      if (state.screen === "coverflow") {
+        if (coverflowAlbums.length === 0) return state;
+
+        return {
+          ...state,
+          coverflowIndex: Math.max(
+            0,
+            Math.min(
+              state.coverflowIndex + action.direction,
+              coverflowAlbums.length - 1,
+            ),
+          ),
         };
       }
 
@@ -354,7 +374,12 @@ export function reactPodReducer(
         });
       }
       if (selectedItem.id === "coverflow") {
-        return navigateTo(state, "coverflow");
+        return navigateTo(state, "coverflow", {
+          coverflowIndex: clampIndex(
+            state.coverflowIndex,
+            coverflowAlbums.length,
+          ),
+        });
       }
       if (selectedItem.id === "shuffle") {
         return navigateTo(state, "now-playing", {
@@ -442,5 +467,22 @@ export function reactPodReducer(
 
     case "SYNC_PHOTO_ALBUMS":
       return syncPhotoSelection(state, photoAlbums);
+
+    case "SET_COVERFLOW_INDEX": {
+      const coverflowIndex = clampIndex(action.index, coverflowAlbums.length);
+      return coverflowIndex === state.coverflowIndex
+        ? state
+        : { ...state, coverflowIndex };
+    }
+
+    case "SYNC_COVERFLOW_ALBUMS": {
+      const coverflowIndex = clampIndex(
+        state.coverflowIndex,
+        coverflowAlbums.length,
+      );
+      return coverflowIndex === state.coverflowIndex
+        ? state
+        : { ...state, coverflowIndex };
+    }
   }
 }

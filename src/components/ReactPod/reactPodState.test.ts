@@ -6,7 +6,11 @@ import {
   reactPodReducer,
   TRACKS,
 } from "./reactPodState";
-import type { ReactPodPhotoAlbum } from "./reactPodState";
+import type {
+  ReactPodCoverflowAlbum,
+  ReactPodPhotoAlbum,
+  ReactPodState,
+} from "./reactPodState";
 
 const PHOTO_ALBUMS = [
   {
@@ -24,6 +28,30 @@ const PHOTO_ALBUMS = [
     ],
   },
 ] satisfies readonly ReactPodPhotoAlbum[];
+
+const COVERFLOW_ALBUMS = [
+  {
+    id: "night-drive",
+    title: "Night Drive",
+    coverSrc: "/night-drive.webp",
+    coverAlt: "Night Drive cover",
+    tracks: [],
+  },
+  {
+    id: "sea-glass",
+    title: "Sea Glass",
+    coverSrc: "/sea-glass.webp",
+    coverAlt: "Sea Glass cover",
+    tracks: [],
+  },
+  {
+    id: "paper-moon",
+    title: "Paper Moon",
+    coverSrc: "/paper-moon.webp",
+    coverAlt: "Paper Moon cover",
+    tracks: [],
+  },
+] satisfies readonly ReactPodCoverflowAlbum[];
 
 describe("reactPodReducer", () => {
   it("wraps menu and song navigation", () => {
@@ -105,6 +133,88 @@ describe("reactPodReducer", () => {
       navigationHistory: [],
       menuIndex: coverflowMenuIndex,
     });
+  });
+
+  it("moves and synchronizes the Coverflow index without wrapping", () => {
+    let state: ReactPodState = {
+      ...initialReactPodState,
+      screen: "coverflow",
+    };
+
+    state = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: 1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    expect(state.coverflowIndex).toBe(1);
+
+    state = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: -1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    state = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: -1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    expect(state.coverflowIndex).toBe(0);
+
+    state = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: 1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    state = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: 1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    state = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: 1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    expect(state.coverflowIndex).toBe(2);
+
+    state = reactPodReducer(
+      state,
+      { type: "SET_COVERFLOW_INDEX", index: 1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+    );
+    expect(state.coverflowIndex).toBe(1);
+
+    state = reactPodReducer(
+      state,
+      { type: "SYNC_COVERFLOW_ALBUMS" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS.slice(0, 1),
+    );
+    expect(state.coverflowIndex).toBe(0);
+
+    const emptyState = reactPodReducer(
+      state,
+      { type: "ROTATE", direction: -1 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      [],
+    );
+    expect(emptyState).toBe(state);
   });
 
   it("clamps volume and restarts or changes the previous track", () => {

@@ -38,13 +38,23 @@ const getChildKey = (child: React.ReactNode, index: number) =>
     ? child.key
     : `coverflow-${index}`;
 
+const normalizeIndex = (index: number, maxIndex: number) =>
+  Number.isFinite(index)
+    ? Math.max(0, Math.min(Math.round(index), maxIndex))
+    : 0;
+
 export const Coverflow = ({
   children,
   className,
+  activeIndex,
+  defaultActiveIndex = 0,
+  onActiveIndexChange,
   ...props
 }: CoverflowProps) => {
   const [size, setSize] = useState(DEFAULT_ITEM_SIZE);
-  const [index, setIndex] = useState(0);
+  const [uncontrolledIndex, setUncontrolledIndex] = useState(() =>
+    Math.max(0, Math.round(defaultActiveIndex)),
+  );
   const [windowStart, setWindowStart] = useState(0);
   const [flippedKey, setFlippedKey] = useState<React.Key | null>(null);
   const positionRef = useRef(0);
@@ -57,6 +67,11 @@ export const Coverflow = ({
   const childrenArray = useMemo(() => Children.toArray(children), [children]);
   const itemCount = childrenArray.length;
   const maxIndex = Math.max(0, itemCount - 1);
+  const isControlled = activeIndex !== undefined;
+  const index = normalizeIndex(
+    isControlled ? activeIndex : uncontrolledIndex,
+    maxIndex,
+  );
   const activeChild = childrenArray[index];
   const activeKey =
     activeChild === undefined ? null : getChildKey(activeChild, index);
@@ -129,9 +144,10 @@ export const Coverflow = ({
     (target: number) => {
       const nextIndex = Math.max(0, Math.min(Math.round(target), maxIndex));
       applyPosition(nextIndex, true);
-      setIndex(nextIndex);
+      if (!isControlled) setUncontrolledIndex(nextIndex);
+      if (nextIndex !== index) onActiveIndexChange?.(nextIndex);
     },
-    [applyPosition, maxIndex],
+    [applyPosition, index, isControlled, maxIndex, onActiveIndexChange],
   );
 
   const registerItem = useCallback(
@@ -199,21 +215,6 @@ export const Coverflow = ({
     pendingAnimationRef.current = false;
   }, [size, updateTransforms, windowStart]);
 
-  useLayoutEffect(() => {
-    const nextIndex = Math.min(index, maxIndex);
-    if (nextIndex !== index) {
-      setFlippedKey(null);
-      navigateTo(nextIndex);
-      return;
-    }
-
-    const nextWindowStart = getWindowStart(positionRef.current, itemCount);
-    if (nextWindowStart !== windowStartRef.current) {
-      windowStartRef.current = nextWindowStart;
-      setWindowStart(nextWindowStart);
-    }
-  }, [index, itemCount, maxIndex, navigateTo]);
-
   const cancelWheel = useWheelEvent({
     containerRef,
     positionRef,
@@ -226,7 +227,7 @@ export const Coverflow = ({
     onScrollEnd: navigateTo,
   });
 
-  const { consumeDragClick, handleDragStart } = useDrag({
+  const { cancelMotion, consumeDragClick, handleDragStart } = useDrag({
     size,
     reducedMotionRef,
     maxIndex,
@@ -237,6 +238,35 @@ export const Coverflow = ({
     },
     onDragEnd: navigateTo,
   });
+
+  useLayoutEffect(() => {
+    if (!isControlled && uncontrolledIndex !== index) {
+      setUncontrolledIndex(index);
+      onActiveIndexChange?.(index);
+    }
+
+    if (positionRef.current !== index) {
+      cancelWheel();
+      cancelMotion();
+      setFlippedKey(null);
+      applyPosition(index, true);
+    }
+
+    const nextWindowStart = getWindowStart(positionRef.current, itemCount);
+    if (nextWindowStart !== windowStartRef.current) {
+      windowStartRef.current = nextWindowStart;
+      setWindowStart(nextWindowStart);
+    }
+  }, [
+    applyPosition,
+    cancelMotion,
+    cancelWheel,
+    index,
+    isControlled,
+    itemCount,
+    onActiveIndexChange,
+    uncontrolledIndex,
+  ]);
 
   const activateItem = useCallback(
     (itemIndex: number, itemKey: React.Key) => {
@@ -378,4 +408,9 @@ export const Coverflow = ({
 export interface CoverflowProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
   children: React.ReactNode;
+  activeIndex?: number;
+  defaultActiveIndex?: number;
+  // The base ESLint rule treats type-only callback parameters as runtime values.
+  // eslint-disable-next-line no-unused-vars
+  onActiveIndexChange?: (activeIndex: number) => void;
 }
