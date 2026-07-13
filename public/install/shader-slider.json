@@ -1,0 +1,210 @@
+{
+  "componentVersion": "0.1.0",
+  "constraints": {
+    "accessibility": [
+      "Do not remove the inactive slide inert and aria-hidden behavior, the aria-hidden canvas, or the polite ShaderSliderStatus live region.",
+      "Increase pagination button hit areas in product styling when the target-size policy exceeds the default 0.5rem visual dots.",
+      "Keep ShaderSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation and visible focus styles remain available.",
+      "Preserve prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
+      "Provide a meaningful non-empty alt string for every slide and an accessible name through aria-label or aria-labelledby on ShaderSliderRoot.",
+      "Use semantic interactive elements or data-shader-slider-no-drag for custom slide controls so pointer gestures do not intercept their interaction."
+    ],
+    "ssr": [
+      "Do not require ssr: false; the mounted placeholder is deterministic and browser rendering begins after hydration.",
+      "Import the Next.js entrypoint from components/ShaderSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+      "Keep onValueChange, children, refs, and DOM event handlers inside a Client Component; pass only the declared serializable data and primitive options from a Server Component.",
+      "The mounted Next.js wrapper server-renders a placeholder instead of slide content; provide a separate static image when no-JavaScript image content is required.",
+      "Use same-origin texture URLs or CORS headers compatible with each slide crossOrigin value; failed WebGL texture loading falls back to the accessible DOM images.",
+      "Use the included mount-gated Client Component wrapper so the server markup and first hydration markup match before the core reads matchMedia and initializes WebGL or ResizeObserver."
+    ]
+  },
+  "defaultVariantId": "tailwind-4",
+  "name": "shader-slider",
+  "schemaVersion": 1,
+  "sourceCommit": "9abab5bafae37adc13716b6072b6280c8b82f4f4",
+  "status": "release-blocked",
+  "statusMessage": "Public installation is blocked until license terms are approved, the fixture gate passes, and the artifact commit is pushed and verified by full SHA.",
+  "title": "Shader Slider",
+  "variants": [
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@2.6.0"
+      ],
+      "id": "tailwind-3",
+      "label": "Tailwind 3",
+      "notes": [
+        "Include the installed directory in Tailwind content, for example './src/components/ShaderSlider/**/*.{js,ts,jsx,tsx}' or './components/ShaderSlider/**/*.{js,ts,jsx,tsx}'.",
+        "Do not require ssr: false; the mounted placeholder is deterministic and browser rendering begins after hydration.",
+        "Import the Next.js entrypoint from components/ShaderSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+        "Keep onValueChange, children, refs, and DOM event handlers inside a Client Component; pass only the declared serializable data and primitive options from a Server Component.",
+        "The mounted Next.js wrapper server-renders a placeholder instead of slide content; provide a separate static image when no-JavaScript image content is required.",
+        "Use same-origin texture URLs or CORS headers compatible with each slide crossOrigin value; failed WebGL texture loading falls back to the accessible DOM images.",
+        "Use the included mount-gated Client Component wrapper so the server markup and first hydration markup match before the core reads matchMedia and initializes WebGL or ResizeObserver.",
+        "Do not remove the inactive slide inert and aria-hidden behavior, the aria-hidden canvas, or the polite ShaderSliderStatus live region.",
+        "Increase pagination button hit areas in product styling when the target-size policy exceeds the default 0.5rem visual dots.",
+        "Keep ShaderSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation and visible focus styles remain available.",
+        "Preserve prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
+        "Provide a meaningful non-empty alt string for every slide and an accessible name through aria-label or aria-labelledby on ShaderSliderRoot.",
+        "Use semantic interactive elements or data-shader-slider-no-drag for custom slide controls so pointer gestures do not intercept their interaction."
+      ],
+      "range": ">=3.4 <4",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/ShaderSlider.tsx",
+          "repositoryPath": "src/components/ShaderSlider/ShaderSlider.tsx",
+          "sha256": "c057f2caf28bf8e73bfd98a6090dd7da2f86de85ecff41f0c2affe23d85fb4d0"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/client.ts",
+          "repositoryPath": "src/components/ShaderSlider/client.ts",
+          "sha256": "692ee7017e87c1e5d96d95ffdfcc5deae1e0ee7a26a810d4c4977e45cd24d658"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/index.ts",
+          "repositoryPath": "src/components/ShaderSlider/index.ts",
+          "sha256": "8b22539fe7f4836cd8b69ba68bdcafcc1fc90f8b82d040a2c6403a32a284fc53"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/shader-slider-renderer.ts",
+          "repositoryPath": "src/components/ShaderSlider/shader-slider-renderer.ts",
+          "sha256": "bde87ffc50c3c01519833811c22bf9de5d3f0394d65538af80117f2a28ef03a9"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/shader-slider-types.ts",
+          "repositoryPath": "src/components/ShaderSlider/shader-slider-types.ts",
+          "sha256": "0d5233a943b919dcf8f38300bb38b8353ac59a53fb477e08eacf66cd2a0e020a"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/useShaderSlider.ts",
+          "repositoryPath": "src/components/ShaderSlider/useShaderSlider.ts",
+          "sha256": "fe8ef577745eebe379929510e72a94a0adb4cd995ccccb4ad21e3eff14078b9d"
+        },
+        {
+          "kind": "registry",
+          "label": "shader-slider-tailwind-v3 Registry JSON",
+          "repositoryPath": "public/r/shader-slider-tailwind-v3.json",
+          "sha256": "2a7aa55481198fa4ce2f1dbeaf0c5fe4535b1673253033966526f0317f24c86e"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/shader-slider-react.zip",
+          "sha256": "37d7bd6a9728a06a2bd7669c0af284d735e61ae9db97e983ef2562e028c380e1"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/shader-slider-next.zip",
+          "sha256": "2d18f039dfb8e74e256be82a0487dfeb863aa9da2063ddc64585d4da99fbea71"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/shader-slider.md",
+          "sha256": "82e4c0f48009d12d966bd21dd3550af5863a09d2448ef83e0a4c38d7fca39fdb"
+        }
+      ],
+      "tailwindMajor": 3,
+      "tested": "3.4.19"
+    },
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@^3.3.1"
+      ],
+      "id": "tailwind-4",
+      "label": "Tailwind 4",
+      "notes": [
+        "Keep components/ShaderSlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory.",
+        "Do not require ssr: false; the mounted placeholder is deterministic and browser rendering begins after hydration.",
+        "Import the Next.js entrypoint from components/ShaderSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+        "Keep onValueChange, children, refs, and DOM event handlers inside a Client Component; pass only the declared serializable data and primitive options from a Server Component.",
+        "The mounted Next.js wrapper server-renders a placeholder instead of slide content; provide a separate static image when no-JavaScript image content is required.",
+        "Use same-origin texture URLs or CORS headers compatible with each slide crossOrigin value; failed WebGL texture loading falls back to the accessible DOM images.",
+        "Use the included mount-gated Client Component wrapper so the server markup and first hydration markup match before the core reads matchMedia and initializes WebGL or ResizeObserver.",
+        "Do not remove the inactive slide inert and aria-hidden behavior, the aria-hidden canvas, or the polite ShaderSliderStatus live region.",
+        "Increase pagination button hit areas in product styling when the target-size policy exceeds the default 0.5rem visual dots.",
+        "Keep ShaderSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation and visible focus styles remain available.",
+        "Preserve prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
+        "Provide a meaningful non-empty alt string for every slide and an accessible name through aria-label or aria-labelledby on ShaderSliderRoot.",
+        "Use semantic interactive elements or data-shader-slider-no-drag for custom slide controls so pointer gestures do not intercept their interaction."
+      ],
+      "range": ">=4 <5",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/ShaderSlider.tsx",
+          "repositoryPath": "src/components/ShaderSlider/ShaderSlider.tsx",
+          "sha256": "c057f2caf28bf8e73bfd98a6090dd7da2f86de85ecff41f0c2affe23d85fb4d0"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/client.ts",
+          "repositoryPath": "src/components/ShaderSlider/client.ts",
+          "sha256": "692ee7017e87c1e5d96d95ffdfcc5deae1e0ee7a26a810d4c4977e45cd24d658"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/index.ts",
+          "repositoryPath": "src/components/ShaderSlider/index.ts",
+          "sha256": "8b22539fe7f4836cd8b69ba68bdcafcc1fc90f8b82d040a2c6403a32a284fc53"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/shader-slider-renderer.ts",
+          "repositoryPath": "src/components/ShaderSlider/shader-slider-renderer.ts",
+          "sha256": "bde87ffc50c3c01519833811c22bf9de5d3f0394d65538af80117f2a28ef03a9"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/shader-slider-types.ts",
+          "repositoryPath": "src/components/ShaderSlider/shader-slider-types.ts",
+          "sha256": "0d5233a943b919dcf8f38300bb38b8353ac59a53fb477e08eacf66cd2a0e020a"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShaderSlider/useShaderSlider.ts",
+          "repositoryPath": "src/components/ShaderSlider/useShaderSlider.ts",
+          "sha256": "fe8ef577745eebe379929510e72a94a0adb4cd995ccccb4ad21e3eff14078b9d"
+        },
+        {
+          "kind": "registry",
+          "label": "shader-slider Registry JSON",
+          "repositoryPath": "public/r/shader-slider.json",
+          "sha256": "86711b5b6f2c97c04fb68fd74d75a4b707219d8b5477519fdd02a48c7c29ed9d"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/shader-slider-react.zip",
+          "sha256": "37d7bd6a9728a06a2bd7669c0af284d735e61ae9db97e983ef2562e028c380e1"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/shader-slider-next.zip",
+          "sha256": "2d18f039dfb8e74e256be82a0487dfeb863aa9da2063ddc64585d4da99fbea71"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/shader-slider.md",
+          "sha256": "82e4c0f48009d12d966bd21dd3550af5863a09d2448ef83e0a4c38d7fca39fdb"
+        }
+      ],
+      "tailwindMajor": 4,
+      "tested": "4.3.2"
+    }
+  ]
+}
