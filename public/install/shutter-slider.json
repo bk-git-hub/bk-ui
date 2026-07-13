@@ -1,0 +1,159 @@
+{
+  "componentVersion": "0.1.0",
+  "constraints": {
+    "accessibility": [
+      "Do not remove the inactive slide inert and aria-hidden behavior or the polite ShutterSliderStatus live region.",
+      "Give custom previous, next, and pagination controls descriptive accessible labels while preserving native button semantics.",
+      "Keep ShutterSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation remains available.",
+      "Preserve the prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
+      "Provide a meaningful alt string for every slide image and an accessible name for the ShutterSliderRoot."
+    ],
+    "ssr": [
+      "Do not require ssr: false: matchMedia, animation frames, and timers are read only after hydration in effects, event handlers, or cleanup.",
+      "Import the Next.js entrypoint from components/ShutterSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+      "Keep callbacks, refs, DOM event handlers, ShutterSliderPagination getLabel, and ShutterSliderStatus render-function children inside a Client Component; pass only serializable data from a Server Component.",
+      "Keep slides, defaultValue, and rendered children deterministic between the server render and initial hydration."
+    ]
+  },
+  "defaultVariantId": "tailwind-4",
+  "name": "shutter-slider",
+  "schemaVersion": 1,
+  "sourceCommit": "a4f7c1cdec909c9e09b2d18a3006c43f484f54f9",
+  "status": "release-blocked",
+  "statusMessage": "Public installation is blocked until license terms are approved, the fixture gate passes, and the artifact commit is pushed and verified by full SHA.",
+  "title": "Shutter Slider",
+  "variants": [
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@2.6.0"
+      ],
+      "id": "tailwind-3",
+      "label": "Tailwind 3",
+      "notes": [
+        "Add './components/ShutterSlider/**/*.{ts,tsx}' (or the equivalent installed path) to the content array in tailwind.config.js or tailwind.config.ts."
+      ],
+      "range": ">=3.4.0 <4.0.0",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/ShutterSlider.tsx",
+          "repositoryPath": "src/components/ShutterSlider/ShutterSlider.tsx",
+          "sha256": "17d76843dfd1c64cb0da76e7c7e58331e8204183de29ae13f14bdb8e787363a4"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/client.ts",
+          "repositoryPath": "src/components/ShutterSlider/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/index.ts",
+          "repositoryPath": "src/components/ShutterSlider/index.ts",
+          "sha256": "955ab65b5ec826e293ec897a5d0cc69ca38902ac4d8001a1830897c8ce412904"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/useShutterSlider.ts",
+          "repositoryPath": "src/components/ShutterSlider/useShutterSlider.ts",
+          "sha256": "1d0e06e84f7c1a527b13898ca2e30453c421542f5204e041f9e73aeb5be0b934"
+        },
+        {
+          "kind": "registry",
+          "label": "shutter-slider-tailwind-v3 Registry JSON",
+          "repositoryPath": "public/r/shutter-slider-tailwind-v3.json",
+          "sha256": "1e9939fab0644a97e24607c59910dfacc0342048955f73eb7ed29d079f4bd34b"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/shutter-slider-react.zip",
+          "sha256": "94d65b50d26aa0ce13b4e1f8992320935f5a8a24b0a27ebb90d37702517ef447"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/shutter-slider-next.zip",
+          "sha256": "26354f9de736914b18cef7c58976ff95abf41f498d44513e31a87ceb48b1f775"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/shutter-slider.md",
+          "sha256": "898aa4cc59298d958136a45333699e114d80dbf097a0026cbb673f033462c178"
+        }
+      ],
+      "tailwindMajor": 3,
+      "tested": "3.4.17"
+    },
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@^3.3.1"
+      ],
+      "id": "tailwind-4",
+      "label": "Tailwind 4",
+      "notes": [
+        "Files copied under the app source tree are detected automatically; for an external or ignored location, add a stylesheet-relative @source directive for './components/ShutterSlider' to the global Tailwind stylesheet."
+      ],
+      "range": ">=4.0.0 <4.2.0",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/ShutterSlider.tsx",
+          "repositoryPath": "src/components/ShutterSlider/ShutterSlider.tsx",
+          "sha256": "17d76843dfd1c64cb0da76e7c7e58331e8204183de29ae13f14bdb8e787363a4"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/client.ts",
+          "repositoryPath": "src/components/ShutterSlider/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/index.ts",
+          "repositoryPath": "src/components/ShutterSlider/index.ts",
+          "sha256": "955ab65b5ec826e293ec897a5d0cc69ca38902ac4d8001a1830897c8ce412904"
+        },
+        {
+          "kind": "source",
+          "label": "@components/ShutterSlider/useShutterSlider.ts",
+          "repositoryPath": "src/components/ShutterSlider/useShutterSlider.ts",
+          "sha256": "1d0e06e84f7c1a527b13898ca2e30453c421542f5204e041f9e73aeb5be0b934"
+        },
+        {
+          "kind": "registry",
+          "label": "shutter-slider Registry JSON",
+          "repositoryPath": "public/r/shutter-slider.json",
+          "sha256": "d2af0386f16faea519549fe3d9e4a77762843fd9c7fd9b38fdd4f20ccf3e37c6"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/shutter-slider-react.zip",
+          "sha256": "94d65b50d26aa0ce13b4e1f8992320935f5a8a24b0a27ebb90d37702517ef447"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/shutter-slider-next.zip",
+          "sha256": "26354f9de736914b18cef7c58976ff95abf41f498d44513e31a87ceb48b1f775"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/shutter-slider.md",
+          "sha256": "898aa4cc59298d958136a45333699e114d80dbf097a0026cbb673f033462c178"
+        }
+      ],
+      "tailwindMajor": 4,
+      "tested": "4.1.10"
+    }
+  ]
+}

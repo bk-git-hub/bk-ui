@@ -1,0 +1,123 @@
+{
+  "$schema": "../schema/component-manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "shutter-slider",
+  "title": "Shutter Slider",
+  "componentVersion": "0.1.0",
+  "description": "An accessible compound image slider with a staggered shutter transition, keyboard controls, pointer gestures, and reduced-motion support.",
+  "repository": "https://github.com/bk-git-hub/bk-ui",
+  "sourceCommit": "a4f7c1cdec909c9e09b2d18a3006c43f484f54f9",
+  "license": {
+    "spdx": "UNLICENSED",
+    "status": "pending"
+  },
+  "react": {
+    "range": ">=19.0.0 <20.0.0",
+    "tested": "19.2.7"
+  },
+  "next": {
+    "tested": "16.2.10",
+    "clientBoundary": "src/components/ShutterSlider/client.ts",
+    "serializableProps": [
+      "slides",
+      "defaultValue",
+      "loop",
+      "stripCount",
+      "orientation",
+      "transitionDuration",
+      "stagger",
+      "dragThreshold",
+      "disabled",
+      "aria-label",
+      "className"
+    ]
+  },
+  "files": [
+    {
+      "source": "src/components/ShutterSlider/ShutterSlider.tsx",
+      "target": "@components/ShutterSlider/ShutterSlider.tsx",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShutterSlider/useShutterSlider.ts",
+      "target": "@components/ShutterSlider/useShutterSlider.ts",
+      "type": "registry:hook",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShutterSlider/index.ts",
+      "target": "@components/ShutterSlider/index.ts",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShutterSlider/client.ts",
+      "target": "@components/ShutterSlider/client.ts",
+      "type": "registry:component",
+      "frameworks": ["next"]
+    }
+  ],
+  "dependencies": {
+    "common": ["clsx@^2.1.1"],
+    "tailwind": {
+      "3": ["tailwind-merge@2.6.0"],
+      "4": ["tailwind-merge@^3.3.1"]
+    }
+  },
+  "entrypoints": {
+    "react": "src/components/ShutterSlider/index.ts",
+    "next": "src/components/ShutterSlider/client.ts"
+  },
+  "tailwind": {
+    "supportedMajors": [3, 4],
+    "3": {
+      "supported": true,
+      "range": ">=3.4.0 <4.0.0",
+      "tested": "3.4.17",
+      "itemName": "shutter-slider-tailwind-v3",
+      "scan": "Add './components/ShutterSlider/**/*.{ts,tsx}' (or the equivalent installed path) to the content array in tailwind.config.js or tailwind.config.ts.",
+      "representativeClasses": [
+        "[touch-action:pan-y]",
+        "ease-[cubic-bezier(0.76,0,0.24,1)]",
+        "focus-visible:ring-offset-slate-950",
+        "motion-reduce:transition-none",
+        "transition-[transform,opacity,filter]"
+      ]
+    },
+    "4": {
+      "supported": true,
+      "range": ">=4.0.0 <4.2.0",
+      "tested": "4.1.10",
+      "itemName": "shutter-slider",
+      "scan": "Files copied under the app source tree are detected automatically; for an external or ignored location, add a stylesheet-relative @source directive for './components/ShutterSlider' to the global Tailwind stylesheet.",
+      "representativeClasses": [
+        "[touch-action:pan-y]",
+        "ease-[cubic-bezier(0.76,0,0.24,1)]",
+        "focus-visible:ring-offset-slate-950",
+        "motion-reduce:transition-none",
+        "transition-[transform,opacity,filter]"
+      ]
+    }
+  },
+  "constraints": {
+    "ssr": [
+      "Import the Next.js entrypoint from components/ShutterSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+      "Keep slides, defaultValue, and rendered children deterministic between the server render and initial hydration.",
+      "Keep callbacks, refs, DOM event handlers, ShutterSliderPagination getLabel, and ShutterSliderStatus render-function children inside a Client Component; pass only serializable data from a Server Component.",
+      "Do not require ssr: false: matchMedia, animation frames, and timers are read only after hydration in effects, event handlers, or cleanup."
+    ],
+    "accessibility": [
+      "Provide a meaningful alt string for every slide image and an accessible name for the ShutterSliderRoot.",
+      "Keep ShutterSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation remains available.",
+      "Give custom previous, next, and pagination controls descriptive accessible labels while preserving native button semantics.",
+      "Do not remove the inactive slide inert and aria-hidden behavior or the polite ShutterSliderStatus live region.",
+      "Preserve the prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles."
+    ]
+  },
+  "examples": {
+    "react": "import {\n  ShutterSliderNext,\n  ShutterSliderPagination,\n  ShutterSliderPrevious,\n  ShutterSliderRoot,\n  ShutterSliderSlide,\n  ShutterSliderStatus,\n  ShutterSliderViewport,\n} from \"../components/ShutterSlider\";\n\nconst stories = [\n  {\n    image: { src: \"/images/river.webp\", alt: \"A river at sunset\" },\n    title: \"Blue hour\",\n  },\n  {\n    image: { src: \"/images/alley.webp\", alt: \"A rain-lit alley\" },\n    title: \"After the rain\",\n  },\n  {\n    image: { src: \"/images/platform.webp\", alt: \"A platform beside the sea\" },\n    title: \"Last train\",\n  },\n] as const;\n\nexport default function ShutterSliderExample() {\n  return (\n    <ShutterSliderRoot\n      slides={stories.map((story) => story.image)}\n      stripCount={5}\n      transitionDuration={820}\n      stagger={52}\n      aria-label=\"Travel stories\"\n      className=\"overflow-hidden rounded-3xl bg-slate-950 text-white\"\n    >\n      <ShutterSliderViewport className=\"aspect-video\">\n        {stories.map((story, index) => (\n          <ShutterSliderSlide\n            key={story.image.src}\n            index={index}\n            className=\"flex items-end p-8 pb-20\"\n          >\n            <h2 className=\"text-4xl font-black\">{story.title}</h2>\n          </ShutterSliderSlide>\n        ))}\n      </ShutterSliderViewport>\n      <ShutterSliderPrevious className=\"absolute left-4 top-1/2 z-30\">\n        Previous\n      </ShutterSliderPrevious>\n      <ShutterSliderNext className=\"absolute right-4 top-1/2 z-30\">\n        Next\n      </ShutterSliderNext>\n      <ShutterSliderPagination\n        aria-label=\"Choose a travel story\"\n        className=\"absolute bottom-6 left-8 z-30\"\n      />\n      <ShutterSliderStatus className=\"absolute bottom-6 right-8 z-30\" />\n    </ShutterSliderRoot>\n  );\n}\n",
+    "nextClient": "\"use client\";\n\nimport {\n  ShutterSliderNext,\n  ShutterSliderPagination,\n  ShutterSliderPrevious,\n  ShutterSliderRoot,\n  ShutterSliderSlide,\n  ShutterSliderStatus,\n  ShutterSliderViewport,\n  type ShutterSliderImage,\n} from \"../components/ShutterSlider/client\";\n\nexport interface ShutterSliderClientProps {\n  stories: readonly { image: ShutterSliderImage; title: string }[];\n}\n\nexport default function ShutterSliderClient({\n  stories,\n}: ShutterSliderClientProps) {\n  return (\n    <ShutterSliderRoot\n      slides={stories.map((story) => story.image)}\n      stripCount={5}\n      transitionDuration={820}\n      stagger={52}\n      aria-label=\"Travel stories\"\n      className=\"overflow-hidden rounded-3xl bg-slate-950 text-white\"\n    >\n      <ShutterSliderViewport className=\"aspect-video\">\n        {stories.map((story, index) => (\n          <ShutterSliderSlide\n            key={story.image.src}\n            index={index}\n            className=\"flex items-end p-8 pb-20\"\n          >\n            <h2 className=\"text-4xl font-black\">{story.title}</h2>\n          </ShutterSliderSlide>\n        ))}\n      </ShutterSliderViewport>\n      <ShutterSliderPrevious className=\"absolute left-4 top-1/2 z-30\">\n        Previous\n      </ShutterSliderPrevious>\n      <ShutterSliderNext className=\"absolute right-4 top-1/2 z-30\">\n        Next\n      </ShutterSliderNext>\n      <ShutterSliderPagination\n        aria-label=\"Choose a travel story\"\n        className=\"absolute bottom-6 left-8 z-30\"\n      />\n      <ShutterSliderStatus className=\"absolute bottom-6 right-8 z-30\" />\n    </ShutterSliderRoot>\n  );\n}\n",
+    "nextServer": "import ShutterSliderClient from \"./client-wrapper\";\n\nconst stories = [\n  {\n    image: { src: \"/images/river.webp\", alt: \"A river at sunset\" },\n    title: \"Blue hour\",\n  },\n  {\n    image: { src: \"/images/alley.webp\", alt: \"A rain-lit alley\" },\n    title: \"After the rain\",\n  },\n  {\n    image: { src: \"/images/platform.webp\", alt: \"A platform beside the sea\" },\n    title: \"Last train\",\n  },\n] as const;\n\nexport default function Page() {\n  return (\n    <main className=\"mx-auto max-w-5xl p-6\">\n      <ShutterSliderClient stories={stories} />\n    </main>\n  );\n}\n"
+  }
+}
