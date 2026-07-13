@@ -6,7 +6,6 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { RotateCcw, Sparkles } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import {
@@ -53,6 +52,43 @@ interface BaccaratSqueezeContextValue {
 
 const BaccaratSqueezeContext =
   createContext<BaccaratSqueezeContextValue | null>(null);
+
+function ResetIcon(props: ComponentPropsWithRef<"svg">) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      focusable="false"
+      {...props}
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+    </svg>
+  );
+}
+
+function RevealIcon(props: ComponentPropsWithRef<"svg">) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      focusable="false"
+      {...props}
+    >
+      <path d="m12 3-1.2 3.3L7.5 7.5l3.3 1.2L12 12l1.2-3.3 3.3-1.2-3.3-1.2L12 3Z" />
+      <path d="m5 13-.8 2.2L2 16l2.2.8L5 19l.8-2.2L8 16l-2.2-.8L5 13Z" />
+      <path d="m18 14-1 2.8-2.8 1L17 19l1 2.8 1-2.8 2.8-1-2.8-1.2L18 14Z" />
+    </svg>
+  );
+}
 
 function useBaccaratSqueezeContext(componentName: string) {
   const context = useContext(BaccaratSqueezeContext);
@@ -256,10 +292,10 @@ export function BaccaratSqueezeBack({
     >
       {children ?? (
         <>
-          <div className="absolute inset-3 rounded-xl border border-[#f3dfad]/35" />
+          <div className="absolute inset-3 rounded-xl border border-[#f3dfad]/[0.35]" />
           <div className="absolute inset-7 rounded-lg border border-[#f3dfad]/20" />
-          <div className="absolute top-1/2 left-1/2 grid size-24 -translate-x-1/2 -translate-y-1/2 rotate-45 place-items-center rounded-2xl border-2 border-[#f3dfad]/55 bg-emerald-950/45 shadow-lg">
-            <div className="size-14 rounded-xl border border-[#f3dfad]/35" />
+          <div className="absolute top-1/2 left-1/2 grid size-24 -translate-x-1/2 -translate-y-1/2 rotate-45 place-items-center rounded-2xl border-2 border-[#f3dfad]/[0.55] bg-emerald-950/[0.45] shadow-lg">
+            <div className="size-14 rounded-xl border border-[#f3dfad]/[0.35]" />
           </div>
           <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-black tracking-[0.35em] text-[#f3dfad]/80 uppercase">
             Baccarat
@@ -366,7 +402,7 @@ export function BaccaratSqueezeFace({
         "pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-[inherit] bg-white",
         isDragging
           ? "transition-none will-change-[clip-path]"
-          : "transition-[clip-path] duration-250 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+          : "transition-[clip-path] duration-[250ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
         className,
       )}
       style={{
@@ -451,7 +487,7 @@ export function BaccaratSqueezeHandle({
         data-slot="baccarat-squeeze-handle"
         data-origin={origin}
         className={twMerge(
-          "pointer-events-none absolute z-40 flex size-12 items-center justify-center rounded-full border border-white/45 bg-black/35 text-white shadow-lg backdrop-blur-sm transition-opacity duration-200",
+          "pointer-events-none absolute z-40 flex size-12 items-center justify-center rounded-full border border-white/[0.45] bg-black/[0.35] text-white shadow-lg backdrop-blur-sm transition-opacity duration-200",
           HANDLE_POSITIONS[corner],
           state === "revealed" && "opacity-0",
           className,
@@ -536,7 +572,7 @@ export function BaccaratSqueezeAction({
       data-state={context.state}
       data-origin={context.origin}
       className={twMerge(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/[0.15] bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/[0.15] focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       onClick={(event) => {
@@ -549,9 +585,9 @@ export function BaccaratSqueezeAction({
       {children ?? (
         <>
           {isRevealed ? (
-            <RotateCcw aria-hidden="true" className="size-4" />
+            <ResetIcon aria-hidden="true" className="size-4" />
           ) : (
-            <Sparkles aria-hidden="true" className="size-4" />
+            <RevealIcon aria-hidden="true" className="size-4" />
           )}
           {isRevealed ? resetLabel : revealLabel}
         </>
