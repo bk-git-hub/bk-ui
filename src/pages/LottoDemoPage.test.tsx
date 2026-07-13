@@ -96,4 +96,35 @@ describe("LottoDemoPage", () => {
       lottoNextExportCode.trim(),
     );
   });
+
+  it("shows framework-specific verified resources without advertising blocked installs", async () => {
+    render(<LottoDemoPage />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Install Lotto Draw" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Release blocked.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy npm" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Copy pnpm" })).toBeDisabled();
+    expect(screen.getByText("React/Vite source ZIP")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Next.js App Router source ZIP"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("lotto Registry JSON")).toBeInTheDocument();
+    expect(screen.getByText("Copy for AI")).toBeInTheDocument();
+    expect(screen.getByText("React/Vite source ZIP").closest("a")).toBeNull();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
+
+    expect(
+      await screen.findByText("Next.js App Router source ZIP"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("React/Vite source ZIP")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Next.js TSX source code" }),
+    ).toHaveTextContent('"use client"');
+    expect(screen.queryByText(/npx bk-ui@latest add lotto/)).not.toBeInTheDocument();
+  });
 });
