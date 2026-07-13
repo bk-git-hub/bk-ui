@@ -214,7 +214,7 @@ export function useCardsStackSlider({
   onValueChangeRef.current = onValueChange;
 
   useEffect(() => {
-    if (import.meta.env.DEV && wasControlledRef.current !== isControlled) {
+    if (wasControlledRef.current !== isControlled) {
       console.warn(
         "CardsStackRoot should not switch between controlled and uncontrolled modes.",
       );
