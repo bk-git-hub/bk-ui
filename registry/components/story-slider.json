@@ -1,0 +1,131 @@
+{
+  "$schema": "../schema/component-manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "story-slider",
+  "title": "Story Slider",
+  "componentVersion": "1.0.0",
+  "description": "A composable Instagram-style grouped story player with autoplay progress, tap, swipe, and keyboard navigation, playback controls, and reduced-motion support.",
+  "repository": "https://github.com/bk-git-hub/bk-ui",
+  "sourceCommit": "25febb424babdbbe6b4dc0a16e32ff7a347790b5",
+  "license": {
+    "spdx": "UNLICENSED",
+    "status": "pending"
+  },
+  "react": {
+    "range": ">=19.0.0 <20",
+    "tested": "19.2.7"
+  },
+  "next": {
+    "tested": "16.2.10",
+    "clientBoundary": "src/components/StorySlider/client.ts",
+    "serializableProps": [
+      "aria-label",
+      "aria-labelledby",
+      "autoplay",
+      "className",
+      "defaultValue: a plain { groupIndex, itemIndex } record",
+      "disabled",
+      "duration: a finite number only",
+      "groupCounts: an ordered array of finite numbers",
+      "longPressDelay",
+      "loop",
+      "swipeThreshold",
+      "tapPreviousRatio",
+      "transitionDuration",
+      "value: a plain { groupIndex, itemIndex } record"
+    ]
+  },
+  "files": [
+    {
+      "source": "src/components/StorySlider/StorySlider.tsx",
+      "target": "@components/StorySlider/StorySlider.tsx",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/StorySlider/useStorySlider.ts",
+      "target": "@components/StorySlider/useStorySlider.ts",
+      "type": "registry:hook",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/StorySlider/index.ts",
+      "target": "@components/StorySlider/index.ts",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/StorySlider/client.ts",
+      "target": "@components/StorySlider/client.ts",
+      "type": "registry:component",
+      "frameworks": ["next"]
+    }
+  ],
+  "dependencies": {
+    "common": ["clsx@^2.1.1"],
+    "tailwind": {
+      "3": ["tailwind-merge@2.6.0"],
+      "4": ["tailwind-merge@^3.3.1"]
+    }
+  },
+  "entrypoints": {
+    "react": "src/components/StorySlider/index.ts",
+    "next": "src/components/StorySlider/client.ts"
+  },
+  "tailwind": {
+    "supportedMajors": [3, 4],
+    "3": {
+      "supported": true,
+      "range": ">=3.4.0 <4.0.0",
+      "tested": "3.4.17",
+      "itemName": "story-slider-tailwind-v3",
+      "scan": "Add './src/components/StorySlider/**/*.{js,ts,jsx,tsx}' (or the equivalent installed path) to the content array in tailwind.config.js or tailwind.config.ts.",
+      "representativeClasses": [
+        "[perspective:1200px]",
+        "aspect-[9/16]",
+        "disabled:opacity-35",
+        "ease-[cubic-bezier(0.22,0.72,0.16,1)]",
+        "focus-visible:ring-offset-slate-950",
+        "motion-reduce:transition-none",
+        "[transition-property:transform,opacity,filter]"
+      ]
+    },
+    "4": {
+      "supported": true,
+      "range": ">=4.0.0 <5.0.0",
+      "tested": "4.3.2",
+      "itemName": "story-slider",
+      "scan": "Keep components/StorySlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory.",
+      "representativeClasses": [
+        "[perspective:1200px]",
+        "aspect-[9/16]",
+        "disabled:opacity-35",
+        "ease-[cubic-bezier(0.22,0.72,0.16,1)]",
+        "focus-visible:ring-offset-slate-950",
+        "motion-reduce:transition-none",
+        "[transition-property:transform,opacity,filter]"
+      ]
+    }
+  },
+  "constraints": {
+    "ssr": [
+      "Import the Next.js entrypoint from components/StorySlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+      "Keep groupCounts, value or defaultValue, ordered groups, and rendered story content deterministic between the server render and the first hydration render.",
+      "Keep callbacks, refs, DOM event handlers, function-valued duration, and StorySliderItem, StorySliderPlayback, or StorySliderStatus render-function children inside a Client Component; pass only serializable data from a Server Component.",
+      "The core does not read window or document during render; matchMedia, document visibility, animation frames, performance timing, and pointer APIs are accessed only after hydration in effects or interaction handlers, so ssr: false is not required.",
+      "Reduced-motion and document-visibility effects may pause playback after hydration without changing the deterministic first render."
+    ],
+    "accessibility": [
+      "Provide a meaningful accessible name for StorySliderRoot through aria-label or aria-labelledby and meaningful text or image alternative text for every story.",
+      "Keep StorySliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, End, and Space navigation and visible focus styles remain available.",
+      "Provide StorySliderPlayback whenever autoplay is enabled so users can pause or resume stories, and keep previous and next controls as native buttons with descriptive labels.",
+      "Do not remove the inactive group and item inert and aria-hidden behavior or the StorySliderStatus live region.",
+      "Preserve the prefers-reduced-motion auto-pause behavior and motion-reduce transition utilities when extending styles."
+    ]
+  },
+  "examples": {
+    "react": "import {\n  StorySliderGroup,\n  StorySliderItem,\n  StorySliderNext,\n  StorySliderPlayback,\n  StorySliderPrevious,\n  StorySliderProgress,\n  StorySliderRoot,\n  StorySliderStatus,\n  StorySliderViewport,\n} from \"../components/StorySlider\";\n\nconst groups = [\n  {\n    id: \"city\",\n    label: \"City\",\n    stories: [\n      { id: \"dawn\", title: \"First light\", className: \"bg-amber-600\" },\n      { id: \"night\", title: \"Neon walk\", className: \"bg-violet-700\" },\n    ],\n  },\n  {\n    id: \"coast\",\n    label: \"Coast\",\n    stories: [\n      { id: \"tide\", title: \"Low tide\", className: \"bg-sky-700\" },\n    ],\n  },\n] as const;\n\nexport default function StorySliderExample() {\n  return (\n    <main className=\"grid min-h-screen place-items-center bg-slate-950 p-6 text-white\">\n      <StorySliderRoot\n        groupCounts={groups.map((group) => group.stories.length)}\n        duration={4500}\n        loop\n        aria-label=\"Travel stories\"\n        className=\"w-full max-w-sm\"\n      >\n        <StorySliderViewport className=\"rounded-3xl bg-slate-900 shadow-2xl\">\n          {groups.map((group, groupIndex) => (\n            <StorySliderGroup\n              key={group.id}\n              index={groupIndex}\n              aria-label={group.label + \" stories\"}\n              className=\"rounded-3xl\"\n            >\n              {group.stories.map((story, itemIndex) => (\n                <StorySliderItem\n                  key={story.id}\n                  index={itemIndex}\n                  className={\"flex items-end rounded-3xl p-8 \" + story.className}\n                >\n                  <h2 className=\"text-4xl font-black\">{story.title}</h2>\n                </StorySliderItem>\n              ))}\n            </StorySliderGroup>\n          ))}\n          <StorySliderProgress className=\"absolute inset-x-0 top-0 z-30 m-4 w-auto\" />\n          <StorySliderPlayback className=\"absolute right-4 top-8 z-40 bg-black/55 px-3 text-sm\">\n            {({ paused }) => (paused ? \"Play\" : \"Pause\")}\n          </StorySliderPlayback>\n        </StorySliderViewport>\n        <div className=\"mt-4 flex items-center justify-between gap-3\">\n          <StorySliderPrevious className=\"bg-white/10 px-4\">Previous</StorySliderPrevious>\n          <StorySliderStatus className=\"text-white/75\" />\n          <StorySliderNext className=\"bg-white/10 px-4\">Next</StorySliderNext>\n        </div>\n      </StorySliderRoot>\n    </main>\n  );\n}\n",
+    "nextClient": "\"use client\";\n\nimport {\n  StorySliderGroup,\n  StorySliderItem,\n  StorySliderNext,\n  StorySliderPlayback,\n  StorySliderPrevious,\n  StorySliderProgress,\n  StorySliderRoot,\n  StorySliderStatus,\n  StorySliderViewport,\n} from \"../components/StorySlider/client\";\n\nexport interface SerializableStory {\n  id: string;\n  title: string;\n  tone: \"amber\" | \"violet\" | \"sky\";\n}\n\nexport interface SerializableStoryGroup {\n  id: string;\n  label: string;\n  stories: readonly SerializableStory[];\n}\n\nexport interface StorySliderClientProps {\n  groups: readonly SerializableStoryGroup[];\n}\n\nconst toneClassNames: Record<SerializableStory[\"tone\"], string> = {\n  amber: \"bg-amber-600\",\n  violet: \"bg-violet-700\",\n  sky: \"bg-sky-700\",\n};\n\nexport default function StorySliderClient({ groups }: StorySliderClientProps) {\n  return (\n    <StorySliderRoot\n      groupCounts={groups.map((group) => group.stories.length)}\n      duration={4500}\n      loop\n      aria-label=\"Travel stories\"\n      className=\"w-full max-w-sm\"\n    >\n      <StorySliderViewport className=\"rounded-3xl bg-slate-900 text-white shadow-2xl\">\n        {groups.map((group, groupIndex) => (\n          <StorySliderGroup\n            key={group.id}\n            index={groupIndex}\n            aria-label={group.label + \" stories\"}\n            className=\"rounded-3xl\"\n          >\n            {group.stories.map((story, itemIndex) => (\n              <StorySliderItem\n                key={story.id}\n                index={itemIndex}\n                className={\"flex items-end rounded-3xl p-8 \" + toneClassNames[story.tone]}\n              >\n                <h2 className=\"text-4xl font-black\">{story.title}</h2>\n              </StorySliderItem>\n            ))}\n          </StorySliderGroup>\n        ))}\n        <StorySliderProgress className=\"absolute inset-x-0 top-0 z-30 m-4 w-auto\" />\n        <StorySliderPlayback className=\"absolute right-4 top-8 z-40 bg-black/55 px-3 text-sm\">\n          {({ paused }) => (paused ? \"Play\" : \"Pause\")}\n        </StorySliderPlayback>\n      </StorySliderViewport>\n      <div className=\"mt-4 flex items-center justify-between gap-3 text-white\">\n        <StorySliderPrevious className=\"bg-white/10 px-4\">Previous</StorySliderPrevious>\n        <StorySliderStatus className=\"text-white/75\" />\n        <StorySliderNext className=\"bg-white/10 px-4\">Next</StorySliderNext>\n      </div>\n    </StorySliderRoot>\n  );\n}\n",
+    "nextServer": "import StorySliderClient, {\n  type SerializableStoryGroup,\n} from \"./client-wrapper\";\n\nconst groups = [\n  {\n    id: \"city\",\n    label: \"City\",\n    stories: [\n      { id: \"dawn\", title: \"First light\", tone: \"amber\" },\n      { id: \"night\", title: \"Neon walk\", tone: \"violet\" },\n    ],\n  },\n  {\n    id: \"coast\",\n    label: \"Coast\",\n    stories: [{ id: \"tide\", title: \"Low tide\", tone: \"sky\" }],\n  },\n] satisfies readonly SerializableStoryGroup[];\n\nexport default function Page() {\n  return (\n    <main className=\"grid min-h-screen place-items-center bg-slate-950 p-6\">\n      <StorySliderClient groups={groups} />\n    </main>\n  );\n}\n"
+  }
+}

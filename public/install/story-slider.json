@@ -1,0 +1,160 @@
+{
+  "componentVersion": "1.0.0",
+  "constraints": {
+    "accessibility": [
+      "Do not remove the inactive group and item inert and aria-hidden behavior or the StorySliderStatus live region.",
+      "Keep StorySliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, End, and Space navigation and visible focus styles remain available.",
+      "Preserve the prefers-reduced-motion auto-pause behavior and motion-reduce transition utilities when extending styles.",
+      "Provide StorySliderPlayback whenever autoplay is enabled so users can pause or resume stories, and keep previous and next controls as native buttons with descriptive labels.",
+      "Provide a meaningful accessible name for StorySliderRoot through aria-label or aria-labelledby and meaningful text or image alternative text for every story."
+    ],
+    "ssr": [
+      "Import the Next.js entrypoint from components/StorySlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+      "Keep callbacks, refs, DOM event handlers, function-valued duration, and StorySliderItem, StorySliderPlayback, or StorySliderStatus render-function children inside a Client Component; pass only serializable data from a Server Component.",
+      "Keep groupCounts, value or defaultValue, ordered groups, and rendered story content deterministic between the server render and the first hydration render.",
+      "Reduced-motion and document-visibility effects may pause playback after hydration without changing the deterministic first render.",
+      "The core does not read window or document during render; matchMedia, document visibility, animation frames, performance timing, and pointer APIs are accessed only after hydration in effects or interaction handlers, so ssr: false is not required."
+    ]
+  },
+  "defaultVariantId": "tailwind-4",
+  "name": "story-slider",
+  "schemaVersion": 1,
+  "sourceCommit": "25febb424babdbbe6b4dc0a16e32ff7a347790b5",
+  "status": "release-blocked",
+  "statusMessage": "Public installation is blocked until license terms are approved, the fixture gate passes, and the artifact commit is pushed and verified by full SHA.",
+  "title": "Story Slider",
+  "variants": [
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@2.6.0"
+      ],
+      "id": "tailwind-3",
+      "label": "Tailwind 3",
+      "notes": [
+        "Add './src/components/StorySlider/**/*.{js,ts,jsx,tsx}' (or the equivalent installed path) to the content array in tailwind.config.js or tailwind.config.ts."
+      ],
+      "range": ">=3.4.0 <4.0.0",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/StorySlider.tsx",
+          "repositoryPath": "src/components/StorySlider/StorySlider.tsx",
+          "sha256": "ae3a2805ad553881fc3e4131de2fe7ae632d374b1c2b562ba8b1d235a85f62bc"
+        },
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/client.ts",
+          "repositoryPath": "src/components/StorySlider/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/index.ts",
+          "repositoryPath": "src/components/StorySlider/index.ts",
+          "sha256": "ffe2018d034ee362669119abf9df69f1ac00fb88ed2de349bb8c56eaff5d1fbc"
+        },
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/useStorySlider.ts",
+          "repositoryPath": "src/components/StorySlider/useStorySlider.ts",
+          "sha256": "74a5bd94a53fd9cf0560b5421ce9fa14cd2a5259f7aab00a7ddd5a855f1630cf"
+        },
+        {
+          "kind": "registry",
+          "label": "story-slider-tailwind-v3 Registry JSON",
+          "repositoryPath": "public/r/story-slider-tailwind-v3.json",
+          "sha256": "d1c7ee29dcd46f4433924a995c9427e0d51cfd3b87144b65e66b20c71fc07125"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/story-slider-react.zip",
+          "sha256": "5e9b9f66f1dec19a722fe27d38898ab1259f7a1f9e2cd9bead60b3828c8dca31"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/story-slider-next.zip",
+          "sha256": "23d84483f03ef5ffa504ce4848b8e4688c0fbfc00740b9f5048fd693bce1e467"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/story-slider.md",
+          "sha256": "6f4dca4784506169070646724a709c89950309acd19c0447d0f7e8627f4375f8"
+        }
+      ],
+      "tailwindMajor": 3,
+      "tested": "3.4.17"
+    },
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@^3.3.1"
+      ],
+      "id": "tailwind-4",
+      "label": "Tailwind 4",
+      "notes": [
+        "Keep components/StorySlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory."
+      ],
+      "range": ">=4.0.0 <5.0.0",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/StorySlider.tsx",
+          "repositoryPath": "src/components/StorySlider/StorySlider.tsx",
+          "sha256": "ae3a2805ad553881fc3e4131de2fe7ae632d374b1c2b562ba8b1d235a85f62bc"
+        },
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/client.ts",
+          "repositoryPath": "src/components/StorySlider/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/index.ts",
+          "repositoryPath": "src/components/StorySlider/index.ts",
+          "sha256": "ffe2018d034ee362669119abf9df69f1ac00fb88ed2de349bb8c56eaff5d1fbc"
+        },
+        {
+          "kind": "source",
+          "label": "@components/StorySlider/useStorySlider.ts",
+          "repositoryPath": "src/components/StorySlider/useStorySlider.ts",
+          "sha256": "74a5bd94a53fd9cf0560b5421ce9fa14cd2a5259f7aab00a7ddd5a855f1630cf"
+        },
+        {
+          "kind": "registry",
+          "label": "story-slider Registry JSON",
+          "repositoryPath": "public/r/story-slider.json",
+          "sha256": "212eb9490a2c808853d0c0890739acc08a1fc18f8214bee87e041351a9016ef6"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/story-slider-react.zip",
+          "sha256": "5e9b9f66f1dec19a722fe27d38898ab1259f7a1f9e2cd9bead60b3828c8dca31"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/story-slider-next.zip",
+          "sha256": "23d84483f03ef5ffa504ce4848b8e4688c0fbfc00740b9f5048fd693bce1e467"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/story-slider.md",
+          "sha256": "6f4dca4784506169070646724a709c89950309acd19c0447d0f7e8627f4375f8"
+        }
+      ],
+      "tailwindMajor": 4,
+      "tested": "4.3.2"
+    }
+  ]
+}
