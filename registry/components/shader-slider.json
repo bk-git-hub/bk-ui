@@ -1,0 +1,140 @@
+{
+  "$schema": "../schema/component-manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "shader-slider",
+  "title": "Shader Slider",
+  "componentVersion": "0.1.0",
+  "description": "A composable React image slider with WebGL wave, ripple, and pixel transitions, accessible pointer and keyboard controls, reduced-motion support, and a DOM fallback.",
+  "repository": "https://github.com/bk-git-hub/bk-ui",
+  "sourceCommit": "9abab5bafae37adc13716b6072b6280c8b82f4f4",
+  "license": {
+    "spdx": "UNLICENSED",
+    "status": "pending"
+  },
+  "react": {
+    "range": ">=19 <20",
+    "tested": "19.2.7"
+  },
+  "next": {
+    "tested": "16.2.10",
+    "clientBoundary": "src/components/ShaderSlider/client.ts",
+    "serializableProps": [
+      "aria-label",
+      "className",
+      "defaultValue",
+      "disabled",
+      "dprCap",
+      "dragThreshold",
+      "effect",
+      "frequency",
+      "intensity",
+      "loop",
+      "slides",
+      "transitionDuration",
+      "value"
+    ]
+  },
+  "files": [
+    {
+      "source": "src/components/ShaderSlider/ShaderSlider.tsx",
+      "target": "@components/ShaderSlider/ShaderSlider.tsx",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShaderSlider/client.ts",
+      "target": "@components/ShaderSlider/client.ts",
+      "type": "registry:component",
+      "frameworks": ["next"]
+    },
+    {
+      "source": "src/components/ShaderSlider/index.ts",
+      "target": "@components/ShaderSlider/index.ts",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShaderSlider/shader-slider-renderer.ts",
+      "target": "@components/ShaderSlider/shader-slider-renderer.ts",
+      "type": "registry:lib",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShaderSlider/shader-slider-types.ts",
+      "target": "@components/ShaderSlider/shader-slider-types.ts",
+      "type": "registry:file",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/ShaderSlider/useShaderSlider.ts",
+      "target": "@components/ShaderSlider/useShaderSlider.ts",
+      "type": "registry:hook",
+      "frameworks": ["react", "next"]
+    }
+  ],
+  "dependencies": {
+    "common": ["clsx@^2.1.1"],
+    "tailwind": {
+      "3": ["tailwind-merge@2.6.0"],
+      "4": ["tailwind-merge@^3.3.1"]
+    }
+  },
+  "entrypoints": {
+    "react": "src/components/ShaderSlider/index.ts",
+    "next": "src/components/ShaderSlider/client.ts"
+  },
+  "tailwind": {
+    "supportedMajors": [3, 4],
+    "3": {
+      "supported": true,
+      "range": ">=3.4 <4",
+      "tested": "3.4.19",
+      "itemName": "shader-slider-tailwind-v3",
+      "scan": "Include the installed directory in Tailwind content, for example './src/components/ShaderSlider/**/*.{js,ts,jsx,tsx}' or './components/ShaderSlider/**/*.{js,ts,jsx,tsx}'.",
+      "representativeClasses": [
+        "[touch-action:pan-y]",
+        "focus-visible:ring-sky-400",
+        "motion-reduce:transition-none",
+        "select-none",
+        "transition-[opacity,transform]"
+      ]
+    },
+    "4": {
+      "supported": true,
+      "range": ">=4 <5",
+      "tested": "4.3.2",
+      "itemName": "shader-slider",
+      "scan": "Keep components/ShaderSlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory.",
+      "representativeClasses": [
+        "[touch-action:pan-y]",
+        "focus-visible:ring-sky-400",
+        "motion-reduce:transition-none",
+        "select-none",
+        "transition-[opacity,transform]"
+      ]
+    }
+  },
+  "constraints": {
+    "ssr": [
+      "Import the Next.js entrypoint from components/ShaderSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
+      "Use the included mount-gated Client Component wrapper so the server markup and first hydration markup match before the core reads matchMedia and initializes WebGL or ResizeObserver.",
+      "Keep onValueChange, children, refs, and DOM event handlers inside a Client Component; pass only the declared serializable data and primitive options from a Server Component.",
+      "Do not require ssr: false; the mounted placeholder is deterministic and browser rendering begins after hydration.",
+      "Use same-origin texture URLs or CORS headers compatible with each slide crossOrigin value; failed WebGL texture loading falls back to the accessible DOM images.",
+      "The mounted Next.js wrapper server-renders a placeholder instead of slide content; provide a separate static image when no-JavaScript image content is required."
+    ],
+    "accessibility": [
+      "Provide a meaningful non-empty alt string for every slide and an accessible name through aria-label or aria-labelledby on ShaderSliderRoot.",
+      "Keep ShaderSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation and visible focus styles remain available.",
+      "Do not remove the inactive slide inert and aria-hidden behavior, the aria-hidden canvas, or the polite ShaderSliderStatus live region.",
+      "Preserve prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
+      "Use semantic interactive elements or data-shader-slider-no-drag for custom slide controls so pointer gestures do not intercept their interaction.",
+      "Increase pagination button hit areas in product styling when the target-size policy exceeds the default 0.5rem visual dots."
+    ]
+  },
+  "examples": {
+    "react": "import {\n  ShaderSliderNext,\n  ShaderSliderPagination,\n  ShaderSliderPrevious,\n  ShaderSliderRoot,\n  ShaderSliderSlide,\n  ShaderSliderStatus,\n  ShaderSliderViewport,\n  type ShaderSliderImage,\n} from \"../components/ShaderSlider\";\n\ninterface ShaderSliderStory extends ShaderSliderImage {\n  title: string;\n}\n\nconst stories: readonly ShaderSliderStory[] = [\n  {\n    src: \"/images/tidal-glass.webp\",\n    alt: \"Teal glass waves beneath a warm sun\",\n    title: \"Tidal Glass\",\n  },\n  {\n    src: \"/images/electric-bloom.webp\",\n    alt: \"Luminous magenta petals over a violet sky\",\n    title: \"Electric Bloom\",\n  },\n];\n\nexport default function ShaderSliderExample() {\n  return (\n    <ShaderSliderRoot\n      slides={stories}\n      effect=\"wave\"\n      transitionDuration={950}\n      intensity={0.9}\n      frequency={2.75}\n      dprCap={2}\n      loop\n      aria-label=\"Visual stories\"\n      className=\"relative overflow-hidden rounded-3xl bg-slate-950 text-white\"\n    >\n      <ShaderSliderViewport className=\"aspect-video\">\n        {stories.map((story, index) => (\n          <ShaderSliderSlide\n            key={story.src}\n            index={index}\n            className=\"flex items-end bg-gradient-to-t from-black/80 to-transparent p-8 pb-20\"\n          >\n            <h2 className=\"text-4xl font-black\">{story.title}</h2>\n          </ShaderSliderSlide>\n        ))}\n      </ShaderSliderViewport>\n      <ShaderSliderPrevious className=\"absolute left-4 top-1/2 z-30 -translate-y-1/2 bg-black/55 px-4 py-3\">\n        Previous\n      </ShaderSliderPrevious>\n      <ShaderSliderNext className=\"absolute right-4 top-1/2 z-30 -translate-y-1/2 bg-black/55 px-4 py-3\">\n        Next\n      </ShaderSliderNext>\n      <ShaderSliderPagination\n        aria-label=\"Choose a visual story\"\n        className=\"absolute bottom-6 left-8 z-30 [&>button]:h-6 [&>button]:min-w-6\"\n      />\n      <ShaderSliderStatus className=\"absolute bottom-6 right-8 z-30\" />\n    </ShaderSliderRoot>\n  );\n}\n",
+    "nextClient": "\"use client\";\n\nimport { useEffect, useState } from \"react\";\nimport {\n  ShaderSliderNext,\n  ShaderSliderPagination,\n  ShaderSliderPrevious,\n  ShaderSliderRoot,\n  ShaderSliderSlide,\n  ShaderSliderStatus,\n  ShaderSliderViewport,\n  type ShaderSliderImage,\n} from \"../components/ShaderSlider/client\";\n\nexport interface ShaderSliderStory extends ShaderSliderImage {\n  title: string;\n}\n\nexport interface ShaderSliderClientProps {\n  stories: readonly ShaderSliderStory[];\n}\n\nexport default function ShaderSliderClient({\n  stories,\n}: ShaderSliderClientProps) {\n  const [mounted, setMounted] = useState(false);\n\n  useEffect(() => setMounted(true), []);\n\n  if (!mounted) {\n    return (\n      <div\n        aria-hidden=\"true\"\n        className=\"aspect-video w-full rounded-3xl bg-slate-950\"\n      />\n    );\n  }\n\n  return (\n    <ShaderSliderRoot\n      slides={stories}\n      effect=\"wave\"\n      transitionDuration={950}\n      intensity={0.9}\n      frequency={2.75}\n      dprCap={2}\n      loop\n      aria-label=\"Visual stories\"\n      className=\"relative overflow-hidden rounded-3xl bg-slate-950 text-white\"\n    >\n      <ShaderSliderViewport className=\"aspect-video\">\n        {stories.map((story, index) => (\n          <ShaderSliderSlide\n            key={story.src}\n            index={index}\n            className=\"flex items-end bg-gradient-to-t from-black/80 to-transparent p-8 pb-20\"\n          >\n            <h2 className=\"text-4xl font-black\">{story.title}</h2>\n          </ShaderSliderSlide>\n        ))}\n      </ShaderSliderViewport>\n      <ShaderSliderPrevious className=\"absolute left-4 top-1/2 z-30 -translate-y-1/2 bg-black/55 px-4 py-3\">\n        Previous\n      </ShaderSliderPrevious>\n      <ShaderSliderNext className=\"absolute right-4 top-1/2 z-30 -translate-y-1/2 bg-black/55 px-4 py-3\">\n        Next\n      </ShaderSliderNext>\n      <ShaderSliderPagination\n        aria-label=\"Choose a visual story\"\n        className=\"absolute bottom-6 left-8 z-30 [&>button]:h-6 [&>button]:min-w-6\"\n      />\n      <ShaderSliderStatus className=\"absolute bottom-6 right-8 z-30\" />\n    </ShaderSliderRoot>\n  );\n}\n",
+    "nextServer": "import ShaderSliderClient, {\n  type ShaderSliderStory,\n} from \"./client-wrapper\";\n\nconst stories = [\n  {\n    src: \"/images/tidal-glass.webp\",\n    alt: \"Teal glass waves beneath a warm sun\",\n    title: \"Tidal Glass\",\n  },\n  {\n    src: \"/images/electric-bloom.webp\",\n    alt: \"Luminous magenta petals over a violet sky\",\n    title: \"Electric Bloom\",\n  },\n] satisfies readonly ShaderSliderStory[];\n\nexport default function Page() {\n  return (\n    <main className=\"mx-auto max-w-5xl p-6\">\n      <ShaderSliderClient stories={stories} />\n    </main>\n  );\n}\n"
+  }
+}
