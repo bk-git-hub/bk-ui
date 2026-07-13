@@ -10,15 +10,18 @@ import HomePage from "./pages/HomePage.tsx";
 const loadTinderDemoPage = () => import("./pages/TinderDemoPage.tsx");
 const loadCoverflowPage = () => import("./pages/CoverflowPage.tsx");
 const loadReactPodPage = () => import("./pages/ReactPodPage.tsx");
+const loadLottoDemoPage = () => import("./pages/LottoDemoPage.tsx");
 
 const TinderDemoPage = lazy(loadTinderDemoPage);
 const CoverflowPage = lazy(loadCoverflowPage);
 const ReactPodPage = lazy(loadReactPodPage);
+const LottoDemoPage = lazy(loadLottoDemoPage);
 
 const routePageLoaders = new Map<string, () => Promise<unknown>>([
   ["/components/tinder-swiper", loadTinderDemoPage],
   ["/components/coverflow", loadCoverflowPage],
   ["/components/react-pod", loadReactPodPage],
+  ["/components/lotto", loadLottoDemoPage],
 ]);
 const preloadedRoutes = new Set<string>();
 
@@ -70,6 +73,14 @@ const router = createBrowserRouter([
         element: (
           <LazyPage>
             <ReactPodPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "components/lotto",
+        element: (
+          <LazyPage>
+            <LottoDemoPage />
           </LazyPage>
         ),
       },

@@ -5,6 +5,7 @@ const navigationLinks = [
   { to: "/components/tinder-swiper", text: "Tinder Swiper" },
   { to: "/components/coverflow", text: "Coverflow" },
   { to: "/components/react-pod", text: "reactPod" },
+  { to: "/components/lotto", text: "Lotto Draw" },
 ];
 
 const NavigationLink = React.memo(

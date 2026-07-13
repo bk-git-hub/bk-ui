@@ -1,0 +1,6 @@
+export function parseBallItems(source: string) {
+  return source
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
