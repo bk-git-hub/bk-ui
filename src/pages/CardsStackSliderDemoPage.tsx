@@ -11,6 +11,7 @@ import {
   cardsStackSliderNextJsExport,
   cardsStackSliderReactExport,
 } from "@/snippets/cardsStackSliderExportCode";
+import { cardsStackSliderInstallDescriptor } from "@/snippets/cardsStackSliderInstallDescriptor";
 import { cardsStackSliderUsageCode } from "@/snippets/cardsStackSliderUsageCode";
 
 export default function CardsStackSliderDemoPage() {
@@ -60,6 +61,7 @@ export default function CardsStackSliderDemoPage() {
       referenceCodeLanguage="React TSX"
       reactExport={cardsStackSliderReactExport}
       nextJsExport={cardsStackSliderNextJsExport}
+      installDescriptor={cardsStackSliderInstallDescriptor}
       showPreviewAlongsideCode
     />
   );

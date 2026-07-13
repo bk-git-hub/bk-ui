@@ -1,0 +1,117 @@
+{
+  "$schema": "../schema/component-manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "cards-stack-slider",
+  "title": "Cards Stack Slider",
+  "componentVersion": "1.0.0",
+  "description": "A compound React card-stack slider with continuous pointer dragging, orientation-aware keyboard controls, previous and next card previews, multi-card snapping, and accessible navigation controls.",
+  "repository": "https://github.com/bk-git-hub/bk-ui",
+  "sourceCommit": "fecaf6502f823c379eedfbeb3e1b3e256040ff5e",
+  "license": {
+    "spdx": "UNLICENSED",
+    "status": "pending"
+  },
+  "react": {
+    "range": ">=19.0.0 <20",
+    "tested": "19.2.7"
+  },
+  "next": {
+    "tested": "16.2.10",
+    "clientBoundary": "src/components/CardsStackSlider/client.ts",
+    "serializableProps": [
+      "cards: an array of plain records containing serializable id, title, and details strings"
+    ]
+  },
+  "files": [
+    {
+      "source": "src/components/CardsStackSlider/CardsStackSlider.tsx",
+      "target": "@components/CardsStackSlider/CardsStackSlider.tsx",
+      "type": "registry:component",
+      "frameworks": ["next", "react"]
+    },
+    {
+      "source": "src/components/CardsStackSlider/client.ts",
+      "target": "@components/CardsStackSlider/client.ts",
+      "type": "registry:component",
+      "frameworks": ["next"]
+    },
+    {
+      "source": "src/components/CardsStackSlider/index.ts",
+      "target": "@components/CardsStackSlider/index.ts",
+      "type": "registry:component",
+      "frameworks": ["next", "react"]
+    },
+    {
+      "source": "src/components/CardsStackSlider/useCardsStackSlider.ts",
+      "target": "@components/CardsStackSlider/useCardsStackSlider.ts",
+      "type": "registry:hook",
+      "frameworks": ["next", "react"]
+    }
+  ],
+  "dependencies": {
+    "common": ["clsx@^2.1.1"],
+    "tailwind": {
+      "3": ["tailwind-merge@2.6.0"],
+      "4": ["tailwind-merge@^3.3.1"]
+    }
+  },
+  "entrypoints": {
+    "react": "src/components/CardsStackSlider/index.ts",
+    "next": "src/components/CardsStackSlider/client.ts"
+  },
+  "tailwind": {
+    "supportedMajors": [3, 4],
+    "3": {
+      "supported": true,
+      "range": ">=3.4.0 <4",
+      "tested": "3.4.19",
+      "itemName": "cards-stack-slider-tailwind-v3",
+      "scan": "Add \"./components/**/*.{js,ts,jsx,tsx}\" to tailwind.config content after copying the component.",
+      "representativeClasses": [
+        "[backface-visibility:hidden]",
+        "[perspective:1200px]",
+        "[touch-action:pan-y]",
+        "aspect-[19/12]",
+        "ease-[cubic-bezier(0.22,0.75,0.18,1)]",
+        "motion-reduce:transition-none",
+        "will-change-transform"
+      ]
+    },
+    "4": {
+      "supported": true,
+      "range": ">=4.0.0 <5",
+      "tested": "4.3.2",
+      "itemName": "cards-stack-slider",
+      "scan": "Keep components/CardsStackSlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory.",
+      "representativeClasses": [
+        "[backface-visibility:hidden]",
+        "[perspective:1200px]",
+        "[touch-action:pan-y]",
+        "aspect-[19/12]",
+        "ease-[cubic-bezier(0.22,0.75,0.18,1)]",
+        "motion-reduce:transition-none",
+        "will-change-transform"
+      ]
+    }
+  },
+  "constraints": {
+    "ssr": [
+      "Browser APIs are accessed only from effects or pointer and transition event handlers; do not invoke interaction handlers during server render.",
+      "Keep onValueChange, DOM event handlers, and function-valued CardsStackStatus children inside the Next.js Client Component boundary; pass only serializable card data from Server Components.",
+      "Render output is deterministic for the same count, initial value, card order, orientation, and options and does not require ssr: false.",
+      "Use the same count, card order, orientation, and initial value for the server render and first hydration render."
+    ],
+    "accessibility": [
+      "Give CardsStackRoot a localized accessible label that identifies the carousel.",
+      "Keep CardsStackViewport keyboard-focusable and preserve its visible focus ring and orientation-aware Arrow key navigation.",
+      "Preserve CardsStackPrevious and CardsStackNext as native-button alternatives to pointer dragging.",
+      "Keep inactive cards aria-hidden and inert so assistive technology and keyboard users interact only with the active card.",
+      "Preserve motion-reduce transition handling and add data-cards-stack-no-drag to interactive descendants that must not initiate a drag."
+    ]
+  },
+  "examples": {
+    "react": "import {\n  CardsStackBack,\n  CardsStackFront,\n  CardsStackItem,\n  CardsStackNext,\n  CardsStackPrevious,\n  CardsStackRoot,\n  CardsStackStatus,\n  CardsStackViewport,\n} from \"../components/CardsStackSlider\";\n\nconst cards = [\n  { id: \"aurora\", title: \"Aurora\", details: \"Northern lights over the coast.\" },\n  { id: \"forest\", title: \"Forest\", details: \"A quiet trail through old pines.\" },\n  { id: \"ocean\", title: \"Ocean\", details: \"Evening waves beneath a clear sky.\" },\n] as const;\n\nexport default function CardsStackSliderExample() {\n  return (\n    <main className=\"grid min-h-screen place-items-center bg-slate-100 p-6\">\n      <CardsStackRoot count={cards.length} aria-label=\"Featured destinations\">\n        <CardsStackViewport>\n          {cards.map((card, index) => (\n            <CardsStackItem\n              key={card.id}\n              index={index}\n              aria-label={`${card.title}: ${card.details}`}\n            >\n              <CardsStackFront className=\"grid place-items-center bg-slate-950 p-8 text-white\">\n                <h2 className=\"text-3xl font-semibold\">{card.title}</h2>\n              </CardsStackFront>\n              <CardsStackBack className=\"grid place-items-center bg-indigo-700 p-8 text-white\">\n                <p>{card.details}</p>\n              </CardsStackBack>\n            </CardsStackItem>\n          ))}\n        </CardsStackViewport>\n        <div className=\"flex items-center gap-4\">\n          <CardsStackPrevious className=\"border border-slate-300 bg-white px-4\">Previous</CardsStackPrevious>\n          <CardsStackStatus className=\"min-w-14 text-center\" />\n          <CardsStackNext className=\"border border-slate-300 bg-white px-4\">Next</CardsStackNext>\n        </div>\n      </CardsStackRoot>\n    </main>\n  );\n}\n",
+    "nextClient": "\"use client\";\n\nimport { useState } from \"react\";\nimport {\n  CardsStackBack,\n  CardsStackFront,\n  CardsStackItem,\n  CardsStackNext,\n  CardsStackPrevious,\n  CardsStackRoot,\n  CardsStackStatus,\n  CardsStackViewport,\n} from \"../components/CardsStackSlider/client\";\n\nexport interface SerializableCard {\n  id: string;\n  title: string;\n  details: string;\n}\n\nexport interface CardsStackGalleryProps {\n  cards: readonly SerializableCard[];\n}\n\nexport function CardsStackGallery({ cards }: CardsStackGalleryProps) {\n  const [value, setValue] = useState(0);\n\n  return (\n    <CardsStackRoot\n      count={cards.length}\n      value={value}\n      onValueChange={(nextValue) => setValue(nextValue)}\n      aria-label=\"Featured destinations\"\n    >\n      <CardsStackViewport>\n        {cards.map((card, index) => (\n          <CardsStackItem\n            key={card.id}\n            index={index}\n            aria-label={`${card.title}: ${card.details}`}\n          >\n            <CardsStackFront className=\"grid place-items-center bg-slate-950 p-8 text-white\">\n              <h2 className=\"text-3xl font-semibold\">{card.title}</h2>\n            </CardsStackFront>\n            <CardsStackBack className=\"grid place-items-center bg-indigo-700 p-8 text-white\">\n              <p>{card.details}</p>\n            </CardsStackBack>\n          </CardsStackItem>\n        ))}\n      </CardsStackViewport>\n      <div className=\"flex items-center gap-4\">\n        <CardsStackPrevious className=\"border border-slate-300 bg-white px-4\">Previous</CardsStackPrevious>\n        <CardsStackStatus className=\"min-w-14 text-center\" />\n        <CardsStackNext className=\"border border-slate-300 bg-white px-4\">Next</CardsStackNext>\n      </div>\n    </CardsStackRoot>\n  );\n}\n",
+    "nextServer": "import {\n  CardsStackGallery,\n  type SerializableCard,\n} from \"./client-wrapper\";\n\nconst cards: readonly SerializableCard[] = [\n  { id: \"aurora\", title: \"Aurora\", details: \"Northern lights over the coast.\" },\n  { id: \"forest\", title: \"Forest\", details: \"A quiet trail through old pines.\" },\n  { id: \"ocean\", title: \"Ocean\", details: \"Evening waves beneath a clear sky.\" },\n];\n\nexport default function Page() {\n  return (\n    <main className=\"grid min-h-screen place-items-center bg-slate-100 p-6\">\n      <CardsStackGallery cards={cards} />\n    </main>\n  );\n}\n"
+  }
+}

@@ -3,14 +3,36 @@ import type { ComponentViewerCodeTab } from "@/components/layout/component-viewe
 export const cardsStackSliderReactExport: ComponentViewerCodeTab = {
   language: "React / Vite TSX",
   description:
-    'Copy CardsStackSlider.tsx, useCardsStackSlider.ts, and index.ts into src/components/CardsStackSlider, then run "pnpm add clsx tailwind-merge". Tailwind v4 scans local src automatically; external source needs @source "../vendor/BK-UI/src/components/CardsStackSlider" in CSS. Tailwind v3 needs the equivalent "./vendor/BK-UI/src/components/CardsStackSlider/**/*.{js,ts,jsx,tsx}" path in content. Configure an @ → src alias or replace the import with a relative path.',
-  code: `// Copy into src/components/CardsStackSlider:
-// CardsStackSlider.tsx, useCardsStackSlider.ts, index.ts
-// Install: pnpm add clsx tailwind-merge
-// Tailwind v4 external source (CSS-relative):
-// @source "../vendor/BK-UI/src/components/CardsStackSlider";
-// Tailwind v3 content (project-root-relative):
-// "./vendor/BK-UI/src/components/CardsStackSlider/**/*.{js,ts,jsx,tsx}"
+    "The deterministic React ZIP contains the alias-free core, a complete example, README, file hashes, and an UNLICENSED distribution notice. It is a local verification artifact while the release is blocked; no bk-ui@latest or public download command is available. Choose the dependency set for the host Tailwind major, keep the copied folder in a scanned source tree, and use the relative import below without configuring an alias.",
+  code: `// Release status: release-blocked (local verification only)
+//
+// Canonical manifest:
+//   registry/components/cards-stack-slider.json
+// Generated React/Vite archive:
+//   public/downloads/cards-stack-slider-react.zip
+// Registry JSON:
+//   public/r/cards-stack-slider.json                 (Tailwind 4)
+//   public/r/cards-stack-slider-tailwind-v3.json     (Tailwind 3.4)
+// Copy for AI / verified hashes:
+//   public/ai/cards-stack-slider.md
+//   public/install/cards-stack-slider.json
+//
+// Generate and verify only this component:
+//   pnpm artifacts:build -- --manifest registry/components/cards-stack-slider.json
+//   pnpm artifacts:check -- --manifest registry/components/cards-stack-slider.json
+//   node --test fixtures/install/cards-stack-slider/cards-stack-slider-artifacts.test.mjs
+//
+// Extract components/CardsStackSlider from the React ZIP into src/components.
+// Tailwind 4:
+//   npm install clsx@^2.1.1 tailwind-merge@^3.3.1
+//   pnpm add clsx@^2.1.1 tailwind-merge@^3.3.1
+// Tailwind 3.4:
+//   npm install clsx@^2.1.1 tailwind-merge@2.6.0
+//   pnpm add clsx@^2.1.1 tailwind-merge@2.6.0
+//
+// A local src/components copy is scanned automatically by Tailwind 4.
+// For external source, add a stylesheet-relative @source directive.
+// Tailwind 3.4 content must include "./src/**/*.{js,ts,jsx,tsx}".
 
 import {
   CardsStackBack,
@@ -22,7 +44,7 @@ import {
   CardsStackStatus,
   CardsStackViewport,
   type CardsStackOrientation,
-} from "@/components/CardsStackSlider";
+} from "./components/CardsStackSlider";
 
 export interface TravelCard {
   id: string;
@@ -72,24 +94,38 @@ export function TravelCards({
 export const cardsStackSliderNextJsExport: ComponentViewerCodeTab = {
   language: "Next.js App Router TSX",
   description:
-    "Copy the same core and split the two file blocks below into client.ts and the Client Component. Keep state and callbacks in the Client Component and pass only serializable cards from Server Components. Render-time output is deterministic and browser APIs run after events/effects, so dynamic(..., { ssr: false }) is unnecessary. Keep count, order, and initial value stable for hydration. Tailwind v4 scans local app/src/components automatically; external source needs @source in globals.css, while Tailwind v3 needs the copied path in content.",
-  code: `// src/components/CardsStackSlider/client.ts
+    "The Next.js ZIP reuses the exact React core bytes and adds only client.ts plus App Router examples. It remains an UNLICENSED local verification artifact until the release gate passes. Keep state, callbacks, and function-valued children in the Client Component; Server Components pass only serializable cards. Render-time output is deterministic, so disabling SSR is unnecessary.",
+  code: `// Release status: release-blocked (local verification only)
+//
+// Generated Next.js App Router archive:
+//   public/downloads/cards-stack-slider-next.zip
+// It contains the exact React core bytes plus:
+//   components/CardsStackSlider/client.ts
+//   examples/client-wrapper.tsx
+//   examples/page.tsx
+//
+// Generate and verify only this component:
+//   pnpm artifacts:build -- --manifest registry/components/cards-stack-slider.json
+//   pnpm artifacts:check -- --manifest registry/components/cards-stack-slider.json
+//   node --test fixtures/install/cards-stack-slider/cards-stack-slider-artifacts.test.mjs
+//
+// Extract components/CardsStackSlider into src/components.
+// Tailwind 4:
+//   npm install clsx@^2.1.1 tailwind-merge@^3.3.1
+//   pnpm add clsx@^2.1.1 tailwind-merge@^3.3.1
+// Tailwind 3.4:
+//   npm install clsx@^2.1.1 tailwind-merge@2.6.0
+//   pnpm add clsx@^2.1.1 tailwind-merge@2.6.0
+
+// src/app/cards/cards-gallery.tsx
 "use client";
 
-export * from "./index";
-
-// app/cards/cards-gallery.tsx
-"use client";
-
-// Copy CardsStackSlider.tsx, useCardsStackSlider.ts, and index.ts too.
-// Install: pnpm add clsx tailwind-merge
 // SSR / hydration: keep count, order, and initial value deterministic.
 // Server Components pass serializable data; callbacks stay in this file.
 // Render-time window/document access is avoided, so ssr: false is unnecessary.
-// Tailwind v4 external source in globals.css:
-// @source "../vendor/BK-UI/src/components/CardsStackSlider";
-// Tailwind v3 content:
-// "./vendor/BK-UI/src/components/CardsStackSlider/**/*.{js,ts,jsx,tsx}"
+// Tailwind 4 scans local src/components automatically. External source needs
+// a stylesheet-relative @source in globals.css. Tailwind 3.4 must include the
+// copied src path in tailwind.config content.
 
 import { useState } from "react";
 import {
@@ -101,7 +137,7 @@ import {
   CardsStackRoot,
   CardsStackStatus,
   CardsStackViewport,
-} from "@/components/CardsStackSlider/client";
+} from "../../components/CardsStackSlider/client";
 
 export interface TravelCard {
   id: string;

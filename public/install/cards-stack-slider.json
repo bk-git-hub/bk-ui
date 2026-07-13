@@ -1,0 +1,159 @@
+{
+  "componentVersion": "1.0.0",
+  "constraints": {
+    "accessibility": [
+      "Give CardsStackRoot a localized accessible label that identifies the carousel.",
+      "Keep CardsStackViewport keyboard-focusable and preserve its visible focus ring and orientation-aware Arrow key navigation.",
+      "Keep inactive cards aria-hidden and inert so assistive technology and keyboard users interact only with the active card.",
+      "Preserve CardsStackPrevious and CardsStackNext as native-button alternatives to pointer dragging.",
+      "Preserve motion-reduce transition handling and add data-cards-stack-no-drag to interactive descendants that must not initiate a drag."
+    ],
+    "ssr": [
+      "Browser APIs are accessed only from effects or pointer and transition event handlers; do not invoke interaction handlers during server render.",
+      "Keep onValueChange, DOM event handlers, and function-valued CardsStackStatus children inside the Next.js Client Component boundary; pass only serializable card data from Server Components.",
+      "Render output is deterministic for the same count, initial value, card order, orientation, and options and does not require ssr: false.",
+      "Use the same count, card order, orientation, and initial value for the server render and first hydration render."
+    ]
+  },
+  "defaultVariantId": "tailwind-4",
+  "name": "cards-stack-slider",
+  "schemaVersion": 1,
+  "sourceCommit": "fecaf6502f823c379eedfbeb3e1b3e256040ff5e",
+  "status": "release-blocked",
+  "statusMessage": "Public installation is blocked until license terms are approved, the fixture gate passes, and the artifact commit is pushed and verified by full SHA.",
+  "title": "Cards Stack Slider",
+  "variants": [
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@2.6.0"
+      ],
+      "id": "tailwind-3",
+      "label": "Tailwind 3",
+      "notes": [
+        "Add \"./components/**/*.{js,ts,jsx,tsx}\" to tailwind.config content after copying the component."
+      ],
+      "range": ">=3.4.0 <4",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/CardsStackSlider.tsx",
+          "repositoryPath": "src/components/CardsStackSlider/CardsStackSlider.tsx",
+          "sha256": "635488ad4e14dab80a6841a069ad8f8c3bcf75d56e0be12d5495085b0500a022"
+        },
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/client.ts",
+          "repositoryPath": "src/components/CardsStackSlider/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/index.ts",
+          "repositoryPath": "src/components/CardsStackSlider/index.ts",
+          "sha256": "54bacaceed9b561eeba4d2f5fd10fb2431ffc1675dde01514bda287854184407"
+        },
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/useCardsStackSlider.ts",
+          "repositoryPath": "src/components/CardsStackSlider/useCardsStackSlider.ts",
+          "sha256": "cb1243d2f996c4c62c7726655458cb13a22a2b6cd55a583325659fa0dae4d018"
+        },
+        {
+          "kind": "registry",
+          "label": "cards-stack-slider-tailwind-v3 Registry JSON",
+          "repositoryPath": "public/r/cards-stack-slider-tailwind-v3.json",
+          "sha256": "698f7a34552ae1be715d09f402f217ed922d7219896eef35e585b331b0a94e6d"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/cards-stack-slider-react.zip",
+          "sha256": "a332e694ae97d9f3622b1dbe9b9376fbcffbdb2e037671000713ce5d6e0d931d"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/cards-stack-slider-next.zip",
+          "sha256": "bd051aeb4707652519da4c09ee035b2712bff27c79401b6ee6e79b2e04ddf206"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/cards-stack-slider.md",
+          "sha256": "6ebdb17a13ca8c6ae86db19a2ad44b511d5aaf666832d0ebe7919481536f2196"
+        }
+      ],
+      "tailwindMajor": 3,
+      "tested": "3.4.19"
+    },
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@^3.3.1"
+      ],
+      "id": "tailwind-4",
+      "label": "Tailwind 4",
+      "notes": [
+        "Keep components/CardsStackSlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory."
+      ],
+      "range": ">=4.0.0 <5",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/CardsStackSlider.tsx",
+          "repositoryPath": "src/components/CardsStackSlider/CardsStackSlider.tsx",
+          "sha256": "635488ad4e14dab80a6841a069ad8f8c3bcf75d56e0be12d5495085b0500a022"
+        },
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/client.ts",
+          "repositoryPath": "src/components/CardsStackSlider/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/index.ts",
+          "repositoryPath": "src/components/CardsStackSlider/index.ts",
+          "sha256": "54bacaceed9b561eeba4d2f5fd10fb2431ffc1675dde01514bda287854184407"
+        },
+        {
+          "kind": "source",
+          "label": "@components/CardsStackSlider/useCardsStackSlider.ts",
+          "repositoryPath": "src/components/CardsStackSlider/useCardsStackSlider.ts",
+          "sha256": "cb1243d2f996c4c62c7726655458cb13a22a2b6cd55a583325659fa0dae4d018"
+        },
+        {
+          "kind": "registry",
+          "label": "cards-stack-slider Registry JSON",
+          "repositoryPath": "public/r/cards-stack-slider.json",
+          "sha256": "16d31a6089de3aeb6d1a8fcfd57c1af441b440709e9ababb079144fb85315803"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/cards-stack-slider-react.zip",
+          "sha256": "a332e694ae97d9f3622b1dbe9b9376fbcffbdb2e037671000713ce5d6e0d931d"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/cards-stack-slider-next.zip",
+          "sha256": "bd051aeb4707652519da4c09ee035b2712bff27c79401b6ee6e79b2e04ddf206"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/cards-stack-slider.md",
+          "sha256": "6ebdb17a13ca8c6ae86db19a2ad44b511d5aaf666832d0ebe7919481536f2196"
+        }
+      ],
+      "tailwindMajor": 4,
+      "tested": "4.3.2"
+    }
+  ]
+}

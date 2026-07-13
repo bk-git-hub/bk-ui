@@ -2,12 +2,34 @@
 
 Swiper의 별도 플러그인 없이 React 상태, Pointer Events, Tailwind 유틸리티만으로 구성한 3D 카드 스택 compound component입니다. 현재 카드는 드래그를 따라 움직이고, 지나간 카드는 뒷면을 보이며, 다음 카드는 원호를 따라 앞으로 이동합니다.
 
+## 설치 및 export 상태
+
+CardsStackSlider는 하나의 component manifest에서 Tailwind 3/4 Registry JSON, React/Vite ZIP, Next.js App Router ZIP, Copy for AI, install descriptor를 재현 가능하게 생성합니다.
+
+```sh
+pnpm artifacts:build -- --manifest registry/components/cards-stack-slider.json
+pnpm artifacts:check -- --manifest registry/components/cards-stack-slider.json
+node --test fixtures/install/cards-stack-slider/cards-stack-slider-artifacts.test.mjs
+```
+
+생성 경로는 다음과 같습니다.
+
+- Manifest: `registry/components/cards-stack-slider.json`
+- Tailwind 4 Registry: `public/r/cards-stack-slider.json`
+- Tailwind 3 Registry: `public/r/cards-stack-slider-tailwind-v3.json`
+- React/Vite ZIP: `public/downloads/cards-stack-slider-react.zip`
+- Next.js App Router ZIP: `public/downloads/cards-stack-slider-next.zip`
+- Copy for AI: `public/ai/cards-stack-slider.md`
+- UI descriptor: `public/install/cards-stack-slider.json`
+
+현재 descriptor 상태는 `release-blocked`입니다. 저장소 라이선스가 아직 결정되지 않았고, 전체 clean fixture 및 원격 full-SHA 검증도 완료되지 않았으므로 이 파일들은 로컬 검증 산출물이며 공개 배포 허가를 뜻하지 않습니다. `npx bk-ui@latest`와 `pnpm dlx bk-ui@latest`는 현재 존재하지 않는 설치 경로이고 문서나 UI에서 동작하는 명령으로 표시하지 않습니다. 향후 공개 상태로 전환할 때만 고정된 commit SHA의 shadcn GitHub source registry 명령과 HTTPS 다운로드 URL을 descriptor에 추가합니다.
+
 ## 공개 경로
 
 - React 및 Vite: `@/components/CardsStackSlider`
 - Next.js App Router: `@/components/CardsStackSlider/client`
 
-두 경로는 같은 React + Tailwind 코어를 사용합니다. `client.ts`는 구현을 복제하지 않고 `"use client"` 경계와 코어 재수출만 제공합니다. 현재 저장소는 private 앱이므로 npm 패키지 subpath는 공개 API로 약속하지 않습니다.
+두 경로는 같은 React + Tailwind 코어를 사용합니다. `client.ts`는 구현을 복제하지 않고 `"use client"` 경계와 코어 재수출만 제공합니다. 현재 저장소는 private 앱이므로 npm 패키지 subpath는 공개 API로 약속하지 않습니다. 생성 ZIP의 예시는 alias 없이 상대 경로로 가져오며, `@/` 예시는 소비 프로젝트가 해당 alias를 이미 설정한 경우에만 사용합니다.
 
 ## React / Vite
 

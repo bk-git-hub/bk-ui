@@ -102,14 +102,26 @@ describe("CardsStackSliderDemoPage", () => {
       name: "React / Vite TSX source code",
     });
     expect(reactExport).toHaveTextContent(
-      'from "@/components/CardsStackSlider"',
+      'from "./components/CardsStackSlider"',
     );
     expect(reactExport).not.toHaveTextContent("CardsStackSlider/client");
     const reactNote = screen.getByRole("note");
-    expect(reactNote).toHaveTextContent("CardsStackSlider.tsx");
-    expect(reactNote).toHaveTextContent("useCardsStackSlider.ts");
-    expect(reactNote).toHaveTextContent("@source");
-    expect(reactNote).toHaveTextContent("tailwind-merge");
+    expect(reactNote).toHaveTextContent("deterministic React ZIP");
+    expect(reactNote).toHaveTextContent("local verification artifact");
+    expect(reactNote).toHaveTextContent("relative import");
+    expect(
+      await screen.findByRole("heading", {
+        name: "Install Cards Stack Slider",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Release blocked\./)).toBeInTheDocument();
+    expect(screen.getByText("React/Vite installation")).toBeInTheDocument();
+    expect(screen.getByText("React/Vite source ZIP")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Next.js App Router source ZIP"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy npm" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Copy pnpm" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
     expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
       cardsStackSliderReactExport.code.trim(),
@@ -121,12 +133,23 @@ describe("CardsStackSliderDemoPage", () => {
     });
     expect(nextExport).toHaveTextContent('"use client"');
     expect(nextExport).toHaveTextContent(
-      'from "@/components/CardsStackSlider/client"',
+      'from "../../components/CardsStackSlider/client"',
     );
-    expect(nextExport).toHaveTextContent('export * from "./index"');
+    expect(nextExport).toHaveTextContent("cards-stack-slider-next.zip");
     expect(nextExport).not.toHaveTextContent('from "next/');
-    expect(screen.getByRole("note")).toHaveTextContent("stable for hydration");
-    expect(screen.getByRole("note")).toHaveTextContent("@source");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "exact React core bytes",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "disabling SSR is unnecessary",
+    );
+    expect(
+      await screen.findByText("Next.js App Router installation"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Next.js App Router source ZIP"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("React/Vite source ZIP")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
     expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
       cardsStackSliderNextJsExport.code.trim(),
