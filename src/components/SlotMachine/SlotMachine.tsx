@@ -1,17 +1,19 @@
-import type {
-  ComponentPropsWithRef,
-  CSSProperties,
-  Key,
-  ReactNode,
+import {
+  useState,
+  type ComponentPropsWithRef,
+  type CSSProperties,
+  type Key,
+  type ReactNode,
 } from "react";
 import { clsx } from "clsx";
-import { RotateCcw, Sparkles } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import {
+  createReelSpinSequence,
   useSlotMachine,
   type SlotRandomSource,
   type SlotValueChangeHandler,
 } from "./useSlotMachine";
+import { SlotMachineLever } from "./SlotMachineLever";
 
 function cn(...inputs: Parameters<typeof clsx>) {
   return twMerge(clsx(inputs));
@@ -97,12 +99,40 @@ export interface SlotMachineProps<T>
   respinLabel?: ReactNode;
   spinningLabel?: ReactNode;
   resetLabel?: ReactNode;
+  leverLabel?: string;
+  showLever?: boolean;
   disabled?: boolean;
 }
 
 interface SlotAnimationStyle extends CSSProperties {
   "--slot-reel-duration": string;
   "--slot-reel-delay": string;
+  "--slot-reel-distance": string;
+}
+
+function SpinIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" viewBox="0 0 24 24">
+      <path
+        d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Zm6 10 .9 2.6 2.6.9-2.6.9L18 20l-.9-2.6-2.6-.9 2.6-.9L18 13Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function ResetIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4 7v5h5M5.6 17a8 8 0 1 0 .5-10.5L4 9"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
 }
 
 export function SlotMachine<T>({
@@ -115,17 +145,21 @@ export function SlotMachine<T>({
   getItemKey = (_item, reelIndex) => reelIndex,
   reelClassName,
   random,
-  spinDuration = 900,
+  spinDuration = 1600,
   spinLabel = "Spin",
   respinLabel = "Spin again",
   spinningLabel = "Spinning…",
   resetLabel = "Reset",
+  leverLabel = "Pull lever to spin",
+  showLever = true,
   disabled = false,
   className,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledby,
   ...props
 }: SlotMachineProps<T>) {
+  const [spinTargets, setSpinTargets] = useState<readonly T[] | null>(null);
+  const [spinCycle, setSpinCycle] = useState(0);
   const { selectedItems, canSpin, hasSpun, isSpinning, spin, reset } =
     useSlotMachine({
       reels,
@@ -135,6 +169,13 @@ export function SlotMachine<T>({
       random,
       spinDuration,
     });
+  const startSpin = () => {
+    const nextItems = spin();
+    if (nextItems.length !== reels.length) return;
+
+    setSpinTargets(nextItems);
+    setSpinCycle((cycle) => cycle + 1);
+  };
   const state = !canSpin
     ? "invalid"
     : isSpinning
@@ -168,40 +209,87 @@ export function SlotMachine<T>({
       </div>
 
       {canSpin ? (
-        <SlotReelList aria-label="Slot reels">
-          {selectedItems.map((item, reelIndex) => {
-            const reelDuration = Math.max(
-              0,
-              spinDuration - reelIndex * Math.min(90, spinDuration / 4),
-            );
-            const animationStyle: SlotAnimationStyle = {
-              "--slot-reel-duration": `${reelDuration}ms`,
-              "--slot-reel-delay": `${Math.min(reelIndex * 90, spinDuration)}ms`,
-            };
+        <div
+          className={cn(
+            "grid min-w-0 gap-2 sm:gap-3",
+            showLever
+              ? "grid-cols-[minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,1fr)_4rem]"
+              : "grid-cols-1",
+          )}
+        >
+          <SlotReelList
+            aria-label="Slot reels"
+            className="h-36 min-h-0 [--slot-cell-height:9rem] sm:h-44 sm:min-h-0 sm:[--slot-cell-height:11rem]"
+          >
+            {selectedItems.map((item, reelIndex) => {
+              const maxDelay = Math.min(500, spinDuration * 0.3);
+              const delay =
+                reels.length > 1
+                  ? (maxDelay * reelIndex) / (reels.length - 1)
+                  : 0;
+              const reelDuration = Math.max(0, spinDuration - delay);
+              const targetItem = spinTargets?.[reelIndex] ?? item;
+              const visualItems = isSpinning
+                ? createReelSpinSequence(
+                    reels[reelIndex],
+                    item,
+                    targetItem,
+                    12 + reelIndex * 3,
+                  )
+                : [item];
+              const travelPercentage =
+                ((visualItems.length - 1) / visualItems.length) * 100;
+              const animationStyle: SlotAnimationStyle = {
+                "--slot-reel-duration": `${reelDuration}ms`,
+                "--slot-reel-delay": `${delay}ms`,
+                "--slot-reel-distance": `-${travelPercentage}%`,
+              };
 
-            return (
-              <SlotReel
-                key={getItemKey(item, reelIndex)}
-                aria-label={`Reel ${reelIndex + 1}: ${getItemLabel(item, reelIndex)}`}
-                className={
-                  typeof reelClassName === "function"
-                    ? reelClassName(item, reelIndex)
-                    : reelClassName
-                }
-                data-spinning={isSpinning || undefined}
-              >
-                <div
-                  aria-hidden="true"
-                  data-slot="slot-symbol"
-                  style={animationStyle}
-                  className="relative z-10 flex min-w-0 flex-col items-center justify-center"
+              return (
+                <SlotReel
+                  key={getItemKey(item, reelIndex)}
+                  aria-label={`Reel ${reelIndex + 1}: ${getItemLabel(item, reelIndex)}`}
+                  className={
+                    typeof reelClassName === "function"
+                      ? reelClassName(item, reelIndex)
+                      : reelClassName
+                  }
+                  data-spinning={isSpinning || undefined}
                 >
-                  {renderItem(item, reelIndex)}
-                </div>
-              </SlotReel>
-            );
-          })}
-        </SlotReelList>
+                  <div
+                    key={`${spinCycle}-${reelIndex}`}
+                    aria-hidden="true"
+                    className="absolute inset-x-0 top-0 z-10 flex flex-col"
+                    data-slot="slot-reel-track"
+                    style={animationStyle}
+                  >
+                    {visualItems.map((visualItem, visualIndex) => (
+                      <div
+                        key={`${String(getItemKey(visualItem, reelIndex))}-${visualIndex}`}
+                        className="flex h-[var(--slot-cell-height)] min-h-[var(--slot-cell-height)] min-w-0 flex-col items-center justify-center px-2"
+                        data-active={
+                          visualIndex === visualItems.length - 1 || undefined
+                        }
+                        data-slot="slot-reel-item"
+                      >
+                        {renderItem(visualItem, reelIndex)}
+                      </div>
+                    ))}
+                  </div>
+                </SlotReel>
+              );
+            })}
+          </SlotReelList>
+
+          {showLever && (
+            <SlotMachineLever
+              active={isSpinning}
+              aria-label={leverLabel}
+              disabled={disabled || !canSpin || isSpinning}
+              onPull={startSpin}
+            />
+          )}
+        </div>
       ) : (
         <div
           data-slot="slot-machine-empty"
@@ -215,9 +303,9 @@ export function SlotMachine<T>({
         <SlotMachineAction
           className="bg-rose-500 text-white shadow-lg shadow-rose-950/40 hover:-translate-y-0.5 hover:bg-rose-400 hover:shadow-xl active:translate-y-0"
           disabled={disabled || !canSpin || isSpinning}
-          onClick={spin}
+          onClick={startSpin}
         >
-          <Sparkles aria-hidden="true" className="size-4" />
+          <SpinIcon />
           {isSpinning ? spinningLabel : hasSpun ? respinLabel : spinLabel}
         </SlotMachineAction>
 
@@ -227,7 +315,7 @@ export function SlotMachine<T>({
             disabled={disabled || isSpinning}
             onClick={reset}
           >
-            <RotateCcw aria-hidden="true" className="size-4" />
+            <ResetIcon />
             {resetLabel}
           </SlotMachineAction>
         )}

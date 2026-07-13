@@ -27,6 +27,9 @@ describe("SlotMachineDemoPreview", () => {
     expect(screen.getByText(/현재 3개/)).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "돌리기" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "레버를 당겨 돌리기" }),
+    ).toBeEnabled();
   });
 
   it("explains and blocks empty slot content", () => {
@@ -47,7 +50,7 @@ describe("SlotMachineDemoPreview", () => {
     render(<SlotMachineDemoPreview />);
 
     fireEvent.click(screen.getByRole("button", { name: "돌리기" }));
-    act(() => vi.advanceTimersByTime(900));
+    act(() => vi.advanceTimersByTime(1800));
 
     expect(screen.getByRole("button", { name: "한 번 더" })).toBeEnabled();
 

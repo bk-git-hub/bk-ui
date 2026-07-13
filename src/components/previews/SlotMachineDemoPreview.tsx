@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { CircleHelp, SlidersHorizontal } from "lucide-react";
 import { SlotMachine } from "@/components/SlotMachine";
 import {
   createSlotReels,
@@ -18,6 +17,38 @@ const DEFAULT_ITEMS = [
 
 const MIN_REELS = 2;
 const MAX_REELS = 5;
+
+function SlidersIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M10 14v6"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function HelpIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-3.5 shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M9.8 9a2.3 2.3 0 1 1 3.3 2.1c-.8.4-1.1.9-1.1 1.7M12 16.8h.01"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
 
 function getFirstItems(items: readonly string[], reelCount: number) {
   return items.length > 0 && Number.isInteger(reelCount) && reelCount > 0
@@ -108,11 +139,12 @@ export default function SlotMachineDemoPreview() {
                   </>
                 );
               }}
-              spinDuration={900}
+              spinDuration={1800}
               spinLabel="돌리기"
               respinLabel="한 번 더"
               spinningLabel="회전 중…"
               resetLabel="처음으로"
+              leverLabel="레버를 당겨 돌리기"
               disabled={Boolean(validationMessage)}
               aria-label="사용자 설정 슬롯 머신"
               className="border-white/10 bg-[#0b1210] shadow-black/30"
@@ -123,7 +155,7 @@ export default function SlotMachineDemoPreview() {
         <aside className="rounded-[2rem] border border-[#ded5c7] bg-[#fffdf8] p-5 shadow-xl shadow-stone-900/5 sm:p-6">
           <div className="flex items-center gap-2">
             <span className="flex size-9 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
-              <SlidersHorizontal aria-hidden="true" className="size-4" />
+              <SlidersIcon />
             </span>
             <div>
               <h3 className="text-sm font-black text-slate-900">슬롯 편집기</h3>
@@ -153,7 +185,7 @@ export default function SlotMachineDemoPreview() {
                 className="mt-1.5 flex items-center gap-1.5 text-xs leading-5 text-slate-500"
                 id="slot-item-source-help"
               >
-                <CircleHelp aria-hidden="true" className="size-3.5 shrink-0" />
+                <HelpIcon />
                 줄바꿈이나 쉼표로 구분합니다. 현재 {items.length}개입니다.
               </p>
             </div>

@@ -23,6 +23,7 @@ export function PrizeSlot() {
         </span>
       )}
       spinLabel="Spin the reels"
+      leverLabel="Pull the lever to spin"
       aria-label="Prize slot machine"
     />
   );

@@ -43,6 +43,30 @@ export function selectSlotResults<T>(
   });
 }
 
+export function createReelSpinSequence<T>(
+  reel: readonly T[],
+  currentItem: T,
+  targetItem: T,
+  intermediateCount = 14,
+): T[] {
+  if (reel.length === 0) return [currentItem, targetItem];
+
+  const safeIntermediateCount = Math.min(
+    Math.max(Math.floor(intermediateCount), 6),
+    22,
+  );
+  const currentIndex = reel.findIndex((item) => Object.is(item, currentItem));
+  const startIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
+  const sequence = [currentItem];
+
+  for (let index = 0; index < safeIntermediateCount; index += 1) {
+    sequence.push(reel[(startIndex + index) % reel.length]);
+  }
+
+  sequence.push(targetItem);
+  return sequence;
+}
+
 function getInitialResults<T>(
   reels: readonly (readonly T[])[],
   defaultValue?: readonly T[],
