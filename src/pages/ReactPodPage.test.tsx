@@ -29,6 +29,9 @@ describe("ReactPodPage", () => {
     expect(screen.getByRole("tabpanel", { name: "Usage" })).toHaveTextContent(
       "wheelSensitivity={1.25}",
     );
+    expect(screen.getByRole("tabpanel", { name: "Usage" })).toHaveTextContent(
+      "coverflowAlbums={coverflowAlbums}",
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
     const reactExportPanel = screen.getByRole("tabpanel", {
@@ -41,6 +44,9 @@ describe("ReactPodPage", () => {
     ).toHaveTextContent('from "@/components/ReactPod"');
     expect(reactExportPanel).toHaveTextContent(
       "src/components/ClickWheel/ClickWheel.tsx",
+    );
+    expect(reactExportPanel).toHaveTextContent(
+      "src/components/Coverflow/coverflow.tsx",
     );
     expect(reactExportPanel).toHaveTextContent("Tailwind CSS v4");
     fireEvent.click(
@@ -59,6 +65,9 @@ describe("ReactPodPage", () => {
     ).toHaveTextContent('from "@/components/ReactPod/client"');
     expect(nextExportPanel).toHaveTextContent('"use client"');
     expect(nextExportPanel).toHaveTextContent("SSR / hydration");
+    expect(nextExportPanel).toHaveTextContent(
+      "coverflowAlbums={coverflowAlbums}",
+    );
     expect(nextExportPanel).toHaveTextContent("@source");
     fireEvent.click(
       within(nextExportPanel).getByRole("button", { name: "Copy" }),
@@ -80,6 +89,9 @@ describe("ReactPodPage", () => {
     const source = JSON.parse((editor as HTMLTextAreaElement).value);
     source.deviceName = "My Pocket Player";
     source.menuItems[0].label = "Listen Now";
+    source.menuItems.find(
+      (item: { id: string }) => item.id === "coverflow",
+    ).label = "Album Browser";
     source.wheelSensitivity = 2;
 
     fireEvent.change(editor, {
@@ -90,6 +102,9 @@ describe("ReactPodPage", () => {
     expect(screen.getByText("My Pocket Player")).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: "Listen Now" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Album Browser" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("slider", { name: "Wheel sensitivity" }),
@@ -199,6 +214,31 @@ describe("ReactPodPage", () => {
     expect(
       screen.getByRole("img", {
         name: /Han River and bridge lights reflected on the water/,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the preview Coverflow with injected album data", () => {
+    render(<ReactPodPage />);
+    const wheel = screen.getByLabelText(/Click wheel/);
+
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+
+    expect(screen.getByRole("option", { name: "Coverflow" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.keyDown(wheel, { key: "Enter" });
+
+    const coverflow = screen.getByRole("region", {
+      name: "ReactPod album coverflow",
+    });
+    expect(
+      within(coverflow).getByRole("button", {
+        name: "Show details for Blue Hour",
       }),
     ).toBeInTheDocument();
   });

@@ -15,6 +15,10 @@ describe("parseReactPodDemoCode", () => {
       id: "now-playing",
       label: "Now Playing",
     });
+    expect(result.config?.menuItems).toContainEqual({
+      id: "coverflow",
+      label: "Coverflow",
+    });
   });
 
   it("preserves a valid wheel sensitivity and defaults a missing value", () => {
@@ -55,5 +59,19 @@ describe("parseReactPodDemoCode", () => {
         }),
       ).error,
     ).toMatch(/duplicated/);
+  });
+
+  it("accepts Coverflow as a configurable menu id", () => {
+    const result = parseReactPodDemoCode(
+      JSON.stringify({
+        deviceName: "Gallery Pod",
+        menuItems: [{ id: "coverflow", label: "Album Browser" }],
+      }),
+    );
+
+    expect(result.error).toBeNull();
+    expect(result.config?.menuItems).toEqual([
+      { id: "coverflow", label: "Album Browser" },
+    ]);
   });
 });

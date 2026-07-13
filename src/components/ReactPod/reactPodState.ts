@@ -5,12 +5,14 @@ export type ReactPodScreen =
   | "photo-albums"
   | "photo-grid"
   | "photo-viewer"
+  | "coverflow"
   | "about";
 
 export type ReactPodMenuItemId =
   | "now-playing"
   | "songs"
   | "photos"
+  | "coverflow"
   | "shuffle"
   | "about";
 
@@ -39,6 +41,19 @@ export interface ReactPodPhotoAlbum {
   id: string;
   title: string;
   photos: readonly ReactPodPhoto[];
+}
+
+export interface ReactPodCoverflowTrack {
+  id: string;
+  title: string;
+}
+
+export interface ReactPodCoverflowAlbum {
+  id: string;
+  title: string;
+  coverSrc: string;
+  coverAlt: string;
+  tracks: readonly ReactPodCoverflowTrack[];
 }
 
 export const TRACKS: Track[] = [
@@ -88,6 +103,7 @@ export const MAIN_MENU_ITEMS: readonly ReactPodMenuItem[] = [
   { id: "now-playing", label: "Now Playing" },
   { id: "songs", label: "Songs" },
   { id: "photos", label: "Photos" },
+  { id: "coverflow", label: "Coverflow" },
   { id: "shuffle", label: "Shuffle Songs" },
   { id: "about", label: "About" },
 ];
@@ -336,6 +352,9 @@ export function reactPodReducer(
           albumIndex: clampIndex(state.albumIndex, photoAlbums.length),
           photoIndex: 0,
         });
+      }
+      if (selectedItem.id === "coverflow") {
+        return navigateTo(state, "coverflow");
       }
       if (selectedItem.id === "shuffle") {
         return navigateTo(state, "now-playing", {

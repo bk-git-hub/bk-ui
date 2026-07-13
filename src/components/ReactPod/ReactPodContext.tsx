@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type {
+  ReactPodCoverflowAlbum,
   ReactPodMenuItem,
   ReactPodPhotoAlbum,
   ReactPodState,
@@ -14,6 +15,8 @@ export interface ReactPodContextValue {
   deviceName: string;
   menuItems: readonly ReactPodMenuItem[];
   photoAlbums: readonly ReactPodPhotoAlbum[];
+  coverflowAlbums: readonly ReactPodCoverflowAlbum[];
+  coverflowAriaLabel: string;
   rotate: RotateHandler;
   select: () => void;
   back: () => void;

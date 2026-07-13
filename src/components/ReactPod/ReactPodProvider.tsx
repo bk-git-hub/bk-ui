@@ -9,6 +9,7 @@ import {
 } from "./reactPodState";
 import type {
   ReactPodAction,
+  ReactPodCoverflowAlbum,
   ReactPodMenuItem,
   ReactPodPhotoAlbum,
   ReactPodState,
@@ -19,6 +20,8 @@ interface ReactPodProviderProps {
   deviceName: string;
   menuItems: readonly ReactPodMenuItem[];
   photoAlbums: readonly ReactPodPhotoAlbum[];
+  coverflowAlbums: readonly ReactPodCoverflowAlbum[];
+  coverflowAriaLabel: string;
 }
 
 export function ReactPodProvider({
@@ -26,6 +29,8 @@ export function ReactPodProvider({
   deviceName,
   menuItems,
   photoAlbums,
+  coverflowAlbums,
+  coverflowAriaLabel,
 }: ReactPodProviderProps) {
   const reducer = useCallback(
     (state: ReactPodState, action: ReactPodAction) =>
@@ -88,6 +93,8 @@ export function ReactPodProvider({
       deviceName,
       menuItems,
       photoAlbums,
+      coverflowAlbums,
+      coverflowAriaLabel,
       rotate,
       select,
       back,
@@ -101,6 +108,8 @@ export function ReactPodProvider({
       deviceName,
       menuItems,
       photoAlbums,
+      coverflowAlbums,
+      coverflowAriaLabel,
       rotate,
       select,
       back,

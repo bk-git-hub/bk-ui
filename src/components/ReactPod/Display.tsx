@@ -7,6 +7,7 @@ import {
   ShuffleIcon,
 } from "./ReactPodIcons";
 import { TRACKS } from "./reactPodState";
+import ReactPodCoverflow from "./ReactPodCoverflow";
 
 function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -14,14 +15,18 @@ function formatTime(seconds: number) {
 }
 
 function StatusBar() {
-  const { deviceName, photoAlbums, state } = useReactPod();
+  const { deviceName, menuItems, photoAlbums, state } = useReactPod();
   const albumTitle = photoAlbums[state.albumIndex]?.title;
+  const coverflowTitle =
+    menuItems.find((item) => item.id === "coverflow")?.label ?? "Coverflow";
   const title =
-    state.screen === "photo-albums"
-      ? "Photos"
-      : state.screen === "photo-grid" || state.screen === "photo-viewer"
-        ? (albumTitle ?? deviceName)
-        : deviceName;
+    state.screen === "coverflow"
+      ? coverflowTitle
+      : state.screen === "photo-albums"
+        ? "Photos"
+        : state.screen === "photo-grid" || state.screen === "photo-viewer"
+          ? (albumTitle ?? deviceName)
+          : deviceName;
 
   return (
     <div className="flex h-7 shrink-0 items-center justify-between border-b border-slate-400 bg-gradient-to-b from-white to-slate-300 px-2 text-[11px] font-semibold text-slate-800">
@@ -42,14 +47,32 @@ function StatusBar() {
 }
 
 function MainMenu() {
-  const { menuItems, photoAlbums, state } = useReactPod();
+  const { coverflowAlbums, menuItems, photoAlbums, state } = useReactPod();
   const isPhotosSelected = menuItems[state.menuIndex]?.id === "photos";
+  const isCoverflowSelected = menuItems[state.menuIndex]?.id === "coverflow";
   const photoCovers = photoAlbums
     .flatMap((album) => {
       const photo = album.photos[0];
       return photo ? [{ albumId: album.id, photo }] : [];
     })
     .slice(0, 2);
+  const coverflowCovers = coverflowAlbums.slice(0, 2).map((album) => ({
+    id: album.id,
+    src: album.coverSrc,
+  }));
+  const previewCovers = isPhotosSelected
+    ? photoCovers.map(({ albumId, photo }) => ({
+        id: albumId,
+        src: photo.src,
+      }))
+    : isCoverflowSelected
+      ? coverflowCovers
+      : [];
+  const previewLabel = isPhotosSelected
+    ? "PHOTOS"
+    : isCoverflowSelected
+      ? "COVERS"
+      : "MUSIC";
 
   return (
     <div className="grid h-full grid-cols-[62%_38%] bg-white">
@@ -61,7 +84,7 @@ function MainMenu() {
               key={`${item.id}-${index}`}
               role="option"
               aria-selected={isSelected}
-              className={`flex h-8 items-center justify-between px-2 text-[12px] font-semibold ${
+              className={`flex h-7 items-center justify-between px-2 text-[11px] font-semibold ${
                 isSelected
                   ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
                   : "text-slate-900"
@@ -75,17 +98,17 @@ function MainMenu() {
       </div>
       <div
         className={`relative overflow-hidden ${
-          isPhotosSelected
+          isPhotosSelected || isCoverflowSelected
             ? "bg-slate-900"
             : "bg-gradient-to-br from-sky-100 via-blue-300 to-indigo-700"
         }`}
       >
-        {isPhotosSelected && photoCovers.length > 0 ? (
+        {previewCovers.length > 0 ? (
           <div className="absolute inset-2 grid rotate-2 grid-cols-2 gap-1.5">
-            {photoCovers.map(({ albumId, photo }) => (
+            {previewCovers.map((cover) => (
               <img
-                key={albumId}
-                src={photo.src}
+                key={cover.id}
+                src={cover.src}
                 alt=""
                 className="h-full min-h-0 w-full rounded-sm border border-white/50 object-cover shadow-md"
               />
@@ -98,7 +121,7 @@ function MainMenu() {
           </>
         )}
         <span className="absolute right-2 bottom-2 text-[10px] font-bold tracking-widest text-white/80">
-          {isPhotosSelected ? "PHOTOS" : "MUSIC"}
+          {previewLabel}
         </span>
       </div>
     </div>
@@ -443,6 +466,7 @@ export default function Display() {
         {state.screen === "photo-albums" && <PhotoAlbums />}
         {state.screen === "photo-grid" && <PhotoGrid />}
         {state.screen === "photo-viewer" && <PhotoViewer />}
+        {state.screen === "coverflow" && <ReactPodCoverflow />}
         {state.screen === "about" && <About />}
       </div>
     </div>

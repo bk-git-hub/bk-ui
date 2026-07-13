@@ -87,6 +87,26 @@ describe("reactPodReducer", () => {
     });
   });
 
+  it("enters Coverflow through the menu and returns through history", () => {
+    const coverflowMenuIndex = MAIN_MENU_ITEMS.findIndex(
+      (item) => item.id === "coverflow",
+    );
+    const coverflow = reactPodReducer(
+      { ...initialReactPodState, menuIndex: coverflowMenuIndex },
+      { type: "SELECT" },
+    );
+
+    expect(coverflow).toMatchObject({
+      screen: "coverflow",
+      navigationHistory: ["menu"],
+    });
+    expect(reactPodReducer(coverflow, { type: "BACK" })).toMatchObject({
+      screen: "menu",
+      navigationHistory: [],
+      menuIndex: coverflowMenuIndex,
+    });
+  });
+
   it("clamps volume and restarts or changes the previous track", () => {
     const loud = {
       ...initialReactPodState,
