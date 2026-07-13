@@ -1,0 +1,112 @@
+{
+  "$schema": "../schema/component-manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "tinder",
+  "title": "Tinder Swiper",
+  "componentVersion": "1.0.0",
+  "description": "A composable React card deck with pointer swiping, native-button controls, bounded three-card rendering, undo, reset, and empty-state primitives.",
+  "repository": "https://github.com/bk-git-hub/bk-ui",
+  "sourceCommit": "35d17dd9e1c04f4f35d9cf72f2c2574ebfceff0c",
+  "license": {
+    "spdx": "UNLICENSED",
+    "status": "pending"
+  },
+  "react": {
+    "range": ">=19.0.0 <20",
+    "tested": "19.2.7"
+  },
+  "next": {
+    "tested": "16.2.10",
+    "clientBoundary": "src/components/Tinder/client.ts",
+    "serializableProps": [
+      "cards: an array of plain records containing only serializable scalar values",
+      "deckKey: string"
+    ]
+  },
+  "files": [
+    {
+      "source": "src/components/Tinder/index.tsx",
+      "target": "@components/Tinder/index.tsx",
+      "type": "registry:component",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Tinder/useTinderSwipe.ts",
+      "target": "@components/Tinder/useTinderSwipe.ts",
+      "type": "registry:hook",
+      "frameworks": ["react", "next"]
+    },
+    {
+      "source": "src/components/Tinder/client.ts",
+      "target": "@components/Tinder/client.ts",
+      "type": "registry:component",
+      "frameworks": ["next"]
+    }
+  ],
+  "dependencies": {
+    "common": ["clsx@^2.1.1"],
+    "tailwind": {
+      "3": ["tailwind-merge@2.6.0"],
+      "4": ["tailwind-merge@^3.3.1"]
+    }
+  },
+  "entrypoints": {
+    "react": "src/components/Tinder/index.tsx",
+    "next": "src/components/Tinder/client.ts"
+  },
+  "tailwind": {
+    "supportedMajors": [3, 4],
+    "3": {
+      "supported": true,
+      "range": ">=3.4.0 <4",
+      "tested": "3.4.17",
+      "itemName": "tinder-tailwind-v3",
+      "scan": "Add \"./src/components/Tinder/**/*.{js,ts,jsx,tsx}\" (or the copied equivalent) to tailwind.config content.",
+      "representativeClasses": [
+        "-rotate-12",
+        "[touch-action:none]",
+        "duration-300",
+        "opacity-0",
+        "select-none",
+        "transition-transform",
+        "will-change-transform"
+      ]
+    },
+    "4": {
+      "supported": true,
+      "range": ">=4.0.0 <5",
+      "tested": "4.3.2",
+      "itemName": "tinder",
+      "scan": "Keep components/Tinder in the locally scanned source tree; for shared source add a stylesheet-relative @source directive for that directory.",
+      "representativeClasses": [
+        "-rotate-12",
+        "[touch-action:none]",
+        "duration-300",
+        "opacity-0",
+        "select-none",
+        "transition-transform",
+        "will-change-transform"
+      ]
+    }
+  },
+  "constraints": {
+    "ssr": [
+      "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
+      "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
+      "Render output is deterministic for the same ordered cards and does not require ssr: false.",
+      "Use the same ordered cards and stable deckKey for the server render and first hydration render."
+    ],
+    "accessibility": [
+      "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
+      "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
+      "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
+      "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
+      "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+    ]
+  },
+  "examples": {
+    "react": "import {\n  TinderCard,\n  TinderEmptyFallback,\n  TinderLikeButton,\n  TinderNopeButton,\n  TinderResetButton,\n  TinderRoot,\n} from \"../components/Tinder\";\n\ninterface Profile {\n  id: string;\n  name: string;\n  age: number;\n}\n\nconst profiles: readonly Profile[] = [\n  { id: \"ada\", name: \"Ada\", age: 29 },\n  { id: \"grace\", name: \"Grace\", age: 31 },\n];\n\nexport default function TinderExample() {\n  return (\n    <main className=\"grid min-h-screen place-items-center bg-slate-100 p-6\">\n      <TinderRoot cards={profiles}>\n        {({ currentIndex, visibleCards }) => (\n          <section aria-label=\"Profile deck\">\n            <div className=\"relative h-[28rem] w-80\">\n              {visibleCards.map(({ item, index }) => (\n                <TinderCard\n                  key={item.id}\n                  index={index}\n                  role=\"group\"\n                  aria-label={`${item.name}, age ${item.age}`}\n                  aria-hidden={index !== currentIndex}\n                  className=\"grid place-items-center p-8\"\n                >\n                  <h2 className=\"text-2xl font-semibold\">{item.name}</h2>\n                  <p>Age {item.age}</p>\n                </TinderCard>\n              ))}\n              <TinderEmptyFallback className=\"absolute inset-0 grid place-items-center\">\n                <div role=\"status\" aria-live=\"polite\" className=\"text-center\">\n                  <p>All profiles reviewed.</p>\n                  <TinderResetButton type=\"button\">Review again</TinderResetButton>\n                </div>\n              </TinderEmptyFallback>\n            </div>\n            <div className=\"mt-6 flex justify-center gap-4\">\n              <TinderNopeButton type=\"button\" aria-label=\"Pass profile\" className=\"rounded-full bg-white px-5 py-3 focus-visible:outline-2\">\n                Pass\n              </TinderNopeButton>\n              <TinderLikeButton type=\"button\" aria-label=\"Like profile\" className=\"rounded-full bg-white px-5 py-3 focus-visible:outline-2\">\n                Like\n              </TinderLikeButton>\n            </div>\n          </section>\n        )}\n      </TinderRoot>\n    </main>\n  );\n}\n",
+    "nextClient": "\"use client\";\n\nimport {\n  TinderCard,\n  TinderEmptyFallback,\n  TinderLikeButton,\n  TinderNopeButton,\n  TinderResetButton,\n  TinderRoot,\n} from \"../components/Tinder/client\";\n\nexport interface SerializableProfile {\n  id: string;\n  name: string;\n  age: number;\n}\n\nexport interface TinderDeckProps {\n  cards: readonly SerializableProfile[];\n  deckKey: string;\n}\n\nexport function TinderDeck({ cards, deckKey }: TinderDeckProps) {\n  return (\n    <TinderRoot key={deckKey} cards={cards}>\n      {({ currentIndex, visibleCards }) => (\n        <section aria-label=\"Profile deck\">\n          <div className=\"relative h-[28rem] w-80\">\n            {visibleCards.map(({ item, index }) => (\n              <TinderCard\n                key={item.id}\n                index={index}\n                role=\"group\"\n                aria-label={`${item.name}, age ${item.age}`}\n                aria-hidden={index !== currentIndex}\n                className=\"grid place-items-center p-8\"\n              >\n                <h2 className=\"text-2xl font-semibold\">{item.name}</h2>\n                <p>Age {item.age}</p>\n              </TinderCard>\n            ))}\n            <TinderEmptyFallback className=\"absolute inset-0 grid place-items-center\">\n              <div role=\"status\" aria-live=\"polite\" className=\"text-center\">\n                <p>All profiles reviewed.</p>\n                <TinderResetButton type=\"button\">Review again</TinderResetButton>\n              </div>\n            </TinderEmptyFallback>\n          </div>\n          <div className=\"mt-6 flex justify-center gap-4\">\n            <TinderNopeButton type=\"button\" aria-label=\"Pass profile\" className=\"rounded-full bg-white px-5 py-3 focus-visible:outline-2\">\n              Pass\n            </TinderNopeButton>\n            <TinderLikeButton type=\"button\" aria-label=\"Like profile\" className=\"rounded-full bg-white px-5 py-3 focus-visible:outline-2\">\n              Like\n            </TinderLikeButton>\n          </div>\n        </section>\n      )}\n    </TinderRoot>\n  );\n}\n",
+    "nextServer": "import { TinderDeck, type SerializableProfile } from \"./client-wrapper\";\n\nconst cards: readonly SerializableProfile[] = [\n  { id: \"ada\", name: \"Ada\", age: 29 },\n  { id: \"grace\", name: \"Grace\", age: 31 },\n];\n\nexport default function Page() {\n  return (\n    <main className=\"grid min-h-screen place-items-center bg-slate-100 p-6\">\n      <TinderDeck\n        cards={cards}\n        deckKey={cards.map((card) => card.id).join(\":\")}\n      />\n    </main>\n  );\n}\n"
+  }
+}
