@@ -42,9 +42,14 @@ present and its full matrix passes.
 
 ```sh
 pnpm artifacts:test
-pnpm artifacts:build
-pnpm artifacts:check
+pnpm artifacts:build -- --manifest registry/components/<slug>.json
+pnpm artifacts:check -- --manifest registry/components/<slug>.json
 ```
+
+An explicit `--manifest` run is component-scoped and never reads or writes the
+aggregate `registry.json`. Only the installation-strategy owner runs the
+unscoped `pnpm artifacts:build` / `pnpm artifacts:check` after component inputs
+are committed and clean.
 
 Generated JSON, ZIP, Markdown, and install descriptors must not be hand-edited.
 The release-blocked outputs contain repository-relative paths and hashes, never

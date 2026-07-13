@@ -117,6 +117,19 @@ test("unsupported Tailwind majors emit no Registry item or install variant", () 
   );
 });
 
+test("component-scoped rendering never emits the aggregate registry", () => {
+  const manifest = validateManifestStructure(sampleManifest(), {
+    manifestName: "demo.json",
+  });
+  const plan = renderArtifactPlan([sampleComponent(manifest)], {
+    includeRegistry: false,
+  });
+
+  assert.equal(plan.has("registry.json"), false);
+  assert.equal(plan.has("public/r/demo.json"), true);
+  assert.equal(plan.has("public/install/demo.json"), true);
+});
+
 test("artifact rendering is deterministic and uses a one-way hash graph", () => {
   const first = rendered();
   const second = rendered();

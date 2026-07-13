@@ -33,10 +33,16 @@ export async function buildArtifactPlan({
   manifestPaths,
   verifyGit = true,
 } = {}) {
+  const isComponentScoped = manifestPaths !== undefined;
   const paths = manifestPaths ?? (await defaultManifestPaths(rootDir));
   if (paths.length === 0) throw new Error("No component manifests were found");
   const components = await loadManifests(paths, { rootDir, verifyGit });
-  return { components, plan: renderArtifactPlan(components) };
+  return {
+    components,
+    plan: renderArtifactPlan(components, {
+      includeRegistry: !isComponentScoped,
+    }),
+  };
 }
 
 export async function runGenerator({

@@ -219,10 +219,13 @@ public/install/<name>.json
 ```
 
 The implementation uses pinned Git blobs as source bytes, canonical LF JSON,
-and an external-dependency-free STORE ZIP writer with fixed 1980 metadata. Run
-`pnpm artifacts:test`, `pnpm artifacts:build`, then `pnpm artifacts:check`.
-Rendering and validation finish in memory before write mode changes generated
-files.
+and an external-dependency-free STORE ZIP writer with fixed 1980 metadata.
+Component owners run `pnpm artifacts:build -- --manifest
+registry/components/<slug>.json` and the matching `artifacts:check`; this scoped
+mode never reads or writes aggregate `registry.json`. Only the shared strategy
+owner runs unscoped `pnpm artifacts:build` / `pnpm artifacts:check` after all
+component inputs are committed and clean. Rendering and validation finish in
+memory before write mode changes generated files.
 
 `public/install/<name>.json` is the UI-facing descriptor. Its status is one of:
 

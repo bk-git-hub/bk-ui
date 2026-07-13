@@ -418,20 +418,25 @@ function installDescriptor(component, leafHashes, aiPath, aiHash) {
   };
 }
 
-export function renderArtifactPlan(components) {
+export function renderArtifactPlan(
+  components,
+  { includeRegistry = true } = {},
+) {
   const plan = new Map();
-  const registry = {
-    $schema: REGISTRY_SCHEMA,
-    name: "bk-ui",
-    homepage: "https://github.com/bk-git-hub/bk-ui",
-    items: components.flatMap((component) =>
-      component.manifest.tailwind.supportedMajors.map((major) =>
-        registryItem(component, major, { inline: false }),
+  if (includeRegistry) {
+    const registry = {
+      $schema: REGISTRY_SCHEMA,
+      name: "bk-ui",
+      homepage: "https://github.com/bk-git-hub/bk-ui",
+      items: components.flatMap((component) =>
+        component.manifest.tailwind.supportedMajors.map((major) =>
+          registryItem(component, major, { inline: false }),
+        ),
       ),
-    ),
-  };
-  registry.items.sort((left, right) => compareUtf8(left.name, right.name));
-  plan.set("registry.json", canonicalJson(registry));
+    };
+    registry.items.sort((left, right) => compareUtf8(left.name, right.name));
+    plan.set("registry.json", canonicalJson(registry));
+  }
 
   for (const component of components) {
     const { manifest } = component;
