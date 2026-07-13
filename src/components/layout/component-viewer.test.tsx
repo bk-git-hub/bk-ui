@@ -122,4 +122,41 @@ describe("ComponentViewer", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(onResetCode).toHaveBeenCalledOnce();
   });
+
+  it("keeps editable configuration separate from copyable usage code", async () => {
+    render(
+      <ComponentViewer
+        title="Editable example"
+        description="Editable component"
+        usageCode={'{\n  "answer": 42\n}'}
+        component={<div>Preview content</div>}
+        codeLanguage="LIVE JSON"
+        onUsageCodeChange={vi.fn()}
+        referenceCode={
+          "\nexport default function Example() {\n  return <div />;\n}\n"
+        }
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+
+    expect(
+      screen.getByRole("textbox", { name: "LIVE JSON source code editor" }),
+    ).toHaveValue('{\n  "answer": 42\n}');
+    expect(screen.getByText("LIVE")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Usage" }));
+
+    const source = await screen.findByRole("region", {
+      name: "TSX source code",
+    });
+    expect(source).toHaveTextContent("export default function Example()");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      "export default function Example() {\n  return <div />;\n}",
+    );
+  });
 });
