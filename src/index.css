@@ -17,15 +17,27 @@
   }
 }
 
-@keyframes slot-lever-fire {
+@keyframes slot-lever-handle-fire {
   0% {
     transform: translate(-50%, 0);
   }
   42% {
-    transform: translate(-50%, 4rem);
+    transform: translate(-50%, var(--slot-lever-travel, 4rem));
   }
   100% {
     transform: translate(-50%, 0);
+  }
+}
+
+@keyframes slot-lever-shaft-fire {
+  0% {
+    clip-path: inset(0 0 0 0);
+  }
+  42% {
+    clip-path: inset(var(--slot-lever-travel, 4rem) 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -39,15 +51,39 @@
   transform: translate(-50%, var(--slot-lever-offset, 0));
 }
 
+[data-slot="slot-machine-lever"] [data-slot="slot-lever-shaft"] {
+  clip-path: inset(var(--slot-lever-offset, 0) 0 0 0);
+  transition: clip-path 150ms ease-out;
+}
+
+[data-slot="slot-machine-lever"][data-pulling="true"]
+  [data-slot="slot-lever-handle"],
+[data-slot="slot-machine-lever"][data-pulling="true"]
+  [data-slot="slot-lever-shaft"] {
+  transition-duration: 0ms;
+}
+
 [data-slot="slot-machine-lever"][data-active="true"]
   [data-slot="slot-lever-handle"] {
-  animation: slot-lever-fire 520ms cubic-bezier(0.2, 0.8, 0.25, 1);
+  animation: slot-lever-handle-fire 520ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+[data-slot="slot-machine-lever"][data-active="true"]
+  [data-slot="slot-lever-shaft"] {
+  animation: slot-lever-shaft-fire 520ms cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-slot="slot-reel"][data-spinning="true"] > [data-slot="slot-reel-track"],
   [data-slot="slot-machine-lever"][data-active="true"]
-    [data-slot="slot-lever-handle"] {
+    [data-slot="slot-lever-handle"],
+  [data-slot="slot-machine-lever"][data-active="true"]
+    [data-slot="slot-lever-shaft"] {
     animation: none;
+  }
+
+  [data-slot="slot-machine-lever"] [data-slot="slot-lever-handle"],
+  [data-slot="slot-machine-lever"] [data-slot="slot-lever-shaft"] {
+    transition: none;
   }
 }

@@ -15,6 +15,7 @@ function cn(...inputs: Parameters<typeof clsx>) {
 
 interface LeverStyle extends CSSProperties {
   "--slot-lever-offset": string;
+  "--slot-lever-travel": string;
 }
 
 export interface SlotMachineLeverProps extends ComponentPropsWithRef<"button"> {
@@ -139,6 +140,7 @@ export function SlotMachineLever({
   const leverStyle: LeverStyle = {
     ...style,
     "--slot-lever-offset": `${pullProgress * maxPullDistance}px`,
+    "--slot-lever-travel": `${maxPullDistance}px`,
   };
 
   return (
@@ -169,15 +171,21 @@ export function SlotMachineLever({
         <span className="mt-2 text-[0.5rem] font-black tracking-[0.22em] text-amber-200/70 [writing-mode:vertical-rl]">
           PULL
         </span>
-        <span className="absolute top-8 bottom-5 left-1/2 w-2 -translate-x-1/2 rounded-full border border-slate-500/70 bg-slate-950 shadow-inner shadow-black" />
+        <span
+          className="absolute top-8 bottom-5 left-1/2 w-2 -translate-x-1/2 rounded-full border border-slate-500/70 bg-slate-950 shadow-inner shadow-black"
+          data-slot="slot-lever-track"
+        />
+        <span
+          className="absolute top-8 bottom-5 left-1/2 z-[5] w-1.5 -translate-x-1/2 rounded-full border-x border-slate-300 bg-gradient-to-r from-slate-500 via-white to-slate-600 shadow-sm"
+          data-slot="slot-lever-shaft"
+        />
         <span
           data-slot="slot-lever-handle"
           className="absolute top-4 left-1/2 z-10 flex flex-col items-center transition-transform duration-150 ease-out"
         >
           <span className="size-8 rounded-full border border-rose-300/50 bg-[radial-gradient(circle_at_35%_28%,#fb7185_0%,#e11d48_48%,#881337_100%)] shadow-[0_5px_14px_rgba(136,19,55,0.55)] transition-transform group-active:scale-95 sm:size-9" />
-          <span className="h-14 w-1.5 rounded-b-full border-x border-slate-300 bg-gradient-to-r from-slate-500 via-white to-slate-600 shadow-sm sm:h-16" />
         </span>
-        <span className="absolute bottom-2 left-1/2 size-6 -translate-x-1/2 rounded-full border border-slate-400 bg-[radial-gradient(circle_at_35%_30%,#e2e8f0,#475569_70%)] shadow-md shadow-black" />
+        <span className="absolute bottom-2 left-1/2 z-20 size-6 -translate-x-1/2 rounded-full border border-slate-400 bg-[radial-gradient(circle_at_35%_30%,#e2e8f0,#475569_70%)] shadow-md shadow-black" />
       </span>
     </button>
   );

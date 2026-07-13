@@ -264,8 +264,20 @@ describe("SlotMachine", () => {
     const lever = screen.getByRole("button", {
       name: "Pull lever to spin",
     }) as HTMLButtonElement;
+    const handle = lever.querySelector<HTMLElement>(
+      '[data-slot="slot-lever-handle"]',
+    );
+    const shaft = lever.querySelector<HTMLElement>(
+      '[data-slot="slot-lever-shaft"]',
+    );
     const { releasePointerCapture, setPointerCapture } =
       preparePointerCapture(lever);
+
+    expect(handle).toBeInTheDocument();
+    expect(shaft).toBeInTheDocument();
+    expect(handle?.parentElement).toBe(shaft?.parentElement);
+    expect(handle).not.toContainElement(shaft);
+    expect(lever.style.getPropertyValue("--slot-lever-travel")).toBe("64px");
 
     firePrimaryPointerEvent(lever, "pointerdown", {
       pointerId: 7,
