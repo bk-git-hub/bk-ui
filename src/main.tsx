@@ -18,6 +18,8 @@ const loadCardsStackSliderDemoPage = () =>
   import("./pages/CardsStackSliderDemoPage.tsx");
 const loadShaderSliderDemoPage = () =>
   import("./pages/ShaderSliderDemoPage.tsx");
+const loadSlicerSliderDemoPage = () =>
+  import("./pages/SlicerSliderDemoPage.tsx");
 
 const TinderDemoPage = lazy(loadTinderDemoPage);
 const CoverflowPage = lazy(loadCoverflowPage);
@@ -27,6 +29,7 @@ const SlotMachineDemoPage = lazy(loadSlotMachineDemoPage);
 const BaccaratSqueezeDemoPage = lazy(loadBaccaratSqueezeDemoPage);
 const CardsStackSliderDemoPage = lazy(loadCardsStackSliderDemoPage);
 const ShaderSliderDemoPage = lazy(loadShaderSliderDemoPage);
+const SlicerSliderDemoPage = lazy(loadSlicerSliderDemoPage);
 
 const routePageLoaders = new Map<string, () => Promise<unknown>>([
   ["/components/tinder-swiper", loadTinderDemoPage],
@@ -37,6 +40,7 @@ const routePageLoaders = new Map<string, () => Promise<unknown>>([
   ["/components/baccarat-squeeze", loadBaccaratSqueezeDemoPage],
   ["/components/cards-stack-slider", loadCardsStackSliderDemoPage],
   ["/components/shader-slider", loadShaderSliderDemoPage],
+  ["/components/slicer-slider", loadSlicerSliderDemoPage],
 ]);
 const preloadedRoutes = new Set<string>();
 
@@ -128,6 +132,14 @@ const router = createBrowserRouter([
         element: (
           <LazyPage>
             <ShaderSliderDemoPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "components/slicer-slider",
+        element: (
+          <LazyPage>
+            <SlicerSliderDemoPage />
           </LazyPage>
         ),
       },

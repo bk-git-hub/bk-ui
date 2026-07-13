@@ -2,6 +2,7 @@ import React from "react";
 import {
   ArrowRight,
   Cherry,
+  Columns3,
   Dices,
   Layers3,
   ScanLine,
@@ -93,6 +94,13 @@ export default function HomePage() {
               description="WebGL image transitions with accessible controls and graceful fallback."
               icon={<Waves aria-hidden="true" className="h-10 w-10" />}
               href="/components/shader-slider"
+            />
+
+            <FeatureCard
+              title="Slicer Slider"
+              description="Editorial image reveals built from staggered vertical ribbons."
+              icon={<Columns3 aria-hidden="true" className="h-10 w-10" />}
+              href="/components/slicer-slider"
             />
           </div>
         </div>

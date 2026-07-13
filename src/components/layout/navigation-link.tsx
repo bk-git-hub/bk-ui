@@ -10,6 +10,7 @@ const navigationLinks = [
   { to: "/components/baccarat-squeeze", text: "Baccarat Squeeze" },
   { to: "/components/cards-stack-slider", text: "Cards Stack Slider" },
   { to: "/components/shader-slider", text: "Shader Slider" },
+  { to: "/components/slicer-slider", text: "Slicer Slider" },
 ];
 
 const NavigationLink = React.memo(
