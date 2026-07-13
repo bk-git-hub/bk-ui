@@ -1,4 +1,4 @@
-export const LOTTO_MIX_DURATION_MS = 900;
+export const LOTTO_MIX_DURATION_MS = 4_800;
 
 export function parseBallItems(source: string) {
   return source

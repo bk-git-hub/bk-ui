@@ -5,11 +5,17 @@ import { LOTTO_MIX_DURATION_MS, parseBallItems } from "./lotto-demo.util";
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.stubGlobal(
+    "requestAnimationFrame",
+    vi.fn(() => 1),
+  );
+  vi.stubGlobal("cancelAnimationFrame", vi.fn());
 });
 
 afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -25,6 +31,7 @@ describe("parseBallItems", () => {
 
 describe("LottoDemoPreview", () => {
   it("lets the user control ball content and draw count", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.25);
     render(<LottoDemoPreview />);
 
     fireEvent.change(screen.getByLabelText("공 내용"), {
@@ -39,13 +46,24 @@ describe("LottoDemoPreview", () => {
     expect(
       screen.getByRole("region", { name: "사용자 설정 로또 추첨기" }),
     ).toHaveAttribute("data-state", "spinning");
+    expect(LOTTO_MIX_DURATION_MS).toBeGreaterThanOrEqual(4_000);
+    expect(random).not.toHaveBeenCalled();
 
     act(() => {
-      vi.advanceTimersByTime(LOTTO_MIX_DURATION_MS);
+      vi.advanceTimersByTime(LOTTO_MIX_DURATION_MS - 1);
+    });
+    expect(screen.getByRole("button", { name: "섞는 중..." })).toBeDisabled();
+    expect(
+      screen.queryByRole("list", { name: "당첨 공" }),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
     });
 
     const results = screen.getByRole("list", { name: "당첨 공" });
     expect(within(results).getAllByRole("listitem")).toHaveLength(2);
+    expect(random).toHaveBeenCalledTimes(2);
     expect(screen.getByText(/줄바꿈이나 쉼표/)).toHaveTextContent(
       "현재 3개입니다.",
     );

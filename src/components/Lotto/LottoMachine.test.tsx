@@ -1,6 +1,39 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { LottoMachine } from "./LottoMachine";
+
+function installAnimationFrameHarness() {
+  let timestamp = 0;
+  let nextFrameId = 0;
+  const frames = new Map<number, FrameRequestCallback>();
+  const cancelAnimationFrame = vi.fn((frameId: number) => {
+    frames.delete(frameId);
+  });
+
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    nextFrameId += 1;
+    frames.set(nextFrameId, callback);
+    return nextFrameId;
+  });
+  vi.stubGlobal("cancelAnimationFrame", cancelAnimationFrame);
+
+  return {
+    cancelAnimationFrame,
+    step(milliseconds = 16) {
+      timestamp += milliseconds;
+      const pendingFrames = [...frames.values()];
+      frames.clear();
+      act(() => {
+        pendingFrames.forEach((callback) => callback(timestamp));
+      });
+    },
+  };
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("LottoMachine", () => {
   it("renders a capped decorative pool and accessible results", () => {
@@ -39,8 +72,9 @@ describe("LottoMachine", () => {
     );
   });
 
-  it("exposes its spinning state and allows style overrides", () => {
-    const { container } = render(
+  it("moves balls independently while exposing its spinning state", () => {
+    const animationFrames = installAnimationFrameHarness();
+    const { container, unmount } = render(
       <LottoMachine
         items={[1, 2, 3]}
         spinning
@@ -57,11 +91,32 @@ describe("LottoMachine", () => {
     expect(machine).toHaveAttribute("aria-busy", "true");
     expect(machine).toHaveClass("p-2");
     expect(machine).not.toHaveClass("p-4");
-    expect(
-      container.querySelector('[data-slot="lotto-machine-balls"]'),
-    ).toHaveClass("motion-safe:animate-[spin_2.8s_linear_infinite]");
+    const field = container.querySelector('[data-slot="lotto-machine-balls"]');
+    expect(field).not.toHaveClass(
+      "motion-safe:animate-[spin_2.8s_linear_infinite]",
+    );
     expect(
       container.querySelector('[data-slot="lotto-machine-ball"]'),
     ).toHaveClass("bg-fuchsia-500");
+    expect(
+      container.querySelector('[data-slot="lotto-machine-ball"]'),
+    ).not.toHaveClass("motion-safe:animate-bounce");
+
+    const ballBodies = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        '[data-slot="lotto-machine-ball-body"]',
+      ),
+    );
+    const initialTransforms = ballBodies.map((ball) => ball.style.transform);
+
+    animationFrames.step();
+    animationFrames.step();
+
+    const animatedTransforms = ballBodies.map((ball) => ball.style.transform);
+    expect(new Set(animatedTransforms).size).toBe(ballBodies.length);
+    expect(animatedTransforms).not.toEqual(initialTransforms);
+
+    unmount();
+    expect(animationFrames.cancelAnimationFrame).toHaveBeenCalled();
   });
 });

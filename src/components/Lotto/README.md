@@ -54,4 +54,4 @@ export function LottoMachineExample() {
 }
 ```
 
-`spinning` prop으로 챔버의 혼합 상태를 표현할 수 있고, `renderBall`, `getItemKey`, `getItemLabel`, `ballClassName`으로 임의 타입의 공을 렌더링합니다. 후보 공의 화면 배치는 인덱스 기반으로 결정되며 추첨 난수를 소비하지 않습니다.
+`spinning` prop으로 챔버의 혼합 상태를 표현할 수 있고, `renderBall`, `getItemKey`, `getItemLabel`, `ballClassName`으로 임의 타입의 공을 렌더링합니다. 혼합 중에는 각 공에 중력, 공기 분사, 원형 벽과 공 사이의 충돌이 독립적으로 적용되며, 혼합을 멈추면 공이 바닥으로 자연스럽게 가라앉습니다. `motionSeed`로 같은 초기 배치와 움직임을 재현할 수 있고, 이 물리 효과는 추첨 난수를 소비하지 않습니다. 사용자가 모션 감소를 요청한 환경에서는 정적인 배치로 표시합니다.

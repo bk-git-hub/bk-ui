@@ -1,11 +1,7 @@
-import type {
-  ComponentPropsWithRef,
-  CSSProperties,
-  Key,
-  ReactNode,
-} from "react";
+import type { ComponentPropsWithRef, Key, ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { LottoBall, LottoBallList, type LottoItemRenderer } from "./LottoDraw";
+import { useLottoMachinePhysics } from "./useLottoMachinePhysics";
 
 const DEFAULT_BALL_COLORS = [
   "bg-amber-400 text-slate-950 ring-amber-500/30 shadow-amber-950/20",
@@ -21,6 +17,7 @@ export interface LottoMachineProps<T>
   items: readonly T[];
   drawnItems?: readonly T[];
   spinning?: boolean;
+  motionSeed?: number;
   maxVisibleBalls?: number;
   resultCount?: number;
   renderBall?: LottoItemRenderer<T, ReactNode>;
@@ -32,25 +29,6 @@ export interface LottoMachineProps<T>
   readyLabel?: ReactNode;
   spinningLabel?: ReactNode;
   emptyResult?: ReactNode;
-}
-
-interface BallPosition extends CSSProperties {
-  left: string;
-  top: string;
-}
-
-function getBallPosition(index: number, itemCount: number): BallPosition {
-  const columns = Math.max(5, Math.ceil(Math.sqrt(itemCount * 1.4)));
-  const rows = Math.max(1, Math.ceil(itemCount / columns));
-  const row = Math.floor(index / columns);
-  const column = index % columns;
-  const horizontalStep = 72 / Math.max(1, columns - 0.5);
-  const verticalStep = Math.min(9.5, 50 / Math.max(1, rows - 1));
-
-  return {
-    left: `${14 + (column + (row % 2) * 0.5) * horizontalStep}%`,
-    top: `${82 - row * verticalStep}%`,
-  };
 }
 
 function getDefaultBallColor(label: string) {
@@ -75,6 +53,7 @@ export function LottoMachine<T>({
   items,
   drawnItems = [],
   spinning = false,
+  motionSeed = 2_026,
   maxVisibleBalls = 60,
   resultCount = 6,
   renderBall = (item) => String(item),
@@ -95,6 +74,11 @@ export function LottoMachine<T>({
     ? Math.max(0, Math.floor(maxVisibleBalls))
     : items.length;
   const visibleItems = items.slice(0, visibleBallLimit);
+  const { fieldRef, setBallRef } = useLottoMachinePhysics({
+    active: spinning,
+    ballCount: visibleItems.length,
+    motionSeed,
+  });
   const placeholderCount = Number.isFinite(resultCount)
     ? Math.min(12, Math.max(1, Math.floor(resultCount)))
     : 6;
@@ -175,31 +159,25 @@ export function LottoMachine<T>({
               {chamberLabel}: {items.length} balls
             </div>
             <div
+              ref={fieldRef}
               aria-hidden="true"
               data-slot="lotto-machine-balls"
-              className={twMerge(
-                "absolute inset-[5%] z-20 rounded-full",
-                spinning && "motion-safe:animate-[spin_2.8s_linear_infinite]",
-              )}
+              className="absolute inset-[5%] z-20 rounded-full"
             >
               {visibleItems.map((item, index) => (
                 <span
                   key={getItemKey(item, index)}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  style={getBallPosition(index, visibleItems.length)}
+                  ref={(element) => setBallRef(index, element)}
+                  data-slot="lotto-machine-ball-body"
+                  className="absolute top-0 left-0"
                 >
                   <span
                     data-index={index}
                     data-slot="lotto-machine-ball"
                     title={getItemLabel(item, index)}
-                    style={{
-                      animationDelay: `${-(index % 7) * 0.12}s`,
-                      animationDuration: `${0.78 + (index % 5) * 0.08}s`,
-                    }}
                     className={twMerge(
                       "relative flex items-center justify-center overflow-hidden rounded-full border border-white/80 px-1 text-center leading-none font-black shadow-[inset_-3px_-4px_6px_rgba(15,23,42,.28),inset_2px_2px_4px_rgba(255,255,255,.6),0_3px_7px_rgba(15,23,42,.32)] ring-1 before:absolute before:top-[12%] before:left-[18%] before:size-[24%] before:rounded-full before:bg-white/70 before:blur-[1px] before:content-['']",
                       machineBallSize,
-                      spinning && "motion-safe:animate-bounce",
                       resolveBallClassName(item, index),
                     )}
                   >
