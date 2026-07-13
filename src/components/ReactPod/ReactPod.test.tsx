@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import ReactPod from "./ReactPod";
+import type { ReactPodMenuItem } from "./ReactPod";
 
 describe("ReactPod", () => {
   it("navigates songs and controls playback from the click wheel", () => {
@@ -204,5 +205,74 @@ describe("ReactPod", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("renders a custom device name and built-in menu configuration", () => {
+    const handleClick = vi.fn();
+    const menuItems = [
+      { id: "about", label: "Device Info" },
+      { id: "songs", label: "My Library" },
+    ] satisfies readonly ReactPodMenuItem[];
+
+    render(
+      <ReactPod
+        deviceName="Pocket Mix"
+        menuItems={menuItems}
+        data-testid="custom-pod"
+        data-theme="midnight"
+        title="Custom music player"
+        className="w-[360px]"
+        onClick={handleClick}
+      />,
+    );
+
+    const pod = screen.getByTestId("custom-pod");
+    const menu = screen.getByRole("listbox", { name: "Main menu" });
+    const labels = within(menu)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+
+    expect(labels).toEqual(["Device Info", "My Library"]);
+    expect(screen.getByText("Pocket Mix")).toBeInTheDocument();
+    expect(pod).toHaveAttribute("data-theme", "midnight");
+    expect(pod).toHaveAttribute("title", "Custom music player");
+    expect(pod).toHaveClass("w-[360px]");
+    expect(pod).not.toHaveClass("w-[300px]");
+
+    fireEvent.click(pod);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    expect(screen.getAllByText("Pocket Mix")).toHaveLength(2);
+  });
+
+  it("keeps the selected menu index in range when menu props change", () => {
+    const fullMenu = [
+      { id: "now-playing", label: "Player" },
+      { id: "songs", label: "Library" },
+      { id: "shuffle", label: "Surprise Me" },
+      { id: "about", label: "Information" },
+    ] satisfies readonly ReactPodMenuItem[];
+    const songsOnly = [
+      { id: "songs", label: "Only Songs" },
+    ] satisfies readonly ReactPodMenuItem[];
+    const { rerender } = render(<ReactPod menuItems={fullMenu} />);
+    const wheel = screen.getByLabelText(/Click wheel/);
+
+    fireEvent.keyDown(wheel, { key: "ArrowUp" });
+    expect(screen.getByRole("option", { name: "Information" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    rerender(<ReactPod menuItems={songsOnly} />);
+
+    expect(screen.getByRole("option", { name: "Only Songs" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    expect(screen.getByRole("listbox", { name: "Songs" })).toBeInTheDocument();
   });
 });

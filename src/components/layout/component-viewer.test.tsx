@@ -62,4 +62,64 @@ describe("ComponentViewer", () => {
     );
     expect(screen.getByText("Copied!")).toBeInTheDocument();
   });
+
+  it("uses a controlled editor when a code change handler is provided", () => {
+    const onUsageCodeChange = vi.fn();
+
+    render(
+      <ComponentViewer
+        title="Editable example"
+        description="Editable component"
+        usageCode="const answer = 42;"
+        component={<div>Preview content</div>}
+        onUsageCodeChange={onUsageCodeChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "TSX source code editor",
+    });
+    expect(editor).toHaveValue("const answer = 42;");
+    expect(screen.getByText("LIVE")).toBeInTheDocument();
+
+    fireEvent.change(editor, {
+      target: { value: "const answer = 43;" },
+    });
+
+    expect(onUsageCodeChange).toHaveBeenCalledOnce();
+    expect(onUsageCodeChange).toHaveBeenCalledWith("const answer = 43;");
+  });
+
+  it("supports a custom language label, reset action, and live errors", () => {
+    const onResetCode = vi.fn();
+
+    render(
+      <ComponentViewer
+        title="Editable example"
+        description="Editable component"
+        usageCode="export default 42;"
+        component={<div>Preview content</div>}
+        codeLanguage="JavaScript"
+        codeError="Unexpected token on line 1"
+        onUsageCodeChange={vi.fn()}
+        onResetCode={onResetCode}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "JavaScript source code editor",
+    });
+    const error = screen.getByText("Unexpected token on line 1");
+
+    expect(editor).toHaveAttribute("aria-invalid", "true");
+    expect(editor).toHaveAccessibleDescription("Unexpected token on line 1");
+    expect(error).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(onResetCode).toHaveBeenCalledOnce();
+  });
 });

@@ -1,6 +1,12 @@
 import { useReactPod } from "./ReactPodContext";
-import { MAIN_MENU_ITEMS, TRACKS } from "./reactPodState";
-import { BatteryFull, ChevronRight, Pause, Play, Shuffle } from "lucide-react";
+import {
+  BatteryIcon,
+  ChevronRightIcon,
+  PauseIcon,
+  PlayIcon,
+  ShuffleIcon,
+} from "./ReactPodIcons";
+import { TRACKS } from "./reactPodState";
 
 function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -8,30 +14,37 @@ function formatTime(seconds: number) {
 }
 
 function StatusBar() {
-  const { state } = useReactPod();
+  const { deviceName, state } = useReactPod();
 
   return (
     <div className="flex h-7 shrink-0 items-center justify-between border-b border-slate-400 bg-gradient-to-b from-white to-slate-300 px-2 text-[11px] font-semibold text-slate-800">
-      <span className="flex w-8 items-center gap-1" aria-label={state.isPlaying ? "Playing" : "Paused"}>
-        {state.isPlaying ? <Play className="h-3 w-3 fill-current" /> : <Pause className="h-3 w-3" />}
+      <span
+        className="flex w-8 items-center gap-1"
+        aria-label={state.isPlaying ? "Playing" : "Paused"}
+      >
+        {state.isPlaying ? (
+          <PlayIcon className="h-3 w-3" />
+        ) : (
+          <PauseIcon className="h-3 w-3" />
+        )}
       </span>
-      <span>ReactPod</span>
-      <BatteryFull className="h-4 w-4" aria-label="Battery full" />
+      <span className="max-w-32 truncate">{deviceName}</span>
+      <BatteryIcon className="h-4 w-4" aria-label="Battery full" />
     </div>
   );
 }
 
 function MainMenu() {
-  const { state } = useReactPod();
+  const { menuItems, state } = useReactPod();
 
   return (
     <div className="grid h-full grid-cols-[62%_38%] bg-white">
       <div className="py-1" role="listbox" aria-label="Main menu">
-        {MAIN_MENU_ITEMS.map((item, index) => {
+        {menuItems.map((item, index) => {
           const isSelected = index === state.menuIndex;
           return (
             <div
-              key={item.id}
+              key={`${item.id}-${index}`}
               role="option"
               aria-selected={isSelected}
               className={`flex h-10 items-center justify-between px-2 text-[13px] font-semibold ${
@@ -40,8 +53,10 @@ function MainMenu() {
                   : "text-slate-900"
               }`}
             >
-              <span>{item.label}</span>
-              {isSelected && <ChevronRight className="h-4 w-4" />}
+              <span className="min-w-0 truncate">{item.label}</span>
+              {isSelected && (
+                <ChevronRightIcon className="h-4 w-4 shrink-0" />
+              )}
             </div>
           );
         })}
@@ -61,7 +76,11 @@ function Songs() {
   const { state } = useReactPod();
 
   return (
-    <div className="h-full overflow-hidden bg-white py-0.5" role="listbox" aria-label="Songs">
+    <div
+      className="h-full overflow-hidden bg-white py-0.5"
+      role="listbox"
+      aria-label="Songs"
+    >
       {TRACKS.map((track, index) => {
         const isSelected = index === state.songIndex;
         return (
@@ -79,11 +98,13 @@ function Songs() {
               <p className="truncate text-[12px] leading-tight font-semibold">
                 {track.title}
               </p>
-              <p className={`truncate text-[9px] ${isSelected ? "text-blue-100" : "text-slate-500"}`}>
+              <p
+                className={`truncate text-[9px] ${isSelected ? "text-blue-100" : "text-slate-500"}`}
+              >
                 {track.artist}
               </p>
             </div>
-            {isSelected && <ChevronRight className="h-4 w-4 shrink-0" />}
+            {isSelected && <ChevronRightIcon className="h-4 w-4 shrink-0" />}
           </div>
         );
       })}
@@ -114,7 +135,7 @@ function NowPlaying() {
           <p className="truncate text-[11px] text-slate-600">{track.artist}</p>
           <p className="truncate text-[10px] text-slate-500">{track.album}</p>
           <p className="mt-2 flex items-center gap-1 text-[9px] font-semibold text-blue-700">
-            {state.isShuffling && <Shuffle className="h-3 w-3" />}
+            {state.isShuffling && <ShuffleIcon className="h-3 w-3" />}
             {state.isPlaying ? "PLAYING" : "PAUSED"}
           </p>
         </div>
@@ -137,7 +158,10 @@ function NowPlaying() {
         <div className="flex items-center gap-2 text-[9px] font-semibold text-slate-600">
           <span>VOL</span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-400">
-            <div className="h-full bg-blue-600" style={{ width: `${state.volume}%` }} />
+            <div
+              className="h-full bg-blue-600"
+              style={{ width: `${state.volume}%` }}
+            />
           </div>
           <span className="w-6 text-right tabular-nums">{state.volume}</span>
         </div>
@@ -147,17 +171,22 @@ function NowPlaying() {
 }
 
 function About() {
+  const { deviceName } = useReactPod();
+  const monogram = deviceName.trim().charAt(0).toUpperCase() || "R";
+
   return (
     <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-200 px-5 text-center text-slate-800">
       <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-400 to-indigo-700 text-xl font-black text-white shadow-md">
-        R
+        {monogram}
       </div>
-      <p className="text-sm font-bold">ReactPod</p>
+      <p className="text-sm font-bold">{deviceName}</p>
       <p className="mt-1 text-[10px] leading-relaxed text-slate-600">
         A click-wheel music player built with React Context, pointer gestures,
         and keyboard controls.
       </p>
-      <p className="mt-2 text-[9px] font-semibold text-slate-400">5 songs · 16 min</p>
+      <p className="mt-2 text-[9px] font-semibold text-slate-400">
+        5 songs · 16 min
+      </p>
     </div>
   );
 }

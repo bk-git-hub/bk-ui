@@ -1,11 +1,37 @@
+import clsx from "clsx";
+import { twMerge } from "tailwind-merge";
+import type { ComponentPropsWithoutRef } from "react";
 import ClickWheel from "./ClickWheel";
 import Display from "./Display";
 import { ReactPodProvider } from "./ReactPodProvider";
+import { MAIN_MENU_ITEMS } from "./reactPodState";
+import type { ReactPodMenuItem } from "./reactPodState";
 
-function ReactPod() {
+export type { ReactPodMenuItem, ReactPodMenuItemId } from "./reactPodState";
+
+export interface ReactPodProps
+  extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
+  deviceName?: string;
+  menuItems?: readonly ReactPodMenuItem[];
+}
+
+function ReactPod({
+  deviceName = "ReactPod",
+  menuItems = MAIN_MENU_ITEMS,
+  className,
+  ...rootProps
+}: ReactPodProps) {
   return (
-    <ReactPodProvider>
-      <div className="flex h-[500px] w-[300px] shrink-0 flex-col overflow-hidden rounded-[26px] border border-zinc-400 bg-gradient-to-r from-zinc-300 via-zinc-100 to-zinc-300 p-4 shadow-[0_24px_50px_rgba(15,23,42,0.35),inset_0_0_15px_rgba(0,0,0,0.18)]">
+    <ReactPodProvider deviceName={deviceName} menuItems={menuItems}>
+      <div
+        {...rootProps}
+        className={twMerge(
+          clsx(
+            "flex h-[500px] w-[300px] shrink-0 flex-col overflow-hidden rounded-[26px] border border-zinc-400 bg-gradient-to-r from-zinc-300 via-zinc-100 to-zinc-300 p-4 shadow-[0_24px_50px_rgba(15,23,42,0.35),inset_0_0_15px_rgba(0,0,0,0.18)]",
+            className,
+          ),
+        )}
+      >
         <Display />
         <ClickWheel />
       </div>

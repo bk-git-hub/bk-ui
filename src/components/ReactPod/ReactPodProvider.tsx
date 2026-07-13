@@ -7,13 +7,33 @@ import {
   reactPodReducer,
   TRACKS,
 } from "./reactPodState";
+import type {
+  ReactPodAction,
+  ReactPodMenuItem,
+  ReactPodState,
+} from "./reactPodState";
 
 interface ReactPodProviderProps {
   children: ReactNode;
+  deviceName: string;
+  menuItems: readonly ReactPodMenuItem[];
 }
 
-export function ReactPodProvider({ children }: ReactPodProviderProps) {
-  const [state, dispatch] = useReducer(reactPodReducer, initialReactPodState);
+export function ReactPodProvider({
+  children,
+  deviceName,
+  menuItems,
+}: ReactPodProviderProps) {
+  const reducer = useCallback(
+    (state: ReactPodState, action: ReactPodAction) =>
+      reactPodReducer(state, action, menuItems),
+    [menuItems],
+  );
+  const [state, dispatch] = useReducer(reducer, initialReactPodState);
+
+  useEffect(() => {
+    dispatch({ type: "SYNC_MENU_ITEMS", menuLength: menuItems.length });
+  }, [menuItems.length]);
 
   const rotate = useCallback((direction: -1 | 1) => {
     dispatch({ type: "ROTATE", direction });
@@ -27,10 +47,7 @@ export function ReactPodProvider({ children }: ReactPodProviderProps) {
   }, []);
 
   const back = useCallback(() => dispatch({ type: "BACK" }), []);
-  const togglePlay = useCallback(
-    () => dispatch({ type: "TOGGLE_PLAY" }),
-    [],
-  );
+  const togglePlay = useCallback(() => dispatch({ type: "TOGGLE_PLAY" }), []);
   const previous = useCallback(() => dispatch({ type: "PREVIOUS" }), []);
   const next = useCallback(() => {
     dispatch({ type: "NEXT", trackIndex: getNextTrackIndex(state) });
@@ -52,8 +69,28 @@ export function ReactPodProvider({ children }: ReactPodProviderProps) {
   }, [state]);
 
   const value = useMemo(
-    () => ({ state, rotate, select, back, togglePlay, next, previous }),
-    [state, rotate, select, back, togglePlay, next, previous],
+    () => ({
+      state,
+      deviceName,
+      menuItems,
+      rotate,
+      select,
+      back,
+      togglePlay,
+      next,
+      previous,
+    }),
+    [
+      state,
+      deviceName,
+      menuItems,
+      rotate,
+      select,
+      back,
+      togglePlay,
+      next,
+      previous,
+    ],
   );
 
   return (

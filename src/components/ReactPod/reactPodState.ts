@@ -1,5 +1,12 @@
 export type ReactPodScreen = "menu" | "songs" | "now-playing" | "about";
 
+export type ReactPodMenuItemId = "now-playing" | "songs" | "shuffle" | "about";
+
+export interface ReactPodMenuItem {
+  id: ReactPodMenuItemId;
+  label: string;
+}
+
 export interface Track {
   id: number;
   title: string;
@@ -52,12 +59,12 @@ export const TRACKS: Track[] = [
   },
 ];
 
-export const MAIN_MENU_ITEMS = [
+export const MAIN_MENU_ITEMS: readonly ReactPodMenuItem[] = [
   { id: "now-playing", label: "Now Playing" },
   { id: "songs", label: "Songs" },
   { id: "shuffle", label: "Shuffle Songs" },
   { id: "about", label: "About" },
-] as const;
+];
 
 export interface ReactPodState {
   screen: ReactPodScreen;
@@ -88,10 +95,16 @@ export type ReactPodAction =
   | { type: "TOGGLE_PLAY" }
   | { type: "NEXT"; trackIndex: number }
   | { type: "PREVIOUS" }
-  | { type: "TICK" };
+  | { type: "TICK" }
+  | { type: "SYNC_MENU_ITEMS"; menuLength: number };
 
 function wrap(value: number, length: number) {
   return (value + length) % length;
+}
+
+function clampMenuIndex(menuIndex: number, menuLength: number) {
+  if (menuLength === 0) return 0;
+  return Math.min(menuIndex, menuLength - 1);
 }
 
 export function getNextTrackIndex(
@@ -111,16 +124,16 @@ export function getNextTrackIndex(
 export function reactPodReducer(
   state: ReactPodState,
   action: ReactPodAction,
+  menuItems: readonly ReactPodMenuItem[] = MAIN_MENU_ITEMS,
 ): ReactPodState {
   switch (action.type) {
     case "ROTATE":
       if (state.screen === "menu") {
+        if (menuItems.length === 0) return state;
+
         return {
           ...state,
-          menuIndex: wrap(
-            state.menuIndex + action.direction,
-            MAIN_MENU_ITEMS.length,
-          ),
+          menuIndex: wrap(state.menuIndex + action.direction, menuItems.length),
         };
       }
 
@@ -161,9 +174,15 @@ export function reactPodReducer(
 
       if (state.screen !== "menu") return state;
 
-      const selectedItem = MAIN_MENU_ITEMS[state.menuIndex];
+      const selectedItem = menuItems[state.menuIndex];
+      if (!selectedItem) return state;
+
       if (selectedItem.id === "songs") {
-        return { ...state, screen: "songs", songIndex: state.currentTrackIndex };
+        return {
+          ...state,
+          screen: "songs",
+          songIndex: state.currentTrackIndex,
+        };
       }
       if (selectedItem.id === "about") {
         return { ...state, screen: "about" };
@@ -214,5 +233,10 @@ export function reactPodReducer(
           TRACKS[state.currentTrackIndex].duration,
         ),
       };
+
+    case "SYNC_MENU_ITEMS": {
+      const menuIndex = clampMenuIndex(state.menuIndex, action.menuLength);
+      return menuIndex === state.menuIndex ? state : { ...state, menuIndex };
+    }
   }
 }
