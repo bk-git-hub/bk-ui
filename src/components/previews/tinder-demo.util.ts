@@ -107,13 +107,13 @@ export function parseTinderDemoCode(source: string): ParseResult {
     }
 
     const id = readText(item.id, `${label}.id`, MAX_ID_LENGTH);
-    if (id.error) return { config: null, error: id.error };
+    if (id.error !== null) return { config: null, error: id.error };
     if (seenIds.has(id.value)) {
       return { config: null, error: `Card id "${id.value}" is duplicated.` };
     }
 
     const name = readText(item.name, `${label}.name`, MAX_NAME_LENGTH);
-    if (name.error) return { config: null, error: name.error };
+    if (name.error !== null) return { config: null, error: name.error };
 
     if (
       typeof item.age !== "number" ||
@@ -148,16 +148,24 @@ export function parseTinderDemoCode(source: string): ParseResult {
     "emptyMessage",
     MAX_LABEL_LENGTH,
   );
-  if (emptyMessage.error) return { config: null, error: emptyMessage.error };
+  if (emptyMessage.error !== null) {
+    return { config: null, error: emptyMessage.error };
+  }
 
   const resetLabel = readText(value.resetLabel, "resetLabel", MAX_LABEL_LENGTH);
-  if (resetLabel.error) return { config: null, error: resetLabel.error };
+  if (resetLabel.error !== null) {
+    return { config: null, error: resetLabel.error };
+  }
 
   const passLabel = readText(value.passLabel, "passLabel", MAX_LABEL_LENGTH);
-  if (passLabel.error) return { config: null, error: passLabel.error };
+  if (passLabel.error !== null) {
+    return { config: null, error: passLabel.error };
+  }
 
   const likeLabel = readText(value.likeLabel, "likeLabel", MAX_LABEL_LENGTH);
-  if (likeLabel.error) return { config: null, error: likeLabel.error };
+  if (likeLabel.error !== null) {
+    return { config: null, error: likeLabel.error };
+  }
 
   return {
     config: {
