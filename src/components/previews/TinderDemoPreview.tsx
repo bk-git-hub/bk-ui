@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   TinderRoot,
   TinderLikeButton,
@@ -6,13 +7,26 @@ import {
   TinderResetButton,
   TinderEmptyFallback,
 } from "@/components/Tinder";
-import { SAMPLE_CARDS } from "@/mocks/tinderSwiperData";
+import {
+  DEFAULT_TINDER_DEMO_CONFIG,
+  resolveTinderDemoCards,
+  type TinderDemoConfig,
+} from "./tinder-demo.util";
 
-export default function TinderDemoPreview() {
+export interface TinderDemoPreviewProps {
+  config?: TinderDemoConfig;
+}
+
+export default function TinderDemoPreview({
+  config = DEFAULT_TINDER_DEMO_CONFIG,
+}: TinderDemoPreviewProps) {
+  const cards = useMemo(() => resolveTinderDemoCards(config), [config]);
+  const previewKey = JSON.stringify(config);
+
   return (
     <div className="flex h-full w-full flex-1 flex-col items-center justify-center overflow-hidden bg-gray-100 p-4">
       {/* 1. Tinder.Root가 모든 것을 감싸고, cards 데이터를 주입합니다. */}
-      <TinderRoot cards={SAMPLE_CARDS}>
+      <TinderRoot key={previewKey} cards={cards}>
         {({ visibleCards, currentIndex }) => (
           <>
             {/* 카드가 표시될 영역의 크기와 위치를 지정합니다. */}
@@ -46,10 +60,10 @@ export default function TinderDemoPreview() {
               <TinderEmptyFallback>
                 <div className="p-4 text-center">
                   <h2 className="text-xl font-bold text-black">
-                    모든 카드를 확인했습니다!
+                    {config.emptyMessage}
                   </h2>
                   <TinderResetButton className="mt-10 cursor-pointer rounded-full bg-black p-4 text-white">
-                    RESET
+                    {config.resetLabel}
                   </TinderResetButton>
                 </div>
               </TinderEmptyFallback>
@@ -58,7 +72,7 @@ export default function TinderDemoPreview() {
             {/* 4. 컨트롤 버튼들을 원하는 위치에 배치합니다. */}
             <div className="mt-8 flex space-x-8">
               <TinderNopeButton
-                aria-label="Pass card"
+                aria-label={config.passLabel}
                 className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
               >
                 <svg
@@ -77,7 +91,7 @@ export default function TinderDemoPreview() {
                 </svg>
               </TinderNopeButton>
               <TinderLikeButton
-                aria-label="Like card"
+                aria-label={config.likeLabel}
                 className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
               >
                 <svg
