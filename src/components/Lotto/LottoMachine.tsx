@@ -18,6 +18,7 @@ export interface LottoMachineProps<T>
   drawnItems?: readonly T[];
   spinning?: boolean;
   motionSeed?: number;
+  depthLayers?: number;
   maxVisibleBalls?: number;
   resultCount?: number;
   renderBall?: LottoItemRenderer<T, ReactNode>;
@@ -54,6 +55,7 @@ export function LottoMachine<T>({
   drawnItems = [],
   spinning = false,
   motionSeed = 2_026,
+  depthLayers = 5,
   maxVisibleBalls = 60,
   resultCount = 6,
   renderBall = (item) => String(item),
@@ -78,6 +80,7 @@ export function LottoMachine<T>({
     active: spinning,
     ballCount: visibleItems.length,
     motionSeed,
+    depthLayerCount: depthLayers,
   });
   const placeholderCount = Number.isFinite(resultCount)
     ? Math.min(12, Math.max(1, Math.floor(resultCount)))

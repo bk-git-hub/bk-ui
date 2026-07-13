@@ -1,7 +1,9 @@
 import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
 import {
   createLottoPhysicsBodies,
+  getLottoPhysicsPresentation,
   kickLottoPhysicsBodies,
+  normalizeLottoDepthLayerCount,
   stepLottoPhysicsBodies,
   type LottoPhysicsBody,
 } from "./lottoMachinePhysics";
@@ -14,6 +16,7 @@ interface UseLottoMachinePhysicsOptions {
   active: boolean;
   ballCount: number;
   motionSeed?: number;
+  depthLayerCount?: number;
 }
 
 interface UseLottoMachinePhysicsResult {
@@ -33,9 +36,20 @@ function applyBodyTransform(
   body: LottoPhysicsBody,
   measurement: FieldMeasurement,
 ) {
-  const x = measurement.center + body.x * measurement.radius;
-  const y = measurement.center + body.y * measurement.radius;
-  element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${body.rotation}deg)`;
+  const presentation = getLottoPhysicsPresentation(body);
+  const depthRatio = Math.min(1, Math.max(0, (body.depth + 1) / 2));
+  const parallax = 0.94 + depthRatio * 0.06;
+  const x = measurement.center + body.x * measurement.radius * parallax;
+  const y = measurement.center + body.y * measurement.radius * parallax;
+  const opacity = String(presentation.opacity);
+  const zIndex = String(presentation.zIndex);
+  const depthLayer = String(body.depthLayer);
+  element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${body.rotation}deg) scale(${presentation.scale})`;
+  if (element.style.opacity !== opacity) element.style.opacity = opacity;
+  if (element.style.zIndex !== zIndex) element.style.zIndex = zIndex;
+  if (element.dataset.depthLayer !== depthLayer) {
+    element.dataset.depthLayer = depthLayer;
+  }
 }
 
 function prefersReducedMotion() {
@@ -48,7 +62,10 @@ export function useLottoMachinePhysics({
   active,
   ballCount,
   motionSeed = 2_026,
+  depthLayerCount,
 }: UseLottoMachinePhysicsOptions): UseLottoMachinePhysicsResult {
+  const normalizedDepthLayerCount =
+    normalizeLottoDepthLayerCount(depthLayerCount);
   const fieldRef = useRef<HTMLDivElement>(null);
   const ballRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const bodiesRef = useRef<LottoPhysicsBody[]>([]);
@@ -56,6 +73,10 @@ export function useLottoMachinePhysics({
   const frameRef = useRef<number | null>(null);
   const wasActiveRef = useRef(false);
   const runCountRef = useRef(0);
+  const configurationRef = useRef<{
+    depthLayerCount: number;
+    motionSeed: number;
+  } | null>(null);
 
   const setBallRef = useCallback(
     (index: number, element: HTMLSpanElement | null) => {
@@ -111,6 +132,9 @@ export function useLottoMachinePhysics({
     const ensureBodies = () => {
       const requiresNewBodies =
         bodiesRef.current.length !== ballCount ||
+        configurationRef.current?.depthLayerCount !==
+          normalizedDepthLayerCount ||
+        configurationRef.current?.motionSeed !== motionSeed ||
         bodiesRef.current.some(
           (body) => Math.abs(body.radius - measurement.ballRadius) > 0.005,
         );
@@ -120,7 +144,12 @@ export function useLottoMachinePhysics({
           count: ballCount,
           ballRadius: measurement.ballRadius,
           seed: motionSeed,
+          depthLayerCount: normalizedDepthLayerCount,
         });
+        configurationRef.current = {
+          depthLayerCount: normalizedDepthLayerCount,
+          motionSeed,
+        };
       } else {
         bodiesRef.current.forEach((body) => {
           body.radius = measurement.ballRadius;
@@ -167,6 +196,7 @@ export function useLottoMachinePhysics({
         count: ballCount,
         ballRadius: measurement.ballRadius,
         seed: motionSeed,
+        depthLayerCount: normalizedDepthLayerCount,
       });
       applyBodies();
       elements.forEach((element) => {
@@ -203,7 +233,7 @@ export function useLottoMachinePhysics({
     }
 
     elements.forEach((element) => {
-      if (element) element.style.willChange = "transform";
+      if (element) element.style.willChange = "transform, opacity";
     });
 
     const runFrame = (timestamp: number) => {
@@ -240,7 +270,7 @@ export function useLottoMachinePhysics({
 
     frameRef.current = window.requestAnimationFrame(runFrame);
     return cleanUp;
-  }, [active, ballCount, motionSeed]);
+  }, [active, ballCount, motionSeed, normalizedDepthLayerCount]);
 
   return { fieldRef, setBallRef };
 }

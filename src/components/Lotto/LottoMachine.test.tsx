@@ -17,17 +17,56 @@ function installAnimationFrameHarness() {
   });
   vi.stubGlobal("cancelAnimationFrame", cancelAnimationFrame);
 
+  const runNextFrame = (milliseconds: number) => {
+    timestamp += milliseconds;
+    const pendingFrames = [...frames.values()];
+    frames.clear();
+    pendingFrames.forEach((callback) => callback(timestamp));
+  };
+
   return {
     cancelAnimationFrame,
+    get pendingFrameCount() {
+      return frames.size;
+    },
     step(milliseconds = 16) {
-      timestamp += milliseconds;
-      const pendingFrames = [...frames.values()];
-      frames.clear();
       act(() => {
-        pendingFrames.forEach((callback) => callback(timestamp));
+        runNextFrame(milliseconds);
+      });
+    },
+    advanceFrames(frameCount: number, milliseconds = 16) {
+      act(() => {
+        for (let frame = 0; frame < frameCount; frame += 1) {
+          runNextFrame(milliseconds);
+        }
       });
     },
   };
+}
+
+function readBallPositions(ballBodies: HTMLElement[]) {
+  return ballBodies.map((ball) => {
+    const match = ball.style.transform.match(
+      /translate3d\(([-\d.e]+)px, ([-\d.e]+)px/,
+    );
+    if (!match)
+      throw new Error(`Missing ball position: ${ball.style.transform}`);
+    return { x: Number(match[1]), y: Number(match[2]) };
+  });
+}
+
+function countMovedBalls(
+  first: Array<{ x: number; y: number }>,
+  second: Array<{ x: number; y: number }>,
+  minimumDistance: number,
+) {
+  return first.filter((position, index) => {
+    const nextPosition = second[index];
+    return (
+      Math.hypot(nextPosition.x - position.x, nextPosition.y - position.y) >=
+      minimumDistance
+    );
+  }).length;
 }
 
 afterEach(() => {
@@ -74,10 +113,12 @@ describe("LottoMachine", () => {
 
   it("moves balls independently while exposing its spinning state", () => {
     const animationFrames = installAnimationFrameHarness();
+    const items = Array.from({ length: 12 }, (_, index) => index + 1);
     const { container, unmount } = render(
       <LottoMachine
-        items={[1, 2, 3]}
+        items={items}
         spinning
+        depthLayers={4}
         aria-label="Custom lotto machine"
         className="p-2"
         ballClassName="bg-fuchsia-500"
@@ -115,8 +156,74 @@ describe("LottoMachine", () => {
     const animatedTransforms = ballBodies.map((ball) => ball.style.transform);
     expect(new Set(animatedTransforms).size).toBe(ballBodies.length);
     expect(animatedTransforms).not.toEqual(initialTransforms);
+    expect(
+      new Set(ballBodies.map((ball) => ball.dataset.depthLayer)).size,
+    ).toBe(4);
+    expect(
+      new Set(ballBodies.map((ball) => ball.style.opacity)).size,
+    ).toBeGreaterThanOrEqual(4);
+    expect(
+      new Set(ballBodies.map((ball) => ball.style.zIndex)).size,
+    ).toBeGreaterThanOrEqual(4);
+    expect(
+      new Set(
+        ballBodies.map(
+          (ball) => ball.style.transform.match(/scale\(([-\d.]+)\)/)?.[1],
+        ),
+      ).size,
+    ).toBeGreaterThanOrEqual(4);
+
+    animationFrames.advanceFrames(75);
+    const earlyPositions = readBallPositions(ballBodies);
+    animationFrames.advanceFrames(75);
+    const middlePositions = readBallPositions(ballBodies);
+    animationFrames.advanceFrames(75);
+    const latePositions = readBallPositions(ballBodies);
+
+    expect(
+      countMovedBalls(earlyPositions, middlePositions, 4),
+    ).toBeGreaterThanOrEqual(6);
+    expect(
+      countMovedBalls(middlePositions, latePositions, 4),
+    ).toBeGreaterThanOrEqual(6);
+    expect(animationFrames.pendingFrameCount).toBe(1);
 
     unmount();
     expect(animationFrames.cancelAnimationFrame).toHaveBeenCalled();
+  });
+
+  it("keeps a static depth layout when reduced motion is preferred", () => {
+    const animationFrames = installAnimationFrameHarness();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+    const { container } = render(
+      <LottoMachine
+        items={Array.from({ length: 10 }, (_, index) => index + 1)}
+        spinning
+      />,
+    );
+    const ballBodies = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        '[data-slot="lotto-machine-ball-body"]',
+      ),
+    );
+
+    expect(animationFrames.pendingFrameCount).toBe(0);
+    expect(
+      new Set(ballBodies.map((ball) => ball.dataset.depthLayer)).size,
+    ).toBe(5);
+    expect(
+      new Set(ballBodies.map((ball) => ball.style.zIndex)).size,
+    ).toBeGreaterThanOrEqual(5);
+    ballBodies.forEach((ball) => {
+      expect(ball.style.transform).toContain("scale(");
+      expect(ball.style.willChange).toBe("auto");
+    });
   });
 });
