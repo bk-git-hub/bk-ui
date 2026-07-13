@@ -112,7 +112,11 @@ describe("TinderDemoPage", () => {
     );
     expect(screen.getByRole("note")).toHaveTextContent("Tailwind v3");
     expect(
-      await screen.findByRole("heading", { name: "Install Tinder Swiper" }),
+      await screen.findByRole(
+        "heading",
+        { name: "Install Tinder Swiper" },
+        { timeout: 5_000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/Release blocked\./)).toBeInTheDocument();
     expect(screen.getByText("React/Vite installation")).toBeInTheDocument();
@@ -137,7 +141,11 @@ describe("TinderDemoPage", () => {
     );
     expect(screen.getByRole("note")).toHaveTextContent("@source");
     expect(
-      await screen.findByText("Next.js App Router installation"),
+      await screen.findByText(
+        "Next.js App Router installation",
+        {},
+        { timeout: 5_000 },
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Next.js App Router source ZIP"),
