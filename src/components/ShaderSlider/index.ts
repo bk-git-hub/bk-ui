@@ -1,0 +1,37 @@
+export {
+  ShaderSliderNext,
+  ShaderSliderPagination,
+  ShaderSliderPrevious,
+  ShaderSliderRendererStatus,
+  ShaderSliderRoot,
+  ShaderSliderSlide,
+  ShaderSliderStatus,
+  ShaderSliderViewport,
+  type ShaderSliderControlProps,
+  type ShaderSliderDirection,
+  type ShaderSliderEffect,
+  type ShaderSliderImage,
+  type ShaderSliderPaginationProps,
+  type ShaderSliderRendererMode,
+  type ShaderSliderRendererStatusProps,
+  type ShaderSliderRootProps,
+  type ShaderSliderSlideProps,
+  type ShaderSliderStatusProps,
+  type ShaderSliderValueChangeDetail,
+  type ShaderSliderViewportProps,
+} from "./ShaderSlider";
+export {
+  getShaderSliderCanvasMetrics,
+  getShaderSliderUvScale,
+  type ShaderSliderCanvasMetrics,
+  type ShaderSliderFrameOptions,
+  type ShaderSliderRenderer,
+} from "./shader-slider-renderer";
+export {
+  getShaderSliderTarget,
+  normalizeShaderSliderValue,
+  useShaderSlider,
+  type ShaderSliderChangeSource,
+  type ShaderSliderTransition,
+  type UseShaderSliderOptions,
+} from "./useShaderSlider";

@@ -9,6 +9,7 @@ const navigationLinks = [
   { to: "/components/slot-machine", text: "Slot Machine" },
   { to: "/components/baccarat-squeeze", text: "Baccarat Squeeze" },
   { to: "/components/cards-stack-slider", text: "Cards Stack Slider" },
+  { to: "/components/shader-slider", text: "Shader Slider" },
 ];
 
 const NavigationLink = React.memo(

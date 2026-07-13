@@ -1,5 +1,12 @@
 import React from "react";
-import { ArrowRight, Cherry, Dices, Layers3, ScanLine } from "lucide-react";
+import {
+  ArrowRight,
+  Cherry,
+  Dices,
+  Layers3,
+  ScanLine,
+  Waves,
+} from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -79,6 +86,13 @@ export default function HomePage() {
               description="Looping 3D cards with drag, flip, and orientation controls."
               icon={<Layers3 aria-hidden="true" className="h-10 w-10" />}
               href="/components/cards-stack-slider"
+            />
+
+            <FeatureCard
+              title="Shader Slider"
+              description="WebGL image transitions with accessible controls and graceful fallback."
+              icon={<Waves aria-hidden="true" className="h-10 w-10" />}
+              href="/components/shader-slider"
             />
           </div>
         </div>
