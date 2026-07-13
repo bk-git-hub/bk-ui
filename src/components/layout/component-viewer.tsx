@@ -26,6 +26,7 @@ export interface ComponentViewerProps {
   component: ReactNode;
   referenceCode?: string;
   referenceCodeLanguage?: string;
+  showPreviewAlongsideCode?: boolean;
   // The base ESLint rule treats type-only callback parameters as runtime values.
   // eslint-disable-next-line no-unused-vars
   onUsageCodeChange?: (nextCode: string) => void;
@@ -41,6 +42,7 @@ export default function ComponentViewer({
   component,
   referenceCode,
   referenceCodeLanguage = "TSX",
+  showPreviewAlongsideCode = false,
   onUsageCodeChange,
   codeLanguage = "TSX",
   codeError = null,
@@ -191,20 +193,31 @@ export default function ComponentViewer({
             </div>
 
             {isActiveSourceEditable ? (
-              <textarea
-                id={codeEditorId}
-                aria-label={`${activeCodeLanguage} source code editor`}
-                aria-describedby={codeError ? codeErrorId : undefined}
-                aria-invalid={codeError ? "true" : undefined}
-                value={usageCode}
-                onChange={(event) =>
-                  onUsageCodeChange(event.currentTarget.value)
-                }
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                className="min-h-0 flex-1 resize-none overflow-auto bg-transparent p-6 font-mono text-[15px] leading-[1.7] text-slate-100 caret-sky-400 outline-none [scrollbar-gutter:stable] [tab-size:2] focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-inset"
-              />
+              <div className="flex min-h-0 flex-1">
+                <textarea
+                  id={codeEditorId}
+                  aria-label={`${activeCodeLanguage} source code editor`}
+                  aria-describedby={codeError ? codeErrorId : undefined}
+                  aria-invalid={codeError ? "true" : undefined}
+                  value={usageCode}
+                  onChange={(event) =>
+                    onUsageCodeChange(event.currentTarget.value)
+                  }
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="min-h-0 min-w-0 flex-1 resize-none overflow-auto bg-transparent p-6 font-mono text-[15px] leading-[1.7] text-slate-100 caret-sky-400 outline-none [scrollbar-gutter:stable] [tab-size:2] focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-inset"
+                />
+                {showPreviewAlongsideCode && (
+                  <div
+                    role="region"
+                    aria-label={`${title} live preview`}
+                    className="hidden min-h-0 min-w-0 flex-1 overflow-auto border-l border-slate-700 bg-white p-2 lg:block"
+                  >
+                    {component}
+                  </div>
+                )}
+              </div>
             ) : (
               <div
                 role="region"

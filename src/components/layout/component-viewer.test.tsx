@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ComponentViewer from "./component-viewer";
 
@@ -158,5 +165,38 @@ describe("ComponentViewer", () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       "export default function Example() {\n  return <div />;\n}",
     );
+  });
+
+  it("can render an updating preview beside editable code", () => {
+    function LiveExample() {
+      const [code, setCode] = useState("Jennifer");
+
+      return (
+        <ComponentViewer
+          title="Tinder example"
+          description="Live component"
+          usageCode={code}
+          component={<div>{code}</div>}
+          codeLanguage="LIVE JSON"
+          onUsageCodeChange={setCode}
+          showPreviewAlongsideCode
+        />
+      );
+    }
+
+    render(<LiveExample />);
+    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+
+    const livePreview = screen.getByRole("region", {
+      name: "Tinder example live preview",
+    });
+    expect(within(livePreview).getByText("Jennifer")).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "LIVE JSON source code editor" }),
+      { target: { value: "Alex" } },
+    );
+
+    expect(within(livePreview).getByText("Alex")).toBeInTheDocument();
   });
 });
