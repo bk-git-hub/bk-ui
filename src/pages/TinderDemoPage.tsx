@@ -11,6 +11,7 @@ import {
   tinderNextJsExport,
   tinderReactExport,
 } from "@/snippets/tinderExportCode";
+import { tinderInstallDescriptor } from "@/snippets/tinderInstallDescriptor";
 import { tinderUsageCode } from "@/snippets/tinderUsageCode";
 
 export default function TinderDemoPage() {
@@ -46,6 +47,7 @@ export default function TinderDemoPage() {
       referenceCode={tinderUsageCode}
       reactExport={tinderReactExport}
       nextJsExport={tinderNextJsExport}
+      installDescriptor={tinderInstallDescriptor}
       showPreviewAlongsideCode
     />
   );

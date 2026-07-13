@@ -111,6 +111,15 @@ describe("TinderDemoPage", () => {
       "Tailwind v4 scans local source automatically",
     );
     expect(screen.getByRole("note")).toHaveTextContent("Tailwind v3");
+    expect(
+      await screen.findByRole("heading", { name: "Install Tinder Swiper" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Release blocked\./)).toBeInTheDocument();
+    expect(screen.getByText("React/Vite installation")).toBeInTheDocument();
+    expect(screen.getByText("React/Vite source ZIP")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Next.js App Router source ZIP"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
 
@@ -127,5 +136,12 @@ describe("TinderDemoPage", () => {
       "disabling SSR is unnecessary",
     );
     expect(screen.getByRole("note")).toHaveTextContent("@source");
+    expect(
+      await screen.findByText("Next.js App Router installation"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Next.js App Router source ZIP"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("React/Vite source ZIP")).not.toBeInTheDocument();
   });
 });
