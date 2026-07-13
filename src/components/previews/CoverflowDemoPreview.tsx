@@ -17,7 +17,7 @@ function CoverflowDemoPreview({
   const previewKey = useMemo(() => JSON.stringify(config), [config]);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 items-center justify-center overflow-hidden bg-black py-4 sm:py-6 md:py-10">
+    <div className="h-full min-h-0 w-full overflow-hidden bg-black py-4 sm:py-6 md:py-10">
       <Coverflow key={previewKey} aria-label={config.ariaLabel}>
         {albums.map((album, index) => (
           <CoverflowItem

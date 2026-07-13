@@ -14,37 +14,44 @@ import { Coverflow, CoverflowItem, LazyImage } from "@/components/Coverflow";
 
 export function AlbumGallery({ albums }: { albums: Album[] }) {
   return (
-    <Coverflow aria-label="Album covers">
-      {albums.map((album, index) => (
-        <CoverflowItem
-          key={album.id}
-          flipLabel={`Toggle details for ${album.title}`}
-          closeLabel={`Close details for ${album.title}`}
-          backContent={
-            <section className="aspect-square rounded-md bg-slate-950 p-5 text-white">
-              <h2 className="text-xl font-semibold">{album.title}</h2>
-              <ol className="mt-4 list-decimal pl-5">
-                {album.tracks.map((track) => (
-                  <li key={track.id}>{track.title}</li>
-                ))}
-              </ol>
-            </section>
-          }
-        >
-          <LazyImage
-            src={album.coverUrl}
-            alt={`${album.title} cover`}
-            isPriority={index < 3}
-          />
-        </CoverflowItem>
-      ))}
-    </Coverflow>
+    <div className="h-96 w-full">
+      <Coverflow aria-label="Album covers">
+        {albums.map((album, index) => (
+          <CoverflowItem
+            key={album.id}
+            flipLabel={`Toggle details for ${album.title}`}
+            closeLabel={`Close details for ${album.title}`}
+            backContent={
+              <section className="aspect-square rounded-md bg-slate-950 p-5 text-white">
+                <h2 className="text-xl font-semibold">{album.title}</h2>
+                <ol className="mt-4 list-decimal pl-5">
+                  {album.tracks.map((track) => (
+                    <li key={track.id}>{track.title}</li>
+                  ))}
+                </ol>
+              </section>
+            }
+          >
+            <LazyImage
+              src={album.coverUrl}
+              alt={`${album.title} cover`}
+              isPriority={index < 3}
+            />
+          </CoverflowItem>
+        ))}
+      </Coverflow>
+    </div>
   );
 }
 ```
 
 When the source files live under the application's `src/components` directory,
 they are covered by the usual Tailwind source scan.
+
+`Coverflow` fills the width and height of its nearest sized parent and centers
+the largest square item that fits inside it. Give the parent a definite height
+when it should fill a fixed area. Without one, the component uses a 3.6:1
+fallback aspect ratio so width-only layouts retain a useful natural height.
 
 ## Next.js App Router
 
@@ -63,18 +70,20 @@ import {
 
 export function AlbumCoverflow({ albums }: { albums: Album[] }) {
   return (
-    <Coverflow aria-label="Album covers">
-      {albums.map((album) => (
-        <CoverflowItem
-          key={album.id}
-          flipLabel={`Toggle details for ${album.title}`}
-          closeLabel={`Close details for ${album.title}`}
-          backContent={<AlbumDetails album={album} />}
-        >
-          <LazyImage src={album.coverUrl} alt={`${album.title} cover`} />
-        </CoverflowItem>
-      ))}
-    </Coverflow>
+    <div className="h-96 w-full">
+      <Coverflow aria-label="Album covers">
+        {albums.map((album) => (
+          <CoverflowItem
+            key={album.id}
+            flipLabel={`Toggle details for ${album.title}`}
+            closeLabel={`Close details for ${album.title}`}
+            backContent={<AlbumDetails album={album} />}
+          >
+            <LazyImage src={album.coverUrl} alt={`${album.title} cover`} />
+          </CoverflowItem>
+        ))}
+      </Coverflow>
+    </div>
   );
 }
 ```
@@ -98,8 +107,9 @@ that contains the Coverflow classes.
 
 ## SSR and hydration
 
-- Server rendering starts from a deterministic 200 px size. A
-  `ResizeObserver` updates it after mount.
+- Server rendering starts from a deterministic 200 px item size. A
+  `ResizeObserver` measures the parent content box after mount and fits the
+  square item to both its width and height.
 - `window`, `ResizeObserver`, media queries, and global input listeners are
   accessed only from effects.
 - `requestAnimationFrame` runs only after user input.

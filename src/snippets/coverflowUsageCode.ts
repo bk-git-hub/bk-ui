@@ -27,30 +27,32 @@ const albums = [
 
 export default function AlbumCoverflow() {
   return (
-    <Coverflow aria-label="Album covers">
-      {albums.map((album, index) => (
-        <CoverflowItem
-          key={album.id}
-          flipLabel={"Show details for " + album.title}
-          closeLabel={"Close details for " + album.title}
-          backContent={
-            <section className="aspect-square rounded-md bg-slate-950 p-5 text-white">
-              <h2 className="text-xl font-semibold">{album.title}</h2>
-              <ol className="mt-4 list-decimal pl-5">
-                {album.tracks.map((track) => (
-                  <li key={track}>{track}</li>
-                ))}
-              </ol>
-            </section>
-          }
-        >
-          <LazyImage
-            src={album.coverUrl}
-            alt={album.title}
-            isPriority={index < 3}
-          />
-        </CoverflowItem>
-      ))}
-    </Coverflow>
+    <div className="h-96 w-full">
+      <Coverflow aria-label="Album covers">
+        {albums.map((album, index) => (
+          <CoverflowItem
+            key={album.id}
+            flipLabel={"Show details for " + album.title}
+            closeLabel={"Close details for " + album.title}
+            backContent={
+              <section className="aspect-square rounded-md bg-slate-950 p-5 text-white">
+                <h2 className="text-xl font-semibold">{album.title}</h2>
+                <ol className="mt-4 list-decimal pl-5">
+                  {album.tracks.map((track) => (
+                    <li key={track}>{track}</li>
+                  ))}
+                </ol>
+              </section>
+            }
+          >
+            <LazyImage
+              src={album.coverUrl}
+              alt={album.title}
+              isPriority={index < 3}
+            />
+          </CoverflowItem>
+        ))}
+      </Coverflow>
+    </div>
   );
 }`;

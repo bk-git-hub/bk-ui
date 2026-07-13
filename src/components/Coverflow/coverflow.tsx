@@ -17,7 +17,15 @@ import { useDrag } from "./use-drag";
 
 const RENDER_RADIUS = 8;
 const WINDOW_SIZE = RENDER_RADIUS * 2 + 1;
-const getSize = (width: number) => Math.min(Math.max(width / 3.6, 200), 800);
+const DEFAULT_ITEM_SIZE = 200;
+const MAX_ITEM_SIZE = 800;
+
+const getItemSize = (width: number, height: number) => {
+  const availableHeight =
+    Number.isFinite(height) && height > 0 ? height : width / 3.6;
+
+  return Math.min(width, availableHeight, MAX_ITEM_SIZE);
+};
 
 const getWindowStart = (position: number, itemCount: number) =>
   Math.min(
@@ -35,7 +43,7 @@ export const Coverflow = ({
   className,
   ...props
 }: CoverflowProps) => {
-  const [size, setSize] = useState(200);
+  const [size, setSize] = useState(DEFAULT_ITEM_SIZE);
   const [index, setIndex] = useState(0);
   const [windowStart, setWindowStart] = useState(0);
   const [flippedKey, setFlippedKey] = useState<React.Key | null>(null);
@@ -168,7 +176,10 @@ export const Coverflow = ({
     if (!container || typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver((entries) => {
-      const nextSize = getSize(entries[0].contentRect.width);
+      const { width, height } = entries[0].contentRect;
+      if (!Number.isFinite(width) || width <= 0) return;
+
+      const nextSize = getItemSize(width, height);
       setSize((currentSize) =>
         currentSize === nextSize ? currentSize : nextSize,
       );
@@ -306,15 +317,18 @@ export const Coverflow = ({
       role={props.role ?? "region"}
       aria-roledescription={props["aria-roledescription"] ?? "carousel"}
       aria-label={props["aria-label"] ?? "Coverflow"}
-      className={twMerge("w-full", className)}
+      className={twMerge(
+        "relative flex aspect-[3.6/1] h-full min-h-0 w-full min-w-0 items-center justify-center overflow-hidden [&_[data-slot=coverflow-flip-trigger]]:focus-visible:ring-offset-0 [&_[data-slot=coverflow-flip-trigger]]:focus-visible:ring-inset",
+        className,
+      )}
     >
       <div
         data-slot="coverflow-viewport"
         role="group"
         aria-label="Coverflow navigation"
         tabIndex={0}
-        className="relative mx-auto touch-none outline-none focus-visible:ring-4 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-        style={{ height: size, width: size, perspective: "600px" }}
+        className="relative h-full w-full touch-none outline-none focus-visible:ring-4 focus-visible:ring-white/80 focus-visible:ring-inset"
+        style={{ perspective: "600px" }}
         onMouseDown={(event) => handleDragStart(event, positionRef.current)}
         onTouchStart={(event) => handleDragStart(event, positionRef.current)}
       >
@@ -342,10 +356,12 @@ export const Coverflow = ({
                 data-active={isActive}
                 data-flipped={isFlipped}
                 ref={(item) => registerItem(itemIndex, item)}
-                className="absolute top-0 left-0 cursor-pointer"
+                className="absolute top-1/2 left-1/2 cursor-pointer"
                 style={{
                   width: size,
                   height: size,
+                  marginTop: -size / 2,
+                  marginLeft: -size / 2,
                 }}
                 onClick={() => centerItem(itemIndex)}
               >

@@ -47,12 +47,10 @@ describe("Coverflow 통합 테스트", () => {
       <CoverflowItem key={itemIndex}>Item {itemIndex}</CoverflowItem>
     ));
 
-  // 헬퍼 함수: 카드의 래퍼 요소(zIndex가 있는 div)를 안전하게 찾음
+  // 카드의 안정적인 공개 data-slot을 기준으로 wrapper를 찾습니다.
   const getCardWrapper = (cardText: string) => {
     const textElement = screen.getByText(cardText);
-    // .absolute 클래스를 가진 가장 가까운 조상 div를 찾습니다.
-    // (Coverflow 컴포넌트에서 부여한 className="absolute top-0 left-0 ..." 요소)
-    return textElement.closest(".absolute.top-0") as HTMLElement;
+    return textElement.closest('[data-slot="coverflow-card"]') as HTMLElement;
   };
 
   const getCoverflowCard = (cardText: string) => {
@@ -103,27 +101,55 @@ describe("Coverflow 통합 테스트", () => {
 
   const getMountedCards = (container: HTMLElement) =>
     Array.from(
-      container.querySelectorAll<HTMLElement>(".touch-none > .absolute.top-0"),
+      container.querySelectorAll<HTMLElement>('[data-slot="coverflow-card"]'),
     );
 
-  it("1. [화면 조정] 화면 크기가 바뀌면 아이템 크기(size)가 자동 조정되어야 한다", () => {
+  it("1. [컨테이너] 부모 크기를 채우고 가장 큰 정사각형 카드를 중앙에 배치해야 한다", () => {
     const { container } = renderCoverflow();
-    // 가장 바깥의 컨테이너 (ref={containerRef})
     const coverflowContainer = container.firstChild as HTMLElement;
-    // 실제 아이템들이 들어있는 내부 컨테이너 (width/height가 size로 설정되는 곳)
-    const innerWrapper = coverflowContainer.firstChild as HTMLElement;
-
-    act(() => {
-      // ResizeObserver 콜백 강제 실행
-      if ((coverflowContainer as any).__resizeCallback) {
-        (coverflowContainer as any).__resizeCallback([
-          { contentRect: { width: 1000 } },
+    const viewport = coverflowContainer.querySelector<HTMLElement>(
+      '[data-slot="coverflow-viewport"]',
+    )!;
+    const firstCard = getCardWrapper("Card 1");
+    const resize = (width: number, height: number) => {
+      act(() => {
+        (coverflowContainer as any).__resizeCallback?.([
+          { contentRect: { width, height } },
         ]);
-      }
-    });
+      });
+    };
 
-    // width/3.6 = 1000/3.6 = 약 277px
-    expect(innerWrapper.style.width).toMatch(/277\./);
+    expect(coverflowContainer).toHaveClass(
+      "aspect-[3.6/1]",
+      "h-full",
+      "w-full",
+      "overflow-hidden",
+      "[&_[data-slot=coverflow-flip-trigger]]:focus-visible:ring-inset",
+    );
+    expect(viewport).toHaveClass(
+      "h-full",
+      "w-full",
+      "focus-visible:ring-inset",
+    );
+    expect(firstCard).toHaveClass("top-1/2", "left-1/2");
+
+    resize(1000, 240);
+    expect(firstCard.style.width).toBe("240px");
+    expect(firstCard.style.height).toBe("240px");
+    expect(firstCard.style.marginTop).toBe("-120px");
+    expect(firstCard.style.marginLeft).toBe("-120px");
+
+    resize(240, 600);
+    expect(firstCard.style.width).toBe("240px");
+
+    resize(1000, 0);
+    expect(Number.parseFloat(firstCard.style.width)).toBeCloseTo(1000 / 3.6, 5);
+
+    resize(150, 100);
+    expect(firstCard.style.width).toBe("100px");
+
+    resize(268, 182);
+    expect(firstCard.style.width).toBe("182px");
   });
 
   it("2. [스크롤] 마우스 휠을 굴리면 다음 카드로 넘어가야 한다", () => {
