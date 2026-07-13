@@ -1,5 +1,4 @@
-export const storySliderUsageCode = `import { Pause, Play } from "lucide-react";
-import {
+export const storySliderUsageCode = `import {
   StorySliderGroup,
   StorySliderItem,
   StorySliderNext,
@@ -7,6 +6,7 @@ import {
   StorySliderPrevious,
   StorySliderProgress,
   StorySliderRoot,
+  StorySliderStatus,
   StorySliderViewport,
 } from "@/components/StorySlider";
 
@@ -57,25 +57,20 @@ export default function Stories() {
               </StorySliderItem>
             ))}
 
-            <div className="absolute inset-x-0 top-0 z-30 p-4">
-              <StorySliderProgress />
-              <p className="mt-3 text-sm font-bold text-white">
-                @{creator.name}
-              </p>
-            </div>
-
-            <StorySliderPlayback className="absolute top-7 right-4 z-40 text-white">
-              {({ paused }) =>
-                paused ? <Play aria-hidden /> : <Pause aria-hidden />
-              }
-            </StorySliderPlayback>
           </StorySliderGroup>
         ))}
+
+        <StorySliderProgress className="absolute inset-x-0 top-0 z-30 m-4 w-auto" />
+        <StorySliderPlayback className="absolute top-8 right-4 z-40 rounded-full bg-black/50 px-3 py-2 text-sm text-white">
+          {({ paused }) => (paused ? "Play" : "Pause")}
+        </StorySliderPlayback>
       </StorySliderViewport>
 
       <StorySliderNext className="bg-black px-4 text-white">
         Next
       </StorySliderNext>
+
+      <StorySliderStatus className="sr-only" />
     </StorySliderRoot>
   );
 }`;
