@@ -105,8 +105,9 @@ describe("TinderDemoPage", () => {
     const reactExport = await screen.findByRole("region", {
       name: "React TSX source code",
     });
-    expect(reactExport).toHaveTextContent('from "@/components/Tinder"');
-    expect(reactExport).toHaveTextContent("export function TinderDeck");
+    expect(reactExport).toHaveTextContent("// FILE: src/App.tsx");
+    expect(reactExport).toHaveTextContent('from "../components/Tinder"');
+    expect(reactExport).toHaveTextContent("export default function TinderExample");
     expect(screen.getByRole("note")).toHaveTextContent(
       "Tailwind v4 scans local source automatically",
     );
@@ -130,9 +131,15 @@ describe("TinderDemoPage", () => {
     const nextJsExport = await screen.findByRole("region", {
       name: "Next.js TSX source code",
     });
+    expect(nextJsExport).toHaveTextContent(
+      "// FILE: src/app/client-wrapper.tsx",
+    );
+    expect(nextJsExport).toHaveTextContent("// FILE: src/app/page.tsx");
     expect(nextJsExport).toHaveTextContent('"use client"');
-    expect(nextJsExport).toHaveTextContent('from "next/image"');
-    expect(nextJsExport).toHaveTextContent('from "@/components/Tinder/client"');
+    expect(nextJsExport).toHaveTextContent(
+      'from "../components/Tinder/client"',
+    );
+    expect(nextJsExport).toHaveTextContent('from "./client-wrapper"');
     expect(screen.getByRole("note")).toHaveTextContent(
       "Server Components should pass only serializable cards and deckKey",
     );
