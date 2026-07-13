@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BaccaratPlayingCard,
   BaccaratSqueezeAction,
@@ -12,22 +12,11 @@ import {
   type BaccaratRank,
   type BaccaratSuit,
 } from "@/components/Baccarat";
-
-const RANKS: readonly BaccaratRank[] = [
-  "A",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "10",
-  "J",
-  "Q",
-  "K",
-];
+import {
+  BACCARAT_SQUEEZE_DEMO_RANKS,
+  DEFAULT_BACCARAT_SQUEEZE_DEMO_CONFIG,
+  type BaccaratSqueezeDemoConfig,
+} from "./baccarat-squeeze-demo.util";
 
 const SUITS: ReadonlyArray<{
   value: BaccaratSuit;
@@ -46,22 +35,47 @@ function getKoreanValueText(progress: number) {
   return `카드 ${Math.round(progress * 100)}퍼센트 공개`;
 }
 
-export default function BaccaratSqueezeDemoPreview() {
-  const [rank, setRank] = useState<BaccaratRank>("8");
-  const [suit, setSuit] = useState<BaccaratSuit>("diamonds");
+export interface BaccaratSqueezeDemoPreviewProps {
+  config?: BaccaratSqueezeDemoConfig;
+  defaultConfig?: BaccaratSqueezeDemoConfig;
+  onConfigChange?: BaccaratSqueezeDemoConfigChangeHandler;
+}
+
+export type BaccaratSqueezeDemoConfigChangeHandler = (
+  // The base ESLint rule cannot distinguish type-only function parameters.
+  // eslint-disable-next-line no-unused-vars
+  ...args: [nextConfig: BaccaratSqueezeDemoConfig]
+) => void;
+
+export default function BaccaratSqueezeDemoPreview({
+  config,
+  defaultConfig = DEFAULT_BACCARAT_SQUEEZE_DEMO_CONFIG,
+  onConfigChange,
+}: BaccaratSqueezeDemoPreviewProps = {}) {
+  const [uncontrolledConfig, setUncontrolledConfig] =
+    useState<BaccaratSqueezeDemoConfig>(() => ({ ...defaultConfig }));
   const [progress, setProgress] = useState(0);
+  const resolvedConfig = config ?? uncontrolledConfig;
+  const { rank, suit, corner, revealThreshold, edgeHitArea } = resolvedConfig;
   const selectedSuit = SUITS.find((item) => item.value === suit) ?? SUITS[0];
   const state =
     progress === 0 ? "SQUEEZE" : progress === 1 ? "OPEN" : "PEEKING";
 
-  const changeRank = (nextRank: BaccaratRank) => {
-    setRank(nextRank);
+  useEffect(() => {
     setProgress(0);
+  }, [corner, edgeHitArea, rank, revealThreshold, suit]);
+
+  const updateConfig = (nextConfig: BaccaratSqueezeDemoConfig) => {
+    if (config === undefined) setUncontrolledConfig(nextConfig);
+    onConfigChange?.(nextConfig);
+  };
+
+  const changeRank = (nextRank: BaccaratRank) => {
+    updateConfig({ ...resolvedConfig, rank: nextRank });
   };
 
   const changeSuit = (nextSuit: BaccaratSuit) => {
-    setSuit(nextSuit);
-    setProgress(0);
+    updateConfig({ ...resolvedConfig, suit: nextSuit });
   };
 
   return (
@@ -102,7 +116,9 @@ export default function BaccaratSqueezeDemoPreview() {
               <BaccaratSqueezeRoot
                 value={progress}
                 onValueChange={(nextProgress) => setProgress(nextProgress)}
-                revealThreshold={0.68}
+                corner={corner}
+                revealThreshold={revealThreshold}
+                edgeHitArea={edgeHitArea}
                 getValueText={getKoreanValueText}
                 revealAnnouncement={`${selectedSuit.label} ${rank} 카드가 공개됐습니다.`}
                 aria-label="플레이어의 두 번째 카드"
@@ -163,7 +179,7 @@ export default function BaccaratSqueezeDemoPreview() {
                   }
                   className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-[#0c3b34] px-3 text-sm font-bold text-white outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-300/25"
                 >
-                  {RANKS.map((item) => (
+                  {BACCARAT_SQUEEZE_DEMO_RANKS.map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
