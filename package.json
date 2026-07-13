@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
+    "artifacts:build": "node scripts/component-artifacts/generate.mjs --write",
+    "artifacts:check": "node scripts/component-artifacts/generate.mjs --check",
+    "artifacts:test": "node --test scripts/component-artifacts/*.test.mjs",
     "test:perf": "node scripts/bench-coverflow.mjs",
     "test:perf:compare": "node scripts/compare-coverflow-benchmarks.mjs",
     "ci:perf": "node scripts/bench-coverflow.mjs --label ci --runs 10 --cpu 4 --assets fixture"

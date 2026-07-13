@@ -122,8 +122,12 @@ runtime dependency differs:
 
 The [`tailwind-merge` project](https://github.com/dcastil/tailwind-merge)
 states that v3 targets Tailwind v4 and that Tailwind v3 users must use v2.6.0.
-Both items reference the same canonical source files; only dependency and
-Tailwind guidance metadata differ.
+When a component declares both majors, both items reference the same canonical
+source blobs; only dependency and Tailwind guidance metadata differ. A
+component may instead mark one major unsupported with a concrete reason. The
+generator then omits that major's Registry item, install variant, command, and
+fixture rows. It never rewrites classes or otherwise transforms canonical
+source to simulate cross-major support.
 
 ## Shared manifest contract
 
@@ -137,6 +141,7 @@ Required fields:
 
 ```text
 schemaVersion
+$schema
 name
 title
 componentVersion
@@ -157,10 +162,19 @@ dependencies.tailwind.3[]
 dependencies.tailwind.4[]
 entrypoints.react
 entrypoints.next
-tailwind.3.content
-tailwind.4.source
+tailwind.supportedMajors[]
+tailwind.3.supported
+tailwind.4.supported
+tailwind.<supported-major>.range
+tailwind.<supported-major>.tested
+tailwind.<supported-major>.itemName
+tailwind.<supported-major>.scan
+tailwind.<supported-major>.representativeClasses[]
+tailwind.<unsupported-major>.reason
 next.clientBoundary
 next.serializableProps[]
+constraints.ssr[]
+constraints.accessibility[]
 examples.react
 examples.nextClient
 examples.nextServer
@@ -172,13 +186,24 @@ Rules:
   moving ref.
 - `files` contains component core only. Demo previews, mocks, remote demo
   assets, page-only icons, and benchmark code are excluded.
-- Every target is project-relative or starts with a supported shadcn target
-  placeholder. Path traversal and absolute filesystem targets are invalid.
+- Every target starts with the supported shadcn `@components/` placeholder.
+  Path traversal, embedded/unknown placeholders, and absolute filesystem
+  targets are invalid.
+- `tailwind.supportedMajors` is an ordered subset of `[3, 4]`. Each listed
+  major records its supported range and exact tested version. Each omitted
+  major records `supported: false` and a non-empty reason, and has no
+  major-specific dependencies.
+- The source manifest does not own release status. Generated descriptors stay
+  `release-blocked` until separate license, fixture, push, and remote-smoke
+  evidence promotes them.
 - File SHA-256 values, artifact SHA-256 values, Registry item content, ZIP
   contents, Copy for AI text, and public UI metadata are generated; component
   owners do not hand-maintain duplicates.
 - Next may add a client entry and examples, but may not fork the common core or
   introduce `next/*` into it.
+- SSR/hydration and accessibility constraints are component-owned manifest
+  data and are copied into Registry metadata/docs, ZIP README/manifest, Copy
+  for AI, and the install descriptor.
 
 ## Generated artifact contract
 
@@ -186,13 +211,18 @@ The shared generator consumes every component manifest and emits:
 
 ```text
 registry.json
-public/r/<name>.json
-public/r/<name>-tailwind-v3.json
+public/r/<supported-major-item-name>.json
 public/downloads/<name>-react.zip
 public/downloads/<name>-next.zip
 public/ai/<name>.md
 public/install/<name>.json
 ```
+
+The implementation uses pinned Git blobs as source bytes, canonical LF JSON,
+and an external-dependency-free STORE ZIP writer with fixed 1980 metadata. Run
+`pnpm artifacts:test`, `pnpm artifacts:build`, then `pnpm artifacts:check`.
+Rendering and validation finish in memory before write mode changes generated
+files.
 
 `public/install/<name>.json` is the UI-facing descriptor. Its status is one of:
 
@@ -201,6 +231,12 @@ release-blocked
 local-verified
 published
 ```
+
+The current generator emits `release-blocked`. That descriptor contains
+repository-relative artifact paths and hashes, but no install command, live
+URL, moving branch, or unresolved placeholder. Promotion to `published` is a
+separate two-commit release operation after the artifact commit is pushed and
+verified by full SHA.
 
 React ZIP contents:
 
@@ -222,8 +258,10 @@ unpublished package or unresolved URL.
 
 ## Fixture gate
 
-Public GO requires the Cartesian matrix below, using fresh scaffolds and exact
-versions recorded in a generated report:
+Public GO requires the Cartesian matrix below for every Tailwind major the
+component declares supported, using fresh scaffolds and exact versions recorded
+in a generated report. Tinder declares both majors and therefore has all eight
+rows:
 
 ```text
 Vite React × Tailwind 4 × npm
@@ -235,6 +273,10 @@ Next App Router × Tailwind 4 × pnpm
 Next App Router × Tailwind 3.4 × npm
 Next App Router × Tailwind 3.4 × pnpm
 ```
+
+A component declaring only Tailwind 4 has four rows: Vite/Next × npm/pnpm. An
+unsupported major has no generated item and no fixture row; generating an item
+whose utilities silently disappear is a gate failure.
 
 Each fixture must:
 
@@ -271,12 +313,25 @@ The installation-strategy owner exclusively changes these shared paths:
 
 ```text
 docs/installation-strategy-feasibility.md
+package.json (artifact scripts only)
 registry/schema/**
 scripts/component-artifacts/**
 src/components/layout/component-install-guide.tsx
 src/components/layout/component-install-guide.test.tsx
 src/components/layout/component-viewer.tsx
 src/components/layout/component-viewer.test.tsx
+```
+
+The generator owns these derived paths. Component owners may run it and commit
+the output for their manifest, but must not hand-edit generated bytes:
+
+```text
+registry.json
+public/r/<component-item-names>.json
+public/downloads/<component-slug>-react.zip
+public/downloads/<component-slug>-next.zip
+public/ai/<component-slug>.md
+public/install/<component-slug>.json
 ```
 
 A component follow-up may change only its component-specific paths:
@@ -290,8 +345,12 @@ src/components/<Component>/README.md
 ```
 
 It may reference canonical core files but must not modify shared schema,
-generator, viewer, or another component. The first shared implementation is
-Tinder. Coverflow remains outside this scope.
+generator, viewer, or another component. If the component's original delegated
+scope explicitly authorizes its own core, the owner may make a narrowly scoped
+cross-major compatibility fix, validate it, and update `sourceCommit`. Without
+that authority it must mark the incompatible major unsupported. Source
+transforms are not an alternative. The first shared implementation is Tinder.
+Coverflow remains outside this scope.
 
 ## Future branded CLI gate
 
