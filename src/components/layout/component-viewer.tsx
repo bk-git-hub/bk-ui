@@ -1,7 +1,18 @@
-import { useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { lazy, Suspense, useState } from "react";
 import { Check, Copy } from "lucide-react";
+
+const loadSyntaxHighlighter = () => import("./tsx-syntax-highlighter");
+const SyntaxHighlighter = lazy(loadSyntaxHighlighter);
+
+const syntaxHighlighterStyle = {
+  margin: 0,
+  padding: "1.5rem",
+  paddingTop: "3.5rem",
+  backgroundColor: "transparent",
+  minHeight: "100%",
+  fontSize: "14px",
+  lineHeight: "1.5",
+} as const;
 
 interface Props {
   title: string;
@@ -55,6 +66,8 @@ export default function ComponentViewer({
           </button>
           <button
             onClick={() => setActiveTab("code")}
+            onPointerEnter={() => void loadSyntaxHighlighter()}
+            onFocus={() => void loadSyntaxHighlighter()}
             className={`px-6 py-3 text-sm font-medium transition-all ${
               activeTab === "code"
                 ? "border-b-2 border-sky-400 bg-slate-800/50 text-sky-400"
@@ -91,21 +104,15 @@ export default function ComponentViewer({
                 )}
               </button>
 
-              <SyntaxHighlighter
-                language="tsx"
-                style={vscDarkPlus}
-                customStyle={{
-                  margin: 0,
-                  padding: "1.5rem",
-                  paddingTop: "3.5rem",
-                  backgroundColor: "transparent",
-                  minHeight: "100%",
-                  fontSize: "14px",
-                  lineHeight: "1.5",
-                }}
+              <Suspense
+                fallback={
+                  <pre style={syntaxHighlighterStyle}>
+                    <code>{usageCode.trim()}</code>
+                  </pre>
+                }
               >
-                {usageCode.trim()}
-              </SyntaxHighlighter>
+                <SyntaxHighlighter code={usageCode.trim()} />
+              </Suspense>
             </div>
           )}
         </div>

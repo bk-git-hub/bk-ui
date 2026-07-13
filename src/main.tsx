@@ -1,14 +1,43 @@
-import React from "react";
+import React, { lazy } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
+import LazyPage from "./components/layout/lazy-page.tsx";
 import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-// ⬇️ 페이지 컴포넌트들을 import 합니다.
 import HomePage from "./pages/HomePage.tsx";
-import TinderDemoPage from "./pages/TinderDemoPage.tsx";
-import CoverflowPage from "./pages/CoverflowPage.tsx";
-import ReactPodPage from "./pages/ReactPodPage.tsx";
+
+const loadTinderDemoPage = () => import("./pages/TinderDemoPage.tsx");
+const loadCoverflowPage = () => import("./pages/CoverflowPage.tsx");
+const loadReactPodPage = () => import("./pages/ReactPodPage.tsx");
+
+const TinderDemoPage = lazy(loadTinderDemoPage);
+const CoverflowPage = lazy(loadCoverflowPage);
+const ReactPodPage = lazy(loadReactPodPage);
+
+const routePageLoaders = new Map<string, () => Promise<unknown>>([
+  ["/components/tinder-swiper", loadTinderDemoPage],
+  ["/components/coverflow", loadCoverflowPage],
+  ["/components/react-pod", loadReactPodPage],
+]);
+const preloadedRoutes = new Set<string>();
+
+function preloadLinkedRoute(event: Event) {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  const link = target.closest("a");
+  if (!(link instanceof HTMLAnchorElement)) return;
+
+  const loader = routePageLoaders.get(link.pathname);
+  if (!loader || preloadedRoutes.has(link.pathname)) return;
+
+  preloadedRoutes.add(link.pathname);
+  void loader().catch(() => preloadedRoutes.delete(link.pathname));
+}
+
+document.addEventListener("pointerover", preloadLinkedRoute, { passive: true });
+document.addEventListener("focusin", preloadLinkedRoute);
 
 // ⬇️ 라우터 설정을 생성합니다.
 const router = createBrowserRouter([
@@ -22,15 +51,27 @@ const router = createBrowserRouter([
       },
       {
         path: "components/tinder-swiper", // path: '/components/tinder-swiper'
-        element: <TinderDemoPage />,
+        element: (
+          <LazyPage>
+            <TinderDemoPage />
+          </LazyPage>
+        ),
       },
       {
         path: "components/coverflow", // path: '/components/tinder-swiper'
-        element: <CoverflowPage />,
+        element: (
+          <LazyPage>
+            <CoverflowPage />
+          </LazyPage>
+        ),
       },
       {
         path: "components/react-pod", // path: '/components/tinder-swiper'
-        element: <ReactPodPage />,
+        element: (
+          <LazyPage>
+            <ReactPodPage />
+          </LazyPage>
+        ),
       },
     ],
   },
