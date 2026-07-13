@@ -1,5 +1,8 @@
 # Tinder slider performance measurement
 
+The latest checked-in before/after results are documented in
+[tinder-performance-results.md](./tinder-performance-results.md).
+
 The Tinder slider audit builds and serves the production app, opens the slider at a fixed mobile viewport, and records repeatable medians instead of a single best run.
 
 ## Full audit
