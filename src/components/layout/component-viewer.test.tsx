@@ -30,6 +30,21 @@ const nextJsExport = {
   description: "Keep this inside a Next.js client boundary.",
 };
 
+const componentSourceLinks = [
+  ["Tinder Swiper", "src/components/Tinder"],
+  ["Coverflow", "src/components/Coverflow"],
+  ["ReactPod", "src/components/ReactPod"],
+  ["Lotto Draw", "src/components/Lotto"],
+  ["Slot Machine", "src/components/SlotMachine"],
+  ["Baccarat Squeeze", "src/components/Baccarat"],
+  ["Cards Stack Slider", "src/components/CardsStackSlider"],
+  ["Shader Slider", "src/components/ShaderSlider"],
+  ["Slicer Slider", "src/components/SlicerSlider"],
+  ["Shutter Slider", "src/components/ShutterSlider"],
+  ["Story Slider", "src/components/StorySlider"],
+  ["Expo Slider", "src/components/ExpoSlider"],
+] as const;
+
 const installDescriptor: ComponentInstallDescriptor = {
   schemaVersion: 1,
   name: "example",
@@ -303,6 +318,67 @@ describe("ComponentViewer", () => {
       }
     });
   });
+
+  it("hides export tabs behind the release flag and keeps the GitHub source link", () => {
+    render(
+      <ComponentViewer
+        title="Tinder Swiper"
+        description="Release-ready tabs"
+        usageCode="const code = true;"
+        component={<div>Preview content</div>}
+        referenceCode="export function Usage() {}"
+        reactExport={reactExport}
+        nextJsExport={nextJsExport}
+        showExportTabs={false}
+      />,
+    );
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Preview",
+      "Code",
+      "Usage",
+    ]);
+    expect(
+      screen.queryByRole("tab", { name: "React Export" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: "Next.js Export" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Tinder Swiper source on GitHub" }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/bk-git-hub/bk-ui/tree/main/src/components/Tinder",
+    );
+    expect(
+      screen.getByText(
+        "Explore the interactive preview, inspect the code and usage, or view Tinder Swiper on GitHub.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Release-ready tabs")).not.toBeInTheDocument();
+  });
+
+  it.each(componentSourceLinks)(
+    "links %s to its component source directory",
+    (title, sourceDirectory) => {
+      render(
+        <ComponentViewer
+          title={title}
+          description="Component description"
+          usageCode="const code = true;"
+          component={<div>Preview content</div>}
+          showExportTabs={false}
+        />,
+      );
+
+      expect(
+        screen.getByRole("link", { name: `${title} source on GitHub` }),
+      ).toHaveAttribute(
+        "href",
+        `https://github.com/bk-git-hub/bk-ui/tree/main/${sourceDirectory}`,
+      );
+    },
+  );
 
   it("moves, wraps, activates, and focuses tabs with the keyboard", () => {
     render(

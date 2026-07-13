@@ -9,6 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import type { ComponentInstallDescriptor } from "./component-install-guide";
+import {
+  COMPONENT_EXPORT_TABS_ENABLED,
+  getComponentGitHubUrl,
+} from "./component-viewer.config";
 
 const loadSyntaxHighlighter = () => import("./tsx-syntax-highlighter");
 const SyntaxHighlighter = lazy(loadSyntaxHighlighter);
@@ -46,6 +50,7 @@ export interface ComponentViewerProps {
   reactExport?: ComponentViewerCodeTab;
   nextJsExport?: ComponentViewerCodeTab;
   installDescriptor?: ComponentInstallDescriptor;
+  showExportTabs?: boolean;
   showPreviewAlongsideCode?: boolean;
   // The base ESLint rule treats type-only callback parameters as runtime values.
   // eslint-disable-next-line no-unused-vars
@@ -78,6 +83,7 @@ export default function ComponentViewer({
   reactExport,
   nextJsExport,
   installDescriptor,
+  showExportTabs = COMPONENT_EXPORT_TABS_ENABLED,
   showPreviewAlongsideCode = false,
   onUsageCodeChange,
   codeLanguage = "TSX",
@@ -91,8 +97,12 @@ export default function ComponentViewer({
   >({});
   const isEditable = onUsageCodeChange !== undefined;
   const hasUsageTab = referenceCode !== undefined;
-  const hasReactExportTab = reactExport !== undefined;
-  const hasNextJsExportTab = nextJsExport !== undefined;
+  const hasReactExportTab = showExportTabs && reactExport !== undefined;
+  const hasNextJsExportTab = showExportTabs && nextJsExport !== undefined;
+  const githubUrl = getComponentGitHubUrl(title);
+  const visibleDescription = showExportTabs
+    ? description
+    : `Explore the interactive preview, inspect the code and usage, or view ${title} on GitHub.`;
   const tabs: ComponentViewerTabDefinition[] = [
     { id: "preview", label: "Preview" },
     {
@@ -110,7 +120,7 @@ export default function ComponentViewer({
     });
   }
 
-  if (reactExport !== undefined) {
+  if (hasReactExportTab) {
     tabs.push({
       id: "react-export",
       label: "React Export",
@@ -118,7 +128,7 @@ export default function ComponentViewer({
     });
   }
 
-  if (nextJsExport !== undefined) {
+  if (hasNextJsExportTab) {
     tabs.push({
       id: "nextjs-export",
       label: "Next.js Export",
@@ -187,9 +197,35 @@ export default function ComponentViewer({
 
   return (
     <div className="flex h-full min-h-0 w-full max-w-4xl flex-1 flex-col gap-6">
-      <section className="flex-none">
-        <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-2 text-lg text-slate-400">{description}</p>
+      <section className="flex flex-none flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+          <p className="mt-2 text-lg text-slate-400">{visibleDescription}</p>
+        </div>
+        {githubUrl && (
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${title} source on GitHub`}
+            className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800 hover:text-white focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
+          >
+            GitHub source
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M7 17 17 7" />
+              <path d="M7 7h10v10" />
+            </svg>
+          </a>
+        )}
       </section>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-700 shadow-sm">
