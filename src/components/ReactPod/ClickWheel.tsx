@@ -5,6 +5,8 @@ import type { KeyboardEvent } from "react";
 export default function ClickWheel() {
   const { state, rotate, select, back, togglePlay, next, previous } =
     useReactPod();
+  const isBrowsingPhotos =
+    state.screen === "photo-grid" || state.screen === "photo-viewer";
   const { wheelRef, wheelProps } = useClickWheel({
     onRotate: rotate,
   });
@@ -57,7 +59,7 @@ export default function ClickWheel() {
         <button
           type="button"
           onClick={next}
-          aria-label={state.screen === "photo-viewer" ? "Next photo" : "Next track"}
+          aria-label={isBrowsingPhotos ? "Next photo" : "Next track"}
           className="absolute top-1/2 right-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full outline-none hover:bg-zinc-200/70 focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <img
@@ -69,9 +71,7 @@ export default function ClickWheel() {
         <button
           type="button"
           onClick={previous}
-          aria-label={
-            state.screen === "photo-viewer" ? "Previous photo" : "Previous track"
-          }
+          aria-label={isBrowsingPhotos ? "Previous photo" : "Previous track"}
           className="absolute top-1/2 left-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full outline-none hover:bg-zinc-200/70 focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <img

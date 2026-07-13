@@ -14,7 +14,14 @@ function formatTime(seconds: number) {
 }
 
 function StatusBar() {
-  const { deviceName, state } = useReactPod();
+  const { deviceName, photoAlbums, state } = useReactPod();
+  const albumTitle = photoAlbums[state.albumIndex]?.title;
+  const title =
+    state.screen === "photo-albums"
+      ? "Photos"
+      : state.screen === "photo-grid" || state.screen === "photo-viewer"
+        ? (albumTitle ?? deviceName)
+        : deviceName;
 
   return (
     <div className="flex h-7 shrink-0 items-center justify-between border-b border-slate-400 bg-gradient-to-b from-white to-slate-300 px-2 text-[11px] font-semibold text-slate-800">
@@ -28,7 +35,7 @@ function StatusBar() {
           <PauseIcon className="h-3 w-3" />
         )}
       </span>
-      <span className="max-w-32 truncate">{deviceName}</span>
+      <span className="max-w-32 truncate">{title}</span>
       <BatteryIcon className="h-4 w-4" aria-label="Battery full" />
     </div>
   );
@@ -38,8 +45,10 @@ function MainMenu() {
   const { menuItems, photoAlbums, state } = useReactPod();
   const isPhotosSelected = menuItems[state.menuIndex]?.id === "photos";
   const photoCovers = photoAlbums
-    .map((album) => album.photos[0])
-    .filter((photo) => photo !== undefined)
+    .flatMap((album) => {
+      const photo = album.photos[0];
+      return photo ? [{ albumId: album.id, photo }] : [];
+    })
     .slice(0, 2);
 
   return (
@@ -59,9 +68,7 @@ function MainMenu() {
               }`}
             >
               <span className="min-w-0 truncate">{item.label}</span>
-              {isSelected && (
-                <ChevronRightIcon className="h-4 w-4 shrink-0" />
-              )}
+              {isSelected && <ChevronRightIcon className="h-4 w-4 shrink-0" />}
             </div>
           );
         })}
@@ -74,10 +81,10 @@ function MainMenu() {
         }`}
       >
         {isPhotosSelected && photoCovers.length > 0 ? (
-          <div className="absolute inset-2 grid grid-cols-2 gap-1.5 rotate-2">
-            {photoCovers.map((photo) => (
+          <div className="absolute inset-2 grid rotate-2 grid-cols-2 gap-1.5">
+            {photoCovers.map(({ albumId, photo }) => (
               <img
-                key={photo.id}
+                key={albumId}
                 src={photo.src}
                 alt=""
                 className="h-full min-h-0 w-full rounded-sm border border-white/50 object-cover shadow-md"
@@ -180,6 +187,89 @@ function PhotoAlbums() {
   );
 }
 
+function PhotoGrid() {
+  const { photoAlbums, state } = useReactPod();
+  const album = photoAlbums[state.albumIndex];
+
+  if (!album || album.photos.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center bg-slate-950 px-5 text-center text-xs font-semibold text-slate-300">
+        No photos in this album.
+      </div>
+    );
+  }
+
+  const columnCount = 5;
+  const pageSize = 15;
+  const pageStart = Math.floor(state.photoIndex / pageSize) * pageSize;
+  const visiblePhotos = album.photos.slice(pageStart, pageStart + pageSize);
+  const selectedPhoto = album.photos[state.photoIndex];
+  const rows = Array.from(
+    { length: Math.ceil(visiblePhotos.length / columnCount) },
+    (_, rowIndex) =>
+      visiblePhotos.slice(rowIndex * columnCount, (rowIndex + 1) * columnCount),
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-slate-950 text-white">
+      <div
+        className="grid min-h-0 flex-1 grid-cols-5 grid-rows-3 gap-1 p-1.5"
+        role="grid"
+        aria-label={`${album.title} photos`}
+        aria-colcount={columnCount}
+        aria-rowcount={Math.ceil(album.photos.length / columnCount)}
+      >
+        {rows.map((row, rowIndex) => (
+          <div
+            key={pageStart + rowIndex * columnCount}
+            role="row"
+            aria-rowindex={Math.floor(pageStart / columnCount) + rowIndex + 1}
+            className="contents"
+          >
+            {row.map((photo, columnIndex) => {
+              const index = pageStart + rowIndex * columnCount + columnIndex;
+              const isSelected = index === state.photoIndex;
+
+              return (
+                <div
+                  key={photo.id}
+                  role="gridcell"
+                  aria-label={`${photo.caption ?? photo.alt}, ${index + 1} of ${album.photos.length}`}
+                  aria-selected={isSelected}
+                  aria-colindex={columnIndex + 1}
+                  className={`relative min-h-0 overflow-hidden rounded-[2px] bg-slate-800 transition-transform ${
+                    isSelected
+                      ? "z-10 scale-[1.06] ring-2 ring-amber-300 ring-offset-1 ring-offset-slate-950"
+                      : "border border-white/20 opacity-75"
+                  }`}
+                >
+                  <img
+                    src={photo.src}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="flex h-[22px] shrink-0 items-center justify-between gap-2 border-t border-white/15 bg-gradient-to-b from-slate-700 to-slate-950 px-2">
+        <p className="min-w-0 truncate text-[9px] font-semibold">
+          {selectedPhoto.caption ?? selectedPhoto.alt}
+        </p>
+        <span className="shrink-0 text-[8px] font-semibold text-white/70 tabular-nums">
+          {state.photoIndex + 1}/{album.photos.length}
+        </span>
+      </div>
+      <span className="sr-only" role="status">
+        {selectedPhoto.caption ?? selectedPhoto.alt}, photo{" "}
+        {state.photoIndex + 1} of {album.photos.length}
+      </span>
+    </div>
+  );
+}
+
 function PhotoViewer() {
   const { photoAlbums, state } = useReactPod();
   const album = photoAlbums[state.albumIndex];
@@ -202,7 +292,7 @@ function PhotoViewer() {
       <img
         src={photo.src}
         alt={photo.alt}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-contain"
       />
       <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-2 pt-5 pb-1.5 text-white">
         <div className="flex items-end justify-between gap-2">
@@ -212,7 +302,7 @@ function PhotoViewer() {
             </p>
             <p className="truncate text-[8px] text-white/70">{album.title}</p>
           </div>
-          <span className="shrink-0 text-[8px] font-semibold tabular-nums text-white/80">
+          <span className="shrink-0 text-[8px] font-semibold text-white/80 tabular-nums">
             {state.photoIndex + 1}/{album.photos.length}
           </span>
         </div>
@@ -351,6 +441,7 @@ export default function Display() {
         {state.screen === "songs" && <Songs />}
         {state.screen === "now-playing" && <NowPlaying />}
         {state.screen === "photo-albums" && <PhotoAlbums />}
+        {state.screen === "photo-grid" && <PhotoGrid />}
         {state.screen === "photo-viewer" && <PhotoViewer />}
         {state.screen === "about" && <About />}
       </div>

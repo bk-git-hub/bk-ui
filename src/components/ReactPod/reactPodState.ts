@@ -3,6 +3,7 @@ export type ReactPodScreen =
   | "songs"
   | "now-playing"
   | "photo-albums"
+  | "photo-grid"
   | "photo-viewer"
   | "about";
 
@@ -151,7 +152,8 @@ function syncPhotoSelection(
   const photoLength = photoAlbums[albumIndex]?.photos.length ?? 0;
   const photoIndex = clampIndex(state.photoIndex, photoLength);
   const screen =
-    state.screen === "photo-viewer" && photoLength === 0
+    (state.screen === "photo-grid" || state.screen === "photo-viewer") &&
+    photoLength === 0
       ? "photo-albums"
       : state.screen;
 
@@ -237,7 +239,7 @@ export function reactPodReducer(
         };
       }
 
-      if (state.screen === "photo-viewer") {
+      if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
         const photoLength = photoAlbums[state.albumIndex]?.photos.length ?? 0;
         if (photoLength === 0) return state;
 
@@ -269,7 +271,14 @@ export function reactPodReducer(
         const selectedAlbum = photoAlbums[state.albumIndex];
         if (!selectedAlbum || selectedAlbum.photos.length === 0) return state;
 
-        return { ...state, screen: "photo-viewer", photoIndex: 0 };
+        return { ...state, screen: "photo-grid", photoIndex: 0 };
+      }
+
+      if (state.screen === "photo-grid") {
+        const selectedAlbum = photoAlbums[state.albumIndex];
+        if (!selectedAlbum || selectedAlbum.photos.length === 0) return state;
+
+        return { ...state, screen: "photo-viewer" };
       }
 
       if (state.screen !== "menu") return state;
@@ -311,6 +320,9 @@ export function reactPodReducer(
     case "BACK":
       if (state.screen === "menu") return state;
       if (state.screen === "photo-viewer") {
+        return { ...state, screen: "photo-grid" };
+      }
+      if (state.screen === "photo-grid") {
         return { ...state, screen: "photo-albums" };
       }
       return { ...state, screen: "menu" };
@@ -319,7 +331,7 @@ export function reactPodReducer(
       return { ...state, isPlaying: !state.isPlaying };
 
     case "NEXT":
-      if (state.screen === "photo-viewer") {
+      if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
         const photoLength = photoAlbums[state.albumIndex]?.photos.length ?? 0;
         if (photoLength === 0) return state;
 
@@ -335,7 +347,7 @@ export function reactPodReducer(
       return advanceTrack(state, action.trackIndex);
 
     case "PREVIOUS":
-      if (state.screen === "photo-viewer") {
+      if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
         const photoLength = photoAlbums[state.albumIndex]?.photos.length ?? 0;
         if (photoLength === 0) return state;
 

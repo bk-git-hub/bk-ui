@@ -89,7 +89,7 @@ describe("reactPodReducer", () => {
     expect(getNextTrackIndex(state, 0.999)).not.toBe(1);
   });
 
-  it("navigates from photo albums into a viewer and back through each level", () => {
+  it("navigates from photo albums through a thumbnail grid and viewer", () => {
     const photosMenuIndex = MAIN_MENU_ITEMS.findIndex(
       (item) => item.id === "photos",
     );
@@ -120,7 +120,7 @@ describe("reactPodReducer", () => {
       MAIN_MENU_ITEMS,
       PHOTO_ALBUMS,
     );
-    expect(state).toMatchObject({ screen: "photo-viewer", photoIndex: 0 });
+    expect(state).toMatchObject({ screen: "photo-grid", photoIndex: 0 });
 
     state = reactPodReducer(
       state,
@@ -129,6 +129,30 @@ describe("reactPodReducer", () => {
       PHOTO_ALBUMS,
     );
     expect(state.photoIndex).toBe(2);
+
+    state = reactPodReducer(
+      state,
+      { type: "NEXT", trackIndex: 0 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+    );
+    expect(state).toMatchObject({ screen: "photo-grid", photoIndex: 0 });
+
+    state = reactPodReducer(
+      state,
+      { type: "PREVIOUS" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+    );
+    expect(state).toMatchObject({ screen: "photo-grid", photoIndex: 2 });
+
+    state = reactPodReducer(
+      state,
+      { type: "SELECT" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+    );
+    expect(state).toMatchObject({ screen: "photo-viewer", photoIndex: 2 });
 
     state = reactPodReducer(
       state,
@@ -145,6 +169,14 @@ describe("reactPodReducer", () => {
       PHOTO_ALBUMS,
     );
     expect(state.photoIndex).toBe(2);
+
+    state = reactPodReducer(
+      state,
+      { type: "BACK" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+    );
+    expect(state).toMatchObject({ screen: "photo-grid", photoIndex: 2 });
 
     state = reactPodReducer(
       state,
@@ -193,17 +225,19 @@ describe("reactPodReducer", () => {
     });
 
     const emptyAlbum = [{ ...onePhotoAlbum[0], photos: [] }];
-    const withoutPhotos = reactPodReducer(
-      clamped,
-      { type: "SYNC_PHOTO_ALBUMS" },
-      MAIN_MENU_ITEMS,
-      emptyAlbum,
-    );
-    expect(withoutPhotos).toMatchObject({
-      screen: "photo-albums",
-      albumIndex: 0,
-      photoIndex: 0,
-    });
+    for (const screen of ["photo-grid", "photo-viewer"] as const) {
+      const withoutPhotos = reactPodReducer(
+        { ...clamped, screen },
+        { type: "SYNC_PHOTO_ALBUMS" },
+        MAIN_MENU_ITEMS,
+        emptyAlbum,
+      );
+      expect(withoutPhotos).toMatchObject({
+        screen: "photo-albums",
+        albumIndex: 0,
+        photoIndex: 0,
+      });
+    }
   });
 
   it("continues to the next track when playback ends in the photo viewer", () => {

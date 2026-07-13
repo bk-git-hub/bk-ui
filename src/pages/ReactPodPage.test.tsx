@@ -60,8 +60,17 @@ describe("ReactPodPage", () => {
 
     fireEvent.click(select);
     expect(
-      screen.getByRole("option", { name: /City Lights/ }),
+      screen.getByRole("option", { name: /Photo Library/ }),
     ).toBeInTheDocument();
+
+    fireEvent.click(select);
+    const photoGrid = screen.getByRole("grid", {
+      name: "Photo Library photos",
+    });
+    expect(within(photoGrid).getAllByRole("gridcell")).toHaveLength(4);
+    expect(
+      within(photoGrid).getByRole("gridcell", { name: /Han River/ }),
+    ).toHaveAttribute("aria-selected", "true");
 
     fireEvent.click(select);
     expect(

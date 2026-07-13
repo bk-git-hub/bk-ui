@@ -75,9 +75,10 @@ describe("ReactPod", () => {
     });
     fireEvent.pointerUp(wheel, { pointerId: 1 });
 
-    expect(
-      screen.getByRole("option", { name: "Photos" }),
-    ).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: "Photos" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("treats a drag starting on MENU as wheel rotation, not a menu click", () => {
@@ -395,25 +396,37 @@ describe("ReactPod", () => {
     expect(
       screen.getByRole("listbox", { name: "Photo albums" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: /City Lights/ }),
-    ).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: /City Lights/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
 
     fireEvent.click(select);
     expect(
-      screen.getByRole("img", { name: "River at night" }),
+      screen.getByRole("grid", { name: "City Lights photos" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("gridcell", { name: /Blue Hour/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
 
     fireEvent.keyDown(wheel, { key: "ArrowDown" });
     expect(
-      screen.getByRole("img", { name: "Neon alley" }),
-    ).toBeInTheDocument();
+      screen.getByRole("gridcell", { name: /Late Night/ }),
+    ).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.click(select);
+    expect(screen.getByRole("img", { name: "Neon alley" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next photo" }));
     expect(
       screen.getByRole("img", { name: "River at night" }),
     ).toBeInTheDocument();
 
+    fireEvent.click(menu);
+    expect(
+      screen.getByRole("grid", { name: "City Lights photos" }),
+    ).toBeInTheDocument();
     fireEvent.click(menu);
     expect(
       screen.getByRole("listbox", { name: "Photo albums" }),
