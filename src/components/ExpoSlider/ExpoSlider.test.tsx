@@ -1,4 +1,5 @@
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
+import { flushSync } from "react-dom";
 import { renderToString } from "react-dom/server";
 import {
   act,
@@ -22,6 +23,7 @@ import {
 } from "./ExpoSlider";
 
 const TEST_SLIDES = ["Aurora", "Dunes", "Lagoon", "Forest"] as const;
+const TEST_TRANSITION_DURATION = 80;
 
 interface TestSliderProps {
   slides?: readonly string[];
@@ -31,6 +33,7 @@ interface TestSliderProps {
   orientation?: "horizontal" | "vertical";
   disabled?: boolean;
   dragThreshold?: number;
+  velocityThreshold?: number;
   transitionDuration?: number;
   onValueChange?: ComponentProps<typeof ExpoSliderRoot>["onValueChange"];
   rootProps?: Partial<ComponentProps<typeof ExpoSliderRoot>> & {
@@ -50,6 +53,7 @@ function TestSlider({
   orientation = "horizontal",
   disabled = false,
   dragThreshold = 0.16,
+  velocityThreshold,
   transitionDuration = 80,
   onValueChange,
   rootProps,
@@ -68,6 +72,7 @@ function TestSlider({
       orientation={orientation}
       disabled={disabled}
       dragThreshold={dragThreshold}
+      velocityThreshold={velocityThreshold}
       transitionDuration={transitionDuration}
       onValueChange={onValueChange}
       aria-label={rootProps?.["aria-label"] ?? "Test expo gallery"}
@@ -98,6 +103,36 @@ function TestSlider({
   );
 }
 
+function ControlledTestSlider({
+  onValueChange,
+  ...props
+}: Omit<TestSliderProps, "defaultValue" | "value">) {
+  const [value, setValue] = useState(0);
+
+  return (
+    <TestSlider
+      {...props}
+      value={value}
+      onValueChange={(nextValue, detail) => {
+        setValue(nextValue);
+        onValueChange?.(nextValue, detail);
+      }}
+    />
+  );
+}
+
+function DisableAfterChangeTestSlider() {
+  const [disabled, setDisabled] = useState(false);
+
+  return (
+    <TestSlider
+      disabled={disabled}
+      dragThreshold={0.2}
+      onValueChange={() => flushSync(() => setDisabled(true))}
+    />
+  );
+}
+
 function createMatchMedia(matches: boolean) {
   return vi.fn().mockImplementation((query: string) => ({
     matches,
@@ -125,10 +160,15 @@ function getActiveSlide() {
   return slide as HTMLElement;
 }
 
-function finishTransition() {
+function dispatchTransformTransitionEnd() {
   const event = new Event("transitionend", { bubbles: true });
   Object.defineProperty(event, "propertyName", { value: "transform" });
   fireEvent(getActiveSlide(), event);
+}
+
+function finishTransition() {
+  act(() => vi.advanceTimersByTime(TEST_TRANSITION_DURATION));
+  dispatchTransformTransitionEnd();
 }
 
 function mockViewportBounds(viewport: HTMLElement) {
@@ -169,12 +209,49 @@ function installPointerCapture(viewport: HTMLElement) {
   return { hasPointerCapture, releasePointerCapture, setPointerCapture };
 }
 
+function startHorizontalDrag(
+  viewport: HTMLElement,
+  pointerId: number,
+  startX = 300,
+  endX = 180,
+  pointerType: "mouse" | "touch" = "touch",
+) {
+  fireEvent.pointerDown(viewport, {
+    pointerId,
+    pointerType,
+    button: 0,
+    clientX: startX,
+    clientY: 100,
+  });
+  fireEvent.pointerMove(viewport, {
+    pointerId,
+    pointerType,
+    clientX: endX,
+    clientY: 100,
+  });
+  act(() => vi.advanceTimersByTime(1));
+}
+
+function endHorizontalDrag(
+  viewport: HTMLElement,
+  pointerId: number,
+  clientX = 180,
+  pointerType: "mouse" | "touch" = "touch",
+) {
+  fireEvent.pointerUp(viewport, {
+    pointerId,
+    pointerType,
+    clientX,
+    clientY: 100,
+  });
+}
+
 describe("ExpoSlider", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("matchMedia", createMatchMedia(false));
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
-      window.setTimeout(() => callback(performance.now()), 0),
+      window.setTimeout(() => callback(performance.now()), 1),
     );
     vi.stubGlobal("cancelAnimationFrame", (frameId: number) =>
       window.clearTimeout(frameId),
@@ -320,6 +397,23 @@ describe("ExpoSlider", () => {
       direction: 1,
       source: "pagination",
     });
+  });
+
+  it("ignores a stale transition end after a new navigation starts", () => {
+    render(<TestSlider slides={TEST_SLIDES} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    finishTransition();
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    dispatchTransformTransitionEnd();
+
+    expect(screen.getByTestId("root")).toHaveAttribute("data-animating");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+
+    finishTransition();
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
   });
 
   it("commits navigation immediately when reduced motion is preferred", async () => {
@@ -486,6 +580,269 @@ describe("ExpoSlider", () => {
       direction: 1,
       source: "pointer",
     });
+  });
+
+  it("accepts a rapid second drag during an uncontrolled transition", () => {
+    const onValueChange = vi.fn();
+    render(
+      <TestSlider
+        slides={TEST_SLIDES}
+        dragThreshold={0.2}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = screen.getByTestId("viewport");
+    mockViewportBounds(viewport);
+    installPointerCapture(viewport);
+
+    startHorizontalDrag(viewport, 20, 300, 180, "mouse");
+    endHorizontalDrag(viewport, 20, 180, "mouse");
+    expect(screen.getByTestId("root")).toHaveAttribute("data-animating");
+
+    startHorizontalDrag(viewport, 20, 300, 180, "mouse");
+    expect(screen.getByTestId("root")).toHaveAttribute("data-dragging");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+
+    endHorizontalDrag(viewport, 20, 180, "mouse");
+    finishTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenNthCalledWith(1, 1, {
+      previousValue: 0,
+      direction: 1,
+      source: "pointer",
+    });
+    expect(onValueChange).toHaveBeenNthCalledWith(2, 2, {
+      previousValue: 1,
+      direction: 1,
+      source: "pointer",
+    });
+  });
+
+  it("preserves a controlled value update when a second drag interrupts", () => {
+    const onValueChange = vi.fn();
+    render(
+      <ControlledTestSlider
+        slides={TEST_SLIDES}
+        dragThreshold={0.2}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = screen.getByTestId("viewport");
+    mockViewportBounds(viewport);
+    installPointerCapture(viewport);
+
+    startHorizontalDrag(viewport, 22);
+    endHorizontalDrag(viewport, 22);
+    startHorizontalDrag(viewport, 23);
+
+    expect(screen.getByTestId("root")).toHaveAttribute("data-dragging");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+
+    endHorizontalDrag(viewport, 23);
+    finishTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenNthCalledWith(1, 1, {
+      previousValue: 0,
+      direction: 1,
+      source: "pointer",
+    });
+    expect(onValueChange).toHaveBeenNthCalledWith(2, 2, {
+      previousValue: 1,
+      direction: 1,
+      source: "pointer",
+    });
+  });
+
+  it("accepts a new drag while a canceled drag is snapping back", () => {
+    render(<TestSlider slides={TEST_SLIDES} dragThreshold={0.2} />);
+    const viewport = screen.getByTestId("viewport");
+    mockViewportBounds(viewport);
+    installPointerCapture(viewport);
+
+    startHorizontalDrag(viewport, 24, 280, 230);
+    fireEvent.pointerCancel(viewport, {
+      pointerId: 24,
+      pointerType: "touch",
+      clientX: 230,
+      clientY: 100,
+    });
+    expect(screen.getByTestId("root")).toHaveAttribute("data-animating");
+
+    startHorizontalDrag(viewport, 25);
+    expect(screen.getByTestId("root")).toHaveAttribute("data-dragging");
+
+    endHorizontalDrag(viewport, 25);
+    finishTransition();
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+  });
+
+  it("does not capture a new pointer when an interrupted callback disables the slider", () => {
+    render(<DisableAfterChangeTestSlider />);
+    const viewport = screen.getByTestId("viewport");
+    mockViewportBounds(viewport);
+    const capture = installPointerCapture(viewport);
+
+    startHorizontalDrag(viewport, 27);
+    endHorizontalDrag(viewport, 27);
+    expect(screen.getByTestId("root")).toHaveAttribute("data-animating");
+
+    fireEvent.pointerDown(viewport, {
+      pointerId: 28,
+      pointerType: "touch",
+      clientX: 300,
+      clientY: 100,
+    });
+
+    expect(screen.getByTestId("root")).toHaveAttribute("data-disabled");
+    expect(capture.setPointerCapture).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("root")).not.toHaveAttribute("data-dragging");
+  });
+
+  it("prepares an even-count wrap without transition before direct reverse navigation", () => {
+    render(<TestSlider slides={TEST_SLIDES} transitionDuration={80} />);
+    const oppositeSlide = getSlides()[2];
+
+    expect(oppositeSlide).toHaveAttribute("data-progress", "2.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "80ms" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+
+    expect(screen.getByTestId("root")).toHaveAttribute("data-animating");
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-2.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-2.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-1.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "80ms" });
+
+    finishTransition();
+    expect(getActiveSlide()).toHaveAttribute("data-index", "3");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "80ms" });
+  });
+
+  it("suppresses wrap transitions for an external controlled value change", () => {
+    const view = render(
+      <TestSlider slides={TEST_SLIDES} value={0} transitionDuration={80} />,
+    );
+    const oppositeSlide = getSlides()[2];
+
+    expect(oppositeSlide).toHaveAttribute("data-progress", "2.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "80ms" });
+
+    view.rerender(
+      <TestSlider slides={TEST_SLIDES} value={3} transitionDuration={80} />,
+    );
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "3");
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-1.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "80ms" });
+  });
+
+  it("suppresses loop rebase transitions when topology changes during a drag", () => {
+    const view = render(
+      <TestSlider slides={TEST_SLIDES} transitionDuration={80} />,
+    );
+    const viewport = screen.getByTestId("viewport");
+    mockViewportBounds(viewport);
+    installPointerCapture(viewport);
+    const oppositeSlide = getSlides()[2];
+
+    startHorizontalDrag(viewport, 29, 200, 250);
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-1.875");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    view.rerender(
+      <TestSlider slides={TEST_SLIDES} disabled transitionDuration={80} />,
+    );
+
+    expect(screen.getByTestId("root")).toHaveAttribute("data-disabled");
+    expect(oppositeSlide).toHaveAttribute("data-progress", "2.000");
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "0ms" });
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(oppositeSlide).toHaveStyle({ transitionDuration: "80ms" });
+  });
+
+  it("keeps an even-count loop on one side during snap-back and disables idle rebase transitions", () => {
+    render(
+      <TestSlider
+        slides={TEST_SLIDES}
+        transitionDuration={80}
+        velocityThreshold={100}
+      />,
+    );
+    const viewport = screen.getByTestId("viewport");
+    mockViewportBounds(viewport);
+    installPointerCapture(viewport);
+
+    const oppositeSlide = getSlides()[2];
+    const frame = screen.getByTestId("frame-2");
+    const imageEffect = screen
+      .getByTestId("image-2")
+      .closest<HTMLElement>('[data-slot="expo-slider-image-effect"]');
+    const content = screen.getByTestId("content-2");
+    expect(imageEffect).not.toBeNull();
+    const animatedElements = [
+      oppositeSlide,
+      frame,
+      imageEffect as HTMLElement,
+      content,
+    ];
+
+    animatedElements.forEach((element) =>
+      expect(element).toHaveStyle({ transitionDuration: "80ms" }),
+    );
+
+    startHorizontalDrag(viewport, 26, 200, 250);
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-1.875");
+    animatedElements.forEach((element) =>
+      expect(element).toHaveStyle({ transitionDuration: "0ms" }),
+    );
+
+    endHorizontalDrag(viewport, 26, 250);
+
+    expect(oppositeSlide).toHaveAttribute("data-progress", "-2.000");
+    animatedElements.forEach((element) =>
+      expect(element).toHaveStyle({ transitionDuration: "80ms" }),
+    );
+
+    finishTransition();
+
+    expect(oppositeSlide).toHaveAttribute("data-progress", "2.000");
+    animatedElements.forEach((element) =>
+      expect(element).toHaveStyle({ transitionDuration: "0ms" }),
+    );
+
+    act(() => vi.advanceTimersByTime(1));
+    animatedElements.forEach((element) =>
+      expect(element).toHaveStyle({ transitionDuration: "0ms" }),
+    );
+
+    act(() => vi.advanceTimersByTime(1));
+    animatedElements.forEach((element) =>
+      expect(element).toHaveStyle({ transitionDuration: "80ms" }),
+    );
   });
 
   it("releases a captured pointer when movement resolves to the cross axis", () => {

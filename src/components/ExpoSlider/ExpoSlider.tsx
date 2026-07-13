@@ -37,7 +37,9 @@ interface ExpoSliderContextValue
     | "isDragging"
     | "motionProgress"
     | "navigate"
+    | "shouldTransition"
     | "transitionDuration"
+    | "wrapDirection"
   > {
   count: number;
   disabled: boolean;
@@ -162,8 +164,10 @@ export function ExpoSliderRoot({
       count: safeCount,
       currentValue: slider.currentValue,
       motionProgress: slider.motionProgress,
+      wrapDirection: slider.wrapDirection,
       isDragging: slider.isDragging,
       isAnimating: slider.isAnimating,
+      shouldTransition: slider.shouldTransition,
       transitionDuration: slider.transitionDuration,
       canNavigate: slider.canNavigate,
       navigate: slider.navigate,
@@ -212,7 +216,9 @@ export function ExpoSliderRoot({
       slider.isDragging,
       slider.motionProgress,
       slider.navigate,
+      slider.shouldTransition,
       slider.transitionDuration,
+      slider.wrapDirection,
     ],
   );
 
@@ -354,6 +360,7 @@ export function ExpoSliderSlide({
     context.count,
     context.loop,
     context.motionProgress,
+    context.wrapDirection,
   );
   const visibleProgress = clamp(progress, -3, 3);
   const axisSize = 100 / context.slidesPerView;
@@ -368,9 +375,9 @@ export function ExpoSliderSlide({
     opacity: Math.abs(progress) > 2.5 ? 0 : 1,
     pointerEvents: isCurrent ? "auto" : "none",
     transform: positionTransform,
-    transitionDuration: context.isDragging
-      ? "0ms"
-      : `${context.transitionDuration}ms`,
+    transitionDuration: context.shouldTransition
+      ? `${context.transitionDuration}ms`
+      : "0ms",
     zIndex: 100 - Math.round(Math.abs(progress) * 10),
   };
   const slideContextValue = useMemo<ExpoSliderSlideContextValue>(
@@ -399,7 +406,7 @@ export function ExpoSliderSlide({
           clsx(
             "absolute top-1/2 left-1/2 [transition-property:transform,opacity] motion-reduce:transition-none",
             context.orientation === "horizontal" ? "h-auto" : "w-auto",
-            !context.isDragging &&
+            context.shouldTransition &&
               "ease-[cubic-bezier(0.22,0.75,0.18,1)] will-change-transform",
             className,
           ),
@@ -413,7 +420,7 @@ export function ExpoSliderSlide({
             event.currentTarget === event.target &&
             event.propertyName === "transform"
           ) {
-            context.completeAnimation();
+            context.completeAnimation(true);
           }
         }}
       />
@@ -459,7 +466,7 @@ export function ExpoSliderFrame({
           context.orientation === "horizontal"
             ? "aspect-video w-full"
             : "aspect-[9/16] h-full",
-          !context.isDragging &&
+          context.shouldTransition &&
             "ease-[cubic-bezier(0.22,0.75,0.18,1)] will-change-transform",
           className,
         ),
@@ -468,9 +475,9 @@ export function ExpoSliderFrame({
         ...style,
         transform,
         transformOrigin,
-        transitionDuration: context.isDragging
-          ? "0ms"
-          : `${context.transitionDuration}ms`,
+        transitionDuration: context.shouldTransition
+          ? `${context.transitionDuration}ms`
+          : "0ms",
       }}
     />
   );
@@ -527,7 +534,7 @@ export function ExpoSliderImage({
           context.orientation === "horizontal"
             ? "top-0 -left-[12.5%] h-full w-[125%]"
             : "-top-[12.5%] left-0 h-[125%] w-full",
-          !context.isDragging &&
+          context.shouldTransition &&
             "ease-[cubic-bezier(0.22,0.75,0.18,1)] will-change-transform",
         ),
       )}
@@ -536,9 +543,9 @@ export function ExpoSliderImage({
           ? `grayscale(${Math.round(distance * 100)}%)`
           : undefined,
         transform,
-        transitionDuration: context.isDragging
-          ? "0ms"
-          : `${context.transitionDuration}ms`,
+        transitionDuration: context.shouldTransition
+          ? `${context.transitionDuration}ms`
+          : "0ms",
       }}
     >
       <img
@@ -585,7 +592,7 @@ export function ExpoSliderContent({
       className={twMerge(
         clsx(
           "absolute inset-0 [transition-property:transform,opacity] motion-reduce:transition-none",
-          !context.isDragging &&
+          context.shouldTransition &&
             "ease-[cubic-bezier(0.22,0.75,0.18,1)] will-change-transform",
           className,
         ),
@@ -594,9 +601,9 @@ export function ExpoSliderContent({
         ...style,
         opacity: Math.max(0, 1 - Math.abs(effectProgress) * 2),
         transform,
-        transitionDuration: context.isDragging
-          ? "0ms"
-          : `${context.transitionDuration}ms`,
+        transitionDuration: context.shouldTransition
+          ? `${context.transitionDuration}ms`
+          : "0ms",
       }}
     />
   );
