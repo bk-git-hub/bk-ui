@@ -330,6 +330,10 @@ export const Coverflow = ({
                 isActive,
                 isFlipped,
                 activate: () => activateItem(itemIndex, itemKey),
+                deactivate: () =>
+                  setFlippedKey((currentKey) =>
+                    currentKey === itemKey ? null : currentKey,
+                  ),
                 consumePendingClick: consumeDragClick,
               }}
             >

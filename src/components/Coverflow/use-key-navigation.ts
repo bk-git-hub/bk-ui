@@ -23,9 +23,8 @@ export const useKeyNavigation = (config: KeyNavigationConfig) => {
       const eventTarget = event.target;
       const isCarouselTarget =
         eventTarget instanceof Element &&
-        eventTarget.closest(
-          '[data-slot="coverflow-flip-trigger"], [data-slot="coverflow-viewport"]',
-        ) !== null;
+        (eventTarget.matches('[data-slot="coverflow-viewport"]') ||
+          eventTarget.closest('[data-slot="coverflow-flip-trigger"]') !== null);
       if (event.defaultPrevented || !isCarouselTarget) return;
 
       let nextTarget = Math.round(target);

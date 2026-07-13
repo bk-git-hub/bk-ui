@@ -32,5 +32,6 @@ describe("Coverflow public entries", () => {
     expect(markup).toContain('aria-label="Album covers"');
     expect(markup).toContain('data-slot="coverflow-flip-trigger"');
     expect(markup).toContain('aria-pressed="false"');
+    expect(markup).not.toContain('data-slot="coverflow-close-trigger"');
   });
 });

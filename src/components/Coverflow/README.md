@@ -19,6 +19,7 @@ export function AlbumGallery({ albums }: { albums: Album[] }) {
         <CoverflowItem
           key={album.id}
           flipLabel={`Toggle details for ${album.title}`}
+          closeLabel={`Close details for ${album.title}`}
           backContent={
             <section className="aspect-square rounded-md bg-slate-950 p-5 text-white">
               <h2 className="text-xl font-semibold">{album.title}</h2>
@@ -67,6 +68,7 @@ export function AlbumCoverflow({ albums }: { albums: Album[] }) {
         <CoverflowItem
           key={album.id}
           flipLabel={`Toggle details for ${album.title}`}
+          closeLabel={`Close details for ${album.title}`}
           backContent={<AlbumDetails album={album} />}
         >
           <LazyImage src={album.coverUrl} alt={`${album.title} cover`} />
@@ -110,13 +112,15 @@ that contains the Coverflow classes.
 - `Coverflow` accepts children, `className`, standard div attributes,
   ARIA/data attributes, and event handlers.
 - `CoverflowItem` uses `children` as the front face and optional
-  `backContent` as the back. `flipLabel` names its toggle button.
+  `backContent` as the back. `flipLabel` names its toggle button and
+  `closeLabel` names the close button.
 - `LazyImage` reports image readiness to its containing item.
 
 Only the active item's native toggle button participates in the Tab order.
 Enter and Space flip it; Left and Right move within a focused Coverflow. Hidden
 faces use `aria-hidden` and `inert` so assistive technology and keyboard focus
-do not enter them.
+do not enter them. While an item is flipped, its top-right close button or a
+click outside the square item surface returns it to the front face.
 
 The same core implementation can therefore be used in React/Vite and Next.js
 App Router projects without duplication.

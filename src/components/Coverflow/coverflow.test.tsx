@@ -82,6 +82,16 @@ describe("Coverflow 통합 테스트", () => {
       throw new Error(`Coverflow flip trigger not found for ${cardText}`);
     return trigger;
   };
+
+  const getCloseTrigger = (cardText: string) => {
+    const trigger = getCoverflowItem(cardText).querySelector<HTMLButtonElement>(
+      '[data-slot="coverflow-close-trigger"]',
+    );
+
+    if (!trigger)
+      throw new Error(`Coverflow close trigger not found for ${cardText}`);
+    return trigger;
+  };
   const getCardFace = (card: HTMLElement, face: "front" | "back") => {
     const element = card.querySelector<HTMLElement>(
       `[data-slot="coverflow-${face}"]`,
@@ -628,5 +638,92 @@ describe("Coverflow 통합 테스트", () => {
 
     expect(secondFront).toHaveAttribute("inert");
     expect(legacyFront).not.toHaveAttribute("inert");
+  });
+  it("24. closes a flipped item only when the click is outside its square surface", () => {
+    render(
+      <Coverflow>
+        <CoverflowItem backContent={<button type="button">Back action</button>}>
+          Card 1
+        </CoverflowItem>
+      </Coverflow>,
+    );
+
+    const card = getCoverflowCard("Card 1");
+    const item = getCoverflowItem("Card 1");
+    fireEvent.click(item);
+
+    expect(card).toHaveAttribute("data-flipped", "true");
+
+    fireEvent.click(item);
+    expect(card).toHaveAttribute("data-flipped", "false");
+
+    fireEvent.click(item);
+    expect(card).toHaveAttribute("data-flipped", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Back action" }));
+    expect(card).toHaveAttribute("data-flipped", "true");
+
+    fireEvent.click(document.body);
+
+    expect(card).toHaveAttribute("data-flipped", "false");
+    expect(getCardFace(item, "back")).toHaveAttribute("aria-hidden", "true");
+    expect(getCardFace(item, "back")).toHaveAttribute("inert");
+  });
+
+  it("25. renders an accessible top-right close button without starting a drag", () => {
+    const onItemClick = vi.fn();
+    render(
+      <Coverflow>
+        <CoverflowItem
+          closeLabel="Close Card 1 details"
+          backContent={<span>Back 1</span>}
+          onClick={onItemClick}
+        >
+          Card 1
+        </CoverflowItem>
+        <CoverflowItem backContent={<span>Back 2</span>}>Card 2</CoverflowItem>
+      </Coverflow>,
+    );
+
+    const firstCard = getCoverflowCard("Card 1");
+    const secondCard = getCoverflowCard("Card 2");
+    const firstItem = getCoverflowItem("Card 1");
+    const flipTrigger = getFlipTrigger("Card 1");
+    fireEvent.click(firstItem);
+    onItemClick.mockClear();
+
+    const closeTrigger = getCloseTrigger("Card 1");
+    expect(closeTrigger).toHaveAttribute("type", "button");
+    expect(closeTrigger).toHaveAccessibleName("Close Card 1 details");
+    expect(closeTrigger).toHaveClass("top-2", "right-2");
+
+    closeTrigger.focus();
+    fireEvent.mouseDown(closeTrigger, { clientX: 500 });
+    fireEvent.mouseMove(window, { clientX: 430 });
+    fireEvent.mouseUp(window);
+    fireEvent.click(closeTrigger);
+
+    expect(firstCard).toHaveAttribute("data-flipped", "false");
+    expect(secondCard).toHaveAttribute("data-active", "false");
+    expect(onItemClick).not.toHaveBeenCalled();
+    expect(flipTrigger).toHaveFocus();
+  });
+
+  it("26. keeps carousel arrow navigation out of the close button", () => {
+    renderFlippableCoverflow();
+
+    const firstCard = getCoverflowCard("Card 1");
+    const secondCard = getCoverflowCard("Card 2");
+    fireEvent.click(getCoverflowItem("Card 1"));
+
+    const closeTrigger = getCloseTrigger("Card 1");
+    closeTrigger.focus();
+    fireEvent.keyDown(closeTrigger, { key: "ArrowRight" });
+    act(() => vi.runAllTimers());
+
+    expect(firstCard).toHaveAttribute("data-active", "true");
+    expect(firstCard).toHaveAttribute("data-flipped", "true");
+    expect(secondCard).toHaveAttribute("data-active", "false");
+    expect(closeTrigger).toHaveFocus();
   });
 });

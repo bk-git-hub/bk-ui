@@ -21,6 +21,7 @@ interface CoverflowInteractionContextType {
   isActive: boolean;
   isFlipped: boolean;
   activate: () => void;
+  deactivate: () => void;
   consumePendingClick: () => boolean;
 }
 

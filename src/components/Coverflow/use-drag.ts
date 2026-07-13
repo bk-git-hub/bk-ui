@@ -2,10 +2,28 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 const DRAG_SENSITIVITY = 0.3;
 const DRAG_THRESHOLD = 2;
-const LERP_FACTOR = 0.1;
-const INERTIA_MULTIPLIER = 6;
-const FRICTION = 0.96;
-const MIN_VELOCITY = 0.01;
+const REFERENCE_FRAME_MS = 1000 / 60;
+const MAX_FRAME_MS = 50;
+const VELOCITY_SAMPLE_WINDOW_MS = 100;
+const RELEASE_VELOCITY_FADE_MS = 100;
+const MOMENTUM_PROJECTION_SECONDS = 0.075;
+const MAX_RELEASE_VELOCITY = 30;
+const SPRING_ANGULAR_FREQUENCY = 18;
+const SNAP_POSITION_EPSILON = 0.001;
+const SNAP_VELOCITY_EPSILON = 0.01;
+const OVERSCROLL_LIMIT = 0.8;
+const BOUNDARY_VELOCITY_DAMPING = 0.35;
+
+const clamp = (value: number, minimum: number, maximum: number) =>
+  Math.max(minimum, Math.min(value, maximum));
+
+const getMonotonicTime = () =>
+  typeof performance === "undefined" ? Date.now() : performance.now();
+
+const getIdleVelocityWeight = (idleDurationMs: number) => {
+  const progress = clamp(idleDurationMs / RELEASE_VELOCITY_FADE_MS, 0, 1);
+  return 1 - progress * progress * (3 - 2 * progress);
+};
 
 const cancelFrame = (frameRef: { current: number | null }) => {
   if (frameRef.current === null) return;
@@ -28,12 +46,15 @@ export const useDrag = (config: DragConfig) => {
   const dragMovedRef = useRef(false);
   const dragFrameRef = useRef<number | null>(null);
   const inertiaFrameRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number | null>(null);
+  const snapTargetRef = useRef<number | null>(null);
   const positionRef = useRef(0);
   const targetPositionRef = useRef(0);
   const velocityRef = useRef(0);
   const gestureRef = useRef({
     startPosition: { x: 0, initialScore: 0 },
-    history: [] as { x: number; time: number }[],
+    latestX: 0,
+    history: [] as { position: number; time: number }[],
   });
 
   useLayoutEffect(() => {
@@ -49,6 +70,8 @@ export const useDrag = (config: DragConfig) => {
     const hadInertia = inertiaFrameRef.current !== null;
 
     cancelFrame(inertiaFrameRef);
+    lastFrameTimeRef.current = null;
+    snapTargetRef.current = null;
     velocityRef.current = 0;
     positionRef.current = nextPosition;
     targetPositionRef.current = Math.max(
@@ -61,6 +84,12 @@ export const useDrag = (config: DragConfig) => {
     );
 
     if (isDraggingRef.current) {
+      const gesture = gestureRef.current;
+      gesture.startPosition = {
+        x: gesture.latestX,
+        initialScore: nextPosition,
+      };
+      gesture.history = [{ position: nextPosition, time: getMonotonicTime() }];
       config.onDrag(nextPosition);
     } else if (hadInertia || nextPosition !== previousPosition) {
       const finalPosition = Math.round(nextPosition);
@@ -70,43 +99,99 @@ export const useDrag = (config: DragConfig) => {
     }
   });
 
-  const inertiaLoop = useCallback(() => {
-    const { onDrag, onDragEnd, maxIndex } = configRef.current;
+  const finishAt = useCallback((finalPosition: number) => {
+    const { onDrag, onDragEnd } = configRef.current;
 
-    if (Math.abs(velocityRef.current) < MIN_VELOCITY) {
-      inertiaFrameRef.current = null;
-      const finalPosition = Math.max(
-        0,
-        Math.min(Math.round(positionRef.current), maxIndex),
-      );
-      positionRef.current = finalPosition;
-      onDragEnd(finalPosition);
-      return;
-    }
-
-    const nextPosition = positionRef.current + velocityRef.current;
-    if (nextPosition < 0 || nextPosition > maxIndex) {
-      velocityRef.current *= 0.5;
-    }
-    positionRef.current = Math.max(
-      -0.8,
-      Math.min(nextPosition, maxIndex + 0.8),
-    );
-    velocityRef.current *= FRICTION;
-    onDrag(positionRef.current);
-    inertiaFrameRef.current = requestAnimationFrame(inertiaLoop);
+    inertiaFrameRef.current = null;
+    lastFrameTimeRef.current = null;
+    snapTargetRef.current = null;
+    velocityRef.current = 0;
+    positionRef.current = finalPosition;
+    targetPositionRef.current = finalPosition;
+    onDrag(finalPosition);
+    onDragEnd(finalPosition);
   }, []);
+
+  const inertiaLoop = useCallback(
+    (timestamp: number) => {
+      const { onDrag, maxIndex } = configRef.current;
+      const previousFrameTime = lastFrameTimeRef.current;
+      const elapsedMs =
+        previousFrameTime === null ||
+        !Number.isFinite(timestamp) ||
+        timestamp <= previousFrameTime
+          ? REFERENCE_FRAME_MS
+          : Math.min(timestamp - previousFrameTime, MAX_FRAME_MS);
+      lastFrameTimeRef.current = Number.isFinite(timestamp)
+        ? timestamp
+        : (previousFrameTime ?? 0) + elapsedMs;
+
+      const deltaSeconds = elapsedMs / 1000;
+      const target =
+        snapTargetRef.current ??
+        clamp(
+          Math.round(
+            positionRef.current +
+              velocityRef.current * MOMENTUM_PROJECTION_SECONDS,
+          ),
+          0,
+          maxIndex,
+        );
+      snapTargetRef.current = target;
+
+      const displacement = positionRef.current - target;
+      if (
+        Math.abs(displacement) <= SNAP_POSITION_EPSILON &&
+        Math.abs(velocityRef.current) <= SNAP_VELOCITY_EPSILON
+      ) {
+        finishAt(target);
+        return;
+      }
+
+      const spring =
+        velocityRef.current + SPRING_ANGULAR_FREQUENCY * displacement;
+      const decay = Math.exp(-SPRING_ANGULAR_FREQUENCY * deltaSeconds);
+      const nextDisplacement = (displacement + spring * deltaSeconds) * decay;
+      const nextVelocity =
+        (velocityRef.current -
+          SPRING_ANGULAR_FREQUENCY * spring * deltaSeconds) *
+        decay;
+      const nextPosition = target + nextDisplacement;
+      const boundedPosition = clamp(
+        nextPosition,
+        -OVERSCROLL_LIMIT,
+        maxIndex + OVERSCROLL_LIMIT,
+      );
+
+      positionRef.current = boundedPosition;
+      velocityRef.current = boundedPosition === nextPosition ? nextVelocity : 0;
+      onDrag(boundedPosition);
+
+      if (
+        Math.abs(boundedPosition - target) <= SNAP_POSITION_EPSILON &&
+        Math.abs(velocityRef.current) <= SNAP_VELOCITY_EPSILON
+      ) {
+        finishAt(target);
+        return;
+      }
+
+      inertiaFrameRef.current = requestAnimationFrame(inertiaLoop);
+    },
+    [finishAt],
+  );
 
   const handleDragStart = useCallback(
     (event: React.MouseEvent | React.TouchEvent, initialPosition: number) => {
       configRef.current.onDragStart?.();
       cancelFrame(dragFrameRef);
       cancelFrame(inertiaFrameRef);
+      lastFrameTimeRef.current = null;
+      snapTargetRef.current = null;
 
       const point = "touches" in event ? event.touches[0] : event;
       if (!point) return;
 
-      const startedAt = Date.now();
+      const startedAt = getMonotonicTime();
       positionRef.current = initialPosition;
       targetPositionRef.current = initialPosition;
       velocityRef.current = 0;
@@ -114,7 +199,8 @@ export const useDrag = (config: DragConfig) => {
       isDraggingRef.current = true;
       gestureRef.current = {
         startPosition: { x: point.clientX, initialScore: initialPosition },
-        history: [{ x: point.clientX, time: startedAt }],
+        latestX: point.clientX,
+        history: [{ position: initialPosition, time: startedAt }],
       };
 
       const dragLoop = () => {
@@ -123,9 +209,11 @@ export const useDrag = (config: DragConfig) => {
           return;
         }
 
-        const distance = targetPositionRef.current - positionRef.current;
-        positionRef.current += distance * LERP_FACTOR;
-        configRef.current.onDrag(positionRef.current);
+        const nextPosition = targetPositionRef.current;
+        if (nextPosition !== positionRef.current) {
+          positionRef.current = nextPosition;
+          configRef.current.onDrag(nextPosition);
+        }
         dragFrameRef.current = requestAnimationFrame(dragLoop);
       };
 
@@ -150,18 +238,27 @@ export const useDrag = (config: DragConfig) => {
 
       const { size, maxIndex } = configRef.current;
       const gesture = gestureRef.current;
-      gesture.history.push({ x: point.clientX, time: Date.now() });
-      if (gesture.history.length > 4) gesture.history.shift();
+      gesture.latestX = point.clientX;
 
       const deltaX = point.clientX - gesture.startPosition.x;
       if (Math.abs(deltaX) > DRAG_THRESHOLD) dragMovedRef.current = true;
 
       const dragAmount = deltaX / (size * DRAG_SENSITIVITY);
       const nextTarget = gesture.startPosition.initialScore - dragAmount;
-      targetPositionRef.current = Math.max(
-        -0.8,
-        Math.min(nextTarget, maxIndex + 0.8),
+      const boundedTarget = clamp(
+        nextTarget,
+        -OVERSCROLL_LIMIT,
+        maxIndex + OVERSCROLL_LIMIT,
       );
+      targetPositionRef.current = boundedTarget;
+
+      const sampledAt = getMonotonicTime();
+      gesture.history.push({ position: boundedTarget, time: sampledAt });
+      const cutoff = sampledAt - VELOCITY_SAMPLE_WINDOW_MS;
+      while (gesture.history.length > 2 && gesture.history[1]!.time < cutoff) {
+        gesture.history.shift();
+      }
+      if (gesture.history.length > 12) gesture.history.shift();
     };
 
     const handleDragEnd = () => {
@@ -169,22 +266,56 @@ export const useDrag = (config: DragConfig) => {
       isDraggingRef.current = false;
       cancelFrame(dragFrameRef);
 
-      const history = gestureRef.current.history;
-      const last = history[history.length - 1];
-      const previous = history[history.length - 2] ?? history[0];
-      if (configRef.current.reducedMotionRef?.current) {
-        velocityRef.current = 0;
-      } else if (last && previous && last.time > previous.time) {
-        const speed =
-          ((last.x - previous.x) / (last.time - previous.time)) *
-          INERTIA_MULTIPLIER;
-        velocityRef.current =
-          (-speed / configRef.current.size) * DRAG_SENSITIVITY * 10;
-      } else {
-        velocityRef.current = 0;
+      const releasePosition = targetPositionRef.current;
+      if (releasePosition !== positionRef.current) {
+        positionRef.current = releasePosition;
+        configRef.current.onDrag(releasePosition);
       }
 
-      inertiaLoop();
+      const history = gestureRef.current.history;
+      const last = history[history.length - 1];
+      const first = history.find((sample) => sample.time < (last?.time ?? 0));
+      const releasedAt = getMonotonicTime();
+      const shouldReduceMotion =
+        configRef.current.reducedMotionRef?.current ?? false;
+
+      let releaseVelocity = 0;
+      if (!shouldReduceMotion && first && last && last.time > first.time) {
+        const sampledVelocity =
+          (last.position - first.position) / ((last.time - first.time) / 1000);
+        const idleDuration = Math.max(0, releasedAt - last.time);
+        releaseVelocity =
+          clamp(sampledVelocity, -MAX_RELEASE_VELOCITY, MAX_RELEASE_VELOCITY) *
+          getIdleVelocityWeight(idleDuration);
+      }
+
+      velocityRef.current = clamp(
+        releaseVelocity,
+        -MAX_RELEASE_VELOCITY,
+        MAX_RELEASE_VELOCITY,
+      );
+      if (releasePosition < 0 || releasePosition > configRef.current.maxIndex) {
+        velocityRef.current *= BOUNDARY_VELOCITY_DAMPING;
+      }
+
+      const finalPosition = clamp(
+        Math.round(
+          releasePosition + velocityRef.current * MOMENTUM_PROJECTION_SECONDS,
+        ),
+        0,
+        configRef.current.maxIndex,
+      );
+      snapTargetRef.current = finalPosition;
+      lastFrameTimeRef.current = getMonotonicTime();
+
+      if (shouldReduceMotion) {
+        finishAt(
+          clamp(Math.round(releasePosition), 0, configRef.current.maxIndex),
+        );
+        return;
+      }
+
+      inertiaFrameRef.current = requestAnimationFrame(inertiaLoop);
     };
 
     window.addEventListener("mousemove", handleDragMove, { passive: false });
@@ -203,7 +334,7 @@ export const useDrag = (config: DragConfig) => {
       cancelFrame(dragFrameRef);
       cancelFrame(inertiaFrameRef);
     };
-  }, [inertiaLoop]);
+  }, [finishAt, inertiaLoop]);
 
   return { consumeDragClick, handleDragStart };
 };
