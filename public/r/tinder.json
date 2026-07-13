@@ -1,0 +1,124 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "dependencies": [
+    "clsx@^2.1.1",
+    "tailwind-merge@^3.3.1"
+  ],
+  "description": "A composable React card deck with pointer swiping, native-button controls, bounded three-card rendering, undo, reset, and empty-state primitives.",
+  "docs": "Tailwind 4: Keep components/Tinder in the locally scanned source tree; for shared source add a stylesheet-relative @source directive for that directory.\n\nSSR and hydration constraints:\n- Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.\n- Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.\n- Render output is deterministic for the same ordered cards and does not require ssr: false.\n- Use the same ordered cards and stable deckKey for the server render and first hydration render.\n\nAccessibility constraints:\n- Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.\n- Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.\n- Pointer dragging has button-based keyboard equivalents; do not remove those controls.\n- Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.\n- The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required.",
+  "files": [
+    {
+      "content": "\"use client\";\n\nexport * from \"./index\";\n",
+      "path": "src/components/Tinder/client.ts",
+      "target": "@components/Tinder/client.ts",
+      "type": "registry:component"
+    },
+    {
+      "content": "import React, { createContext, useContext, useMemo } from \"react\";\nimport { useTinderSwipe } from \"./useTinderSwipe\";\nimport { clsx } from \"clsx\";\nimport { twMerge } from \"tailwind-merge\";\n\ntype TinderSwipeContextType = ReturnType<typeof useTinderSwipe> | null;\n\nconst TinderSwipeContext = createContext<TinderSwipeContextType>(null);\n\nconst useTinderContext = () => {\n  const context = useContext(TinderSwipeContext);\n  if (!context) {\n    throw new Error(\n      \"Tinder.* components must be rendered within a Tinder.Root component.\",\n    );\n  }\n\n  return context;\n};\n\nconst VISIBLE_CARD_COUNT = 3;\n\nexport interface TinderVisibleCard<T> {\n  item: T;\n  index: number;\n}\n\nexport interface TinderRootRenderProps<T> {\n  currentIndex: number;\n  visibleCards: readonly TinderVisibleCard<T>[];\n}\n\nexport interface TinderRootProps<T> {\n  cards: readonly T[];\n  children:\n    | React.ReactNode\n    | ((state: TinderRootRenderProps<T>) => React.ReactNode);\n  onSwipeLeft?: (item: T) => void;\n  onSwipeRight?: (item: T) => void;\n}\n\nexport const TinderRoot = <T,>({\n  cards,\n  children,\n  onSwipeLeft,\n  onSwipeRight,\n}: TinderRootProps<T>) => {\n  const swipeApi = useTinderSwipe({\n    itemCount: cards.length,\n    onSwipeLeft: (index) => {\n      if (cards[index]) onSwipeLeft?.(cards[index]);\n    },\n    onSwipeRight: (index) => {\n      if (cards[index]) onSwipeRight?.(cards[index]);\n    },\n  });\n\n  const visibleCards = useMemo(\n    () =>\n      cards\n        .slice(\n          swipeApi.currentIndex,\n          swipeApi.currentIndex + VISIBLE_CARD_COUNT,\n        )\n        .map((item, offset) => ({\n          item,\n          index: swipeApi.currentIndex + offset,\n        })),\n    [cards, swipeApi.currentIndex],\n  );\n\n  const content =\n    typeof children === \"function\"\n      ? children({ currentIndex: swipeApi.currentIndex, visibleCards })\n      : children;\n\n  return (\n    <TinderSwipeContext.Provider value={swipeApi}>\n      {content}\n    </TinderSwipeContext.Provider>\n  );\n};\ninterface TinderCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  index: number;\n  children: React.ReactNode;\n}\n\nexport const TinderCard = ({\n  index,\n  children,\n  className,\n  style,\n  ...props\n}: TinderCardProps) => {\n  const {\n    currentIndex,\n    itemCount,\n    topCardRef,\n    nextCardRef,\n    handlePointerDown,\n    likeIndicatorRef,\n    nopeIndicatorRef,\n  } = useTinderContext();\n\n  if (index < currentIndex || index > currentIndex + 2) return null;\n\n  const isTopCard = index === currentIndex;\n  const isNextCard = index === currentIndex + 1;\n\n  return (\n    <div\n      ref={isTopCard ? topCardRef : isNextCard ? nextCardRef : null}\n      onPointerDown={isTopCard ? handlePointerDown : undefined}\n      className={twMerge(\n        clsx(\n          \"absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out select-none\",\n          (isTopCard || isNextCard) && \"will-change-transform\",\n          className,\n        ),\n      )}\n      style={{\n        zIndex: itemCount - index,\n        transform: isTopCard\n          ? \"none\"\n          : `scale(${1 - (index - currentIndex) * 0.1}) translate3d(0, ${(index - currentIndex) * 12}px, 0)`,\n        ...style,\n      }}\n      {...props}\n    >\n      {children}\n      {isTopCard && (\n        <>\n          <div\n            ref={likeIndicatorRef}\n            className=\"pointer-events-none absolute top-10 left-10 -rotate-12 transform rounded-xl border-4 border-green-500 p-2 text-4xl font-bold text-green-500 opacity-0\"\n          >\n            LIKE\n          </div>\n          <div\n            ref={nopeIndicatorRef}\n            className=\"pointer-events-none absolute top-10 right-10 rotate-12 transform rounded-xl border-4 border-red-500 p-2 text-4xl font-bold text-red-500 opacity-0\"\n          >\n            NOPE\n          </div>\n        </>\n      )}\n    </div>\n  );\n};\n\nexport const TinderNopeButton = (\n  props: React.ButtonHTMLAttributes<HTMLButtonElement>,\n) => {\n  const { animateSwipe, isFinished } = useTinderContext();\n  if (isFinished) return null;\n  return <button onClick={() => animateSwipe(\"left\")} {...props} />;\n};\n\nexport const TinderLikeButton = (\n  props: React.ButtonHTMLAttributes<HTMLButtonElement>,\n) => {\n  const { animateSwipe, isFinished } = useTinderContext();\n  if (isFinished) return null;\n  return <button onClick={() => animateSwipe(\"right\")} {...props} />;\n};\n\nexport const TinderEmptyFallback = ({\n  children,\n  className,\n}: {\n  children: React.ReactNode;\n  className?: string;\n}) => {\n  const { isFinished } = useTinderContext();\n\n  return isFinished ? <div className={className}>{children}</div> : null;\n};\n\nexport const TinderUndoButton = ({\n  children,\n  className,\n  ...props\n}: React.ButtonHTMLAttributes<HTMLButtonElement>) => {\n  const { undo, currentIndex } = useTinderContext();\n  const isDisabled = currentIndex === 0;\n  return (\n    <button\n      onClick={undo}\n      disabled={isDisabled}\n      className={twMerge(\"...\", className)}\n      {...props}\n    >\n      {children}\n    </button>\n  );\n};\n\nexport const TinderResetButton = ({\n  children,\n  className,\n  ...props\n}: React.ButtonHTMLAttributes<HTMLButtonElement>) => {\n  const { reset, currentIndex } = useTinderContext();\n  const isDisabled = currentIndex === 0;\n  return (\n    <button\n      onClick={reset}\n      disabled={isDisabled}\n      className={twMerge(\"...\", className)}\n      {...props}\n    >\n      {children}\n    </button>\n  );\n};\n",
+      "path": "src/components/Tinder/index.tsx",
+      "target": "@components/Tinder/index.tsx",
+      "type": "registry:component"
+    },
+    {
+      "content": "import { useCallback, useRef, useState, useEffect } from \"react\";\n\ninterface UseTinderSwipeProps {\n  itemCount: number;\n  swipeThreshold?: number;\n  // 🔥 콜백 함수 타입 정의\n  onSwipeLeft?: (index: number) => void;\n  onSwipeRight?: (index: number) => void;\n}\n\nconst SWIPE_THRESHOLD_DEFAULT = 100;\nconst SWIPE_TRANSITION_DURATION_MS = 200;\nconst SWIPE_TRANSITION_FALLBACK_MS = SWIPE_TRANSITION_DURATION_MS + 50;\nconst NEXT_CARD_REST_SCALE = 0.9;\nconst NEXT_CARD_REST_TRANSLATE_Y = 12;\n\nexport const useTinderSwipe = ({\n  itemCount,\n  swipeThreshold = SWIPE_THRESHOLD_DEFAULT,\n  onSwipeLeft,\n  onSwipeRight,\n}: UseTinderSwipeProps) => {\n  const [currentIndex, setCurrentIndex] = useState(0);\n  const currentIndexRef = useRef(currentIndex);\n  const itemCountRef = useRef(itemCount);\n  const swipeThresholdRef = useRef(swipeThreshold);\n  const onSwipeLeftRef = useRef(onSwipeLeft);\n  const onSwipeRightRef = useRef(onSwipeRight);\n\n  currentIndexRef.current = currentIndex;\n  itemCountRef.current = itemCount;\n  swipeThresholdRef.current = swipeThreshold;\n  onSwipeLeftRef.current = onSwipeLeft;\n  onSwipeRightRef.current = onSwipeRight;\n\n  const topCardRef = useRef<HTMLDivElement>(null);\n  const nextCardRef = useRef<HTMLDivElement>(null);\n  const likeIndicatorRef = useRef<HTMLDivElement>(null);\n  const nopeIndicatorRef = useRef<HTMLDivElement>(null);\n\n  const isDraggingRef = useRef(false);\n  const isAnimatingRef = useRef(false);\n  const startPosRef = useRef({ x: 0, y: 0 });\n  const latestPointerPosRef = useRef({ x: 0, y: 0 });\n  const currentTranslateRef = useRef(0);\n  const dragOriginYRef = useRef<\"top\" | \"bottom\">(\"top\");\n  const rafIdRef = useRef<number | null>(null);\n  const animationCleanupRef = useRef<(() => void) | null>(null);\n\n  const animateSwipe = useCallback((direction: \"left\" | \"right\") => {\n    const topCard = topCardRef.current;\n    const swipedIndex = currentIndexRef.current;\n    if (\n      !topCard ||\n      swipedIndex >= itemCountRef.current ||\n      isAnimatingRef.current ||\n      isDraggingRef.current\n    ) {\n      return;\n    }\n\n    isAnimatingRef.current = true;\n\n    try {\n      if (direction === \"left\") {\n        onSwipeLeftRef.current?.(swipedIndex);\n      } else {\n        onSwipeRightRef.current?.(swipedIndex);\n      }\n    } catch (error) {\n      isAnimatingRef.current = false;\n      throw error;\n    }\n\n    if (nextCardRef.current) {\n      nextCardRef.current.style.transition = \"transform 0.3s ease-out\";\n      nextCardRef.current.style.transform = `none`;\n    }\n\n    const flyOutX =\n      (direction === \"right\" ? 1 : -1) * (window.innerWidth + 200);\n    topCard.style.transition = \"transform 0.2s ease-out, opacity 0.2s ease-out\";\n    topCard.style.transform = `translate3d(${flyOutX}px, 0, 0) rotate(${flyOutX / 15}deg)`;\n    topCard.style.opacity = \"0\";\n\n    let isComplete = false;\n\n    const cleanupAnimation = () => {\n      topCard.removeEventListener(\"transitionend\", handleTransitionEnd);\n      window.clearTimeout(fallbackTimerId);\n      if (animationCleanupRef.current === cleanupAnimation) {\n        animationCleanupRef.current = null;\n      }\n    };\n\n    const completeAnimation = () => {\n      if (isComplete) return;\n      isComplete = true;\n      cleanupAnimation();\n      isAnimatingRef.current = false;\n      topCard.style.transition = \"\";\n      topCard.style.display = \"none\";\n      setCurrentIndex((prev) => Math.min(prev + 1, itemCountRef.current));\n    };\n\n    function handleTransitionEnd(event: TransitionEvent) {\n      if (event.target === topCard && event.propertyName === \"transform\") {\n        completeAnimation();\n      }\n    }\n\n    topCard.addEventListener(\"transitionend\", handleTransitionEnd);\n    const fallbackTimerId = window.setTimeout(\n      completeAnimation,\n      SWIPE_TRANSITION_FALLBACK_MS,\n    );\n    animationCleanupRef.current = cleanupAnimation;\n  }, []);\n\n  const snapBack = useCallback(() => {\n    if (topCardRef.current) {\n      topCardRef.current.style.transition = \"transform 0.3s ease-out\";\n      topCardRef.current.style.transform = \"translate3d(0, 0, 0)\";\n      topCardRef.current.style.transformOrigin = \"center center\";\n    }\n    if (nextCardRef.current) {\n      nextCardRef.current.style.transition = \"transform 0.3s ease-out\";\n      nextCardRef.current.style.transform = `scale(${NEXT_CARD_REST_SCALE}) translate3d(0, ${NEXT_CARD_REST_TRANSLATE_Y}px, 0)`;\n    }\n    if (likeIndicatorRef.current) likeIndicatorRef.current.style.opacity = \"0\";\n    if (nopeIndicatorRef.current) nopeIndicatorRef.current.style.opacity = \"0\";\n  }, []);\n\n  const renderLatestDragPosition = useCallback(() => {\n    if (!isDraggingRef.current || !topCardRef.current) return;\n\n    const deltaX = latestPointerPosRef.current.x - startPosRef.current.x;\n    const deltaY = latestPointerPosRef.current.y - startPosRef.current.y;\n    currentTranslateRef.current = deltaX;\n\n    const rotationMultiplier = dragOriginYRef.current === \"top\" ? 1 : -1;\n    const rotation = (deltaX / 15) * rotationMultiplier;\n\n    topCardRef.current.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) rotate(${rotation}deg)`;\n\n    const likeOpacity = Math.max(\n      0,\n      Math.min(1, deltaX / swipeThresholdRef.current),\n    );\n    const nopeOpacity = Math.max(\n      0,\n      Math.min(1, -deltaX / swipeThresholdRef.current),\n    );\n\n    if (likeIndicatorRef.current) {\n      likeIndicatorRef.current.style.opacity = `${likeOpacity}`;\n    }\n    if (nopeIndicatorRef.current) {\n      nopeIndicatorRef.current.style.opacity = `${nopeOpacity}`;\n    }\n\n    if (nextCardRef.current) {\n      const progress = Math.min(\n        Math.abs(deltaX) / swipeThresholdRef.current,\n        1,\n      );\n      const newScale =\n        NEXT_CARD_REST_SCALE + (1 - NEXT_CARD_REST_SCALE) * progress;\n      const newTranslateY = NEXT_CARD_REST_TRANSLATE_Y * (1 - progress);\n      nextCardRef.current.style.transform = `scale(${newScale}) translate3d(0, ${newTranslateY}px, 0)`;\n    }\n  }, []);\n\n  const cancelScheduledDragFrame = useCallback(() => {\n    if (rafIdRef.current === null) return;\n    cancelAnimationFrame(rafIdRef.current);\n    rafIdRef.current = null;\n  }, []);\n\n  const flushLatestDragPosition = useCallback(() => {\n    cancelScheduledDragFrame();\n    renderLatestDragPosition();\n  }, [cancelScheduledDragFrame, renderLatestDragPosition]);\n\n  const handleWindowPointerMove = useCallback(\n    (e: PointerEvent) => {\n      if (!isDraggingRef.current || !topCardRef.current) return;\n      latestPointerPosRef.current = { x: e.clientX, y: e.clientY };\n      if (rafIdRef.current !== null) return;\n\n      rafIdRef.current = requestAnimationFrame(() => {\n        rafIdRef.current = null;\n        renderLatestDragPosition();\n      });\n    },\n    [renderLatestDragPosition],\n  );\n\n  const handleWindowPointerEnd = useCallback(\n    (event: PointerEvent) => {\n      window.removeEventListener(\"pointermove\", handleWindowPointerMove);\n      window.removeEventListener(\"pointerup\", handleWindowPointerEnd);\n      window.removeEventListener(\"pointercancel\", handleWindowPointerEnd);\n\n      if (event.type === \"pointercancel\") {\n        cancelScheduledDragFrame();\n        isDraggingRef.current = false;\n        snapBack();\n        currentTranslateRef.current = 0;\n        return;\n      }\n\n      latestPointerPosRef.current = { x: event.clientX, y: event.clientY };\n      flushLatestDragPosition();\n      isDraggingRef.current = false;\n\n      if (Math.abs(currentTranslateRef.current) > swipeThresholdRef.current) {\n        animateSwipe(currentTranslateRef.current > 0 ? \"right\" : \"left\");\n      } else {\n        snapBack();\n      }\n      currentTranslateRef.current = 0;\n    },\n    [\n      animateSwipe,\n      cancelScheduledDragFrame,\n      flushLatestDragPosition,\n      handleWindowPointerMove,\n      snapBack,\n    ],\n  );\n\n  const handlePointerDown = useCallback(\n    (e: React.PointerEvent<HTMLDivElement>) => {\n      e.preventDefault();\n      if (\n        !topCardRef.current ||\n        isDraggingRef.current ||\n        isAnimatingRef.current\n      ) {\n        return;\n      }\n\n      const cardRect = topCardRef.current.getBoundingClientRect();\n      const clickOffsetY = e.clientY - cardRect.top;\n\n      if (clickOffsetY > cardRect.height / 2) {\n        dragOriginYRef.current = \"bottom\";\n        topCardRef.current.style.transformOrigin = \"top center\";\n      } else {\n        dragOriginYRef.current = \"top\";\n        topCardRef.current.style.transformOrigin = \"bottom center\";\n      }\n\n      isDraggingRef.current = true;\n      startPosRef.current = { x: e.clientX, y: e.clientY };\n      latestPointerPosRef.current = { x: e.clientX, y: e.clientY };\n      currentTranslateRef.current = 0;\n      topCardRef.current.style.transition = \"\";\n      if (nextCardRef.current) {\n        nextCardRef.current.style.transition = \"none\";\n      }\n\n      window.addEventListener(\"pointermove\", handleWindowPointerMove);\n      window.addEventListener(\"pointerup\", handleWindowPointerEnd);\n      window.addEventListener(\"pointercancel\", handleWindowPointerEnd);\n    },\n    [handleWindowPointerEnd, handleWindowPointerMove],\n  );\n\n  const undo = useCallback(() => {\n    if (isAnimatingRef.current) return;\n    setCurrentIndex((prev) => Math.max(0, prev - 1));\n  }, []);\n\n  const reset = useCallback(() => {\n    if (isAnimatingRef.current) return;\n    setCurrentIndex(0);\n  }, []);\n\n  useEffect(() => {\n    return () => {\n      window.removeEventListener(\"pointermove\", handleWindowPointerMove);\n      window.removeEventListener(\"pointerup\", handleWindowPointerEnd);\n      window.removeEventListener(\"pointercancel\", handleWindowPointerEnd);\n      cancelScheduledDragFrame();\n      animationCleanupRef.current?.();\n      isDraggingRef.current = false;\n      isAnimatingRef.current = false;\n    };\n  }, [\n    cancelScheduledDragFrame,\n    handleWindowPointerEnd,\n    handleWindowPointerMove,\n  ]);\n\n  const isFinished = currentIndex >= itemCount;\n\n  return {\n    currentIndex,\n    itemCount,\n    topCardRef,\n    nextCardRef,\n    likeIndicatorRef,\n    nopeIndicatorRef,\n    handlePointerDown,\n    animateSwipe,\n    isFinished,\n    setCurrentIndex,\n    undo,\n    reset,\n  };\n};\n",
+      "path": "src/components/Tinder/useTinderSwipe.ts",
+      "target": "@components/Tinder/useTinderSwipe.ts",
+      "type": "registry:hook"
+    }
+  ],
+  "meta": {
+    "bkUi": {
+      "componentVersion": "1.0.0",
+      "constraints": {
+        "accessibility": [
+          "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
+          "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
+          "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
+          "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
+          "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+        ],
+        "ssr": [
+          "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
+          "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
+          "Render output is deterministic for the same ordered cards and does not require ssr: false.",
+          "Use the same ordered cards and stable deckKey for the server render and first hydration render."
+        ]
+      },
+      "entrypoints": {
+        "next": "src/components/Tinder/client.ts",
+        "react": "src/components/Tinder/index.tsx"
+      },
+      "files": [
+        {
+          "frameworks": [
+            "next"
+          ],
+          "gitBlob": "4b339ad0a054337c09375d9a0065f0ff735a0f66",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61",
+          "source": "src/components/Tinder/client.ts",
+          "target": "@components/Tinder/client.ts",
+          "type": "registry:component"
+        },
+        {
+          "frameworks": [
+            "next",
+            "react"
+          ],
+          "gitBlob": "d46bbe21b36443495156c98e8a4c257679901db7",
+          "sha256": "736e6e3cd8a21a2e18e8ebd17b1035d6b8223fe55f4681be7340bc1af2638676",
+          "source": "src/components/Tinder/index.tsx",
+          "target": "@components/Tinder/index.tsx",
+          "type": "registry:component"
+        },
+        {
+          "frameworks": [
+            "next",
+            "react"
+          ],
+          "gitBlob": "3c03191ade4b0615159d0bfeb60770eeb57f4dd8",
+          "sha256": "accf1da12dd897db49efe4e2455e9f2a4534eef919d0c0ba31775550b19f4cc4",
+          "source": "src/components/Tinder/useTinderSwipe.ts",
+          "target": "@components/Tinder/useTinderSwipe.ts",
+          "type": "registry:hook"
+        }
+      ],
+      "license": {
+        "spdx": "UNLICENSED",
+        "status": "pending"
+      },
+      "next": {
+        "clientBoundary": "src/components/Tinder/client.ts",
+        "serializableProps": [
+          "cards: an array of plain records containing only serializable scalar values",
+          "deckKey: string"
+        ],
+        "tested": "16.2.10"
+      },
+      "react": {
+        "range": ">=19.0.0 <20",
+        "tested": "19.2.7"
+      },
+      "schemaVersion": 1,
+      "sourceCommit": "35d17dd9e1c04f4f35d9cf72f2c2574ebfceff0c",
+      "tailwind": {
+        "major": 4,
+        "range": ">=4.0.0 <5",
+        "representativeClasses": [
+          "-rotate-12",
+          "[touch-action:none]",
+          "duration-300",
+          "opacity-0",
+          "select-none",
+          "transition-transform",
+          "will-change-transform"
+        ],
+        "scan": "Keep components/Tinder in the locally scanned source tree; for shared source add a stylesheet-relative @source directive for that directory.",
+        "tested": "4.3.2"
+      }
+    }
+  },
+  "name": "tinder",
+  "registryDependencies": [],
+  "title": "Tinder Swiper (Tailwind 4)",
+  "type": "registry:ui"
+}

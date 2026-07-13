@@ -1,0 +1,165 @@
+{
+  "componentVersion": "1.0.0",
+  "constraints": {
+    "accessibility": [
+      "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
+      "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
+      "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
+      "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
+      "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+    ],
+    "ssr": [
+      "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
+      "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
+      "Render output is deterministic for the same ordered cards and does not require ssr: false.",
+      "Use the same ordered cards and stable deckKey for the server render and first hydration render."
+    ]
+  },
+  "defaultVariantId": "tailwind-4",
+  "name": "tinder",
+  "schemaVersion": 1,
+  "sourceCommit": "35d17dd9e1c04f4f35d9cf72f2c2574ebfceff0c",
+  "status": "release-blocked",
+  "statusMessage": "Public installation is blocked until license terms are approved, the fixture gate passes, and the artifact commit is pushed and verified by full SHA.",
+  "title": "Tinder Swiper",
+  "variants": [
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@2.6.0"
+      ],
+      "id": "tailwind-3",
+      "label": "Tailwind 3",
+      "notes": [
+        "Add \"./src/components/Tinder/**/*.{js,ts,jsx,tsx}\" (or the copied equivalent) to tailwind.config content.",
+        "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
+        "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
+        "Render output is deterministic for the same ordered cards and does not require ssr: false.",
+        "Use the same ordered cards and stable deckKey for the server render and first hydration render.",
+        "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
+        "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
+        "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
+        "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
+        "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+      ],
+      "range": ">=3.4.0 <4",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/Tinder/client.ts",
+          "repositoryPath": "src/components/Tinder/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Tinder/index.tsx",
+          "repositoryPath": "src/components/Tinder/index.tsx",
+          "sha256": "736e6e3cd8a21a2e18e8ebd17b1035d6b8223fe55f4681be7340bc1af2638676"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Tinder/useTinderSwipe.ts",
+          "repositoryPath": "src/components/Tinder/useTinderSwipe.ts",
+          "sha256": "accf1da12dd897db49efe4e2455e9f2a4534eef919d0c0ba31775550b19f4cc4"
+        },
+        {
+          "kind": "registry",
+          "label": "tinder-tailwind-v3 Registry JSON",
+          "repositoryPath": "public/r/tinder-tailwind-v3.json",
+          "sha256": "3a2cd0617be61729b94b9d7f3e26aca42611ea941633e42fe9948b847ee59c88"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/tinder-react.zip",
+          "sha256": "32b8129f015fe5137ab550347bc3cd21d2e52aabf388d5782746baae52a92ed3"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/tinder-next.zip",
+          "sha256": "2874e49fc0bcc625b1aad987bb8b4a39107845634610a141a73176ae5b4948ed"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/tinder.md",
+          "sha256": "57151eaa977fdfd6c61be06e82df949b40ba3369ee115bf5f2d27765238235df"
+        }
+      ],
+      "tailwindMajor": 3,
+      "tested": "3.4.17"
+    },
+    {
+      "dependencies": [
+        "clsx@^2.1.1",
+        "tailwind-merge@^3.3.1"
+      ],
+      "id": "tailwind-4",
+      "label": "Tailwind 4",
+      "notes": [
+        "Keep components/Tinder in the locally scanned source tree; for shared source add a stylesheet-relative @source directive for that directory.",
+        "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
+        "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
+        "Render output is deterministic for the same ordered cards and does not require ssr: false.",
+        "Use the same ordered cards and stable deckKey for the server render and first hydration render.",
+        "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
+        "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
+        "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
+        "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
+        "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+      ],
+      "range": ">=4.0.0 <5",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/Tinder/client.ts",
+          "repositoryPath": "src/components/Tinder/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Tinder/index.tsx",
+          "repositoryPath": "src/components/Tinder/index.tsx",
+          "sha256": "736e6e3cd8a21a2e18e8ebd17b1035d6b8223fe55f4681be7340bc1af2638676"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Tinder/useTinderSwipe.ts",
+          "repositoryPath": "src/components/Tinder/useTinderSwipe.ts",
+          "sha256": "accf1da12dd897db49efe4e2455e9f2a4534eef919d0c0ba31775550b19f4cc4"
+        },
+        {
+          "kind": "registry",
+          "label": "tinder Registry JSON",
+          "repositoryPath": "public/r/tinder.json",
+          "sha256": "0ade02df6aef67943b54e15da6d70d125e7a2462711e5dcfdf32639d875e36ca"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/tinder-react.zip",
+          "sha256": "32b8129f015fe5137ab550347bc3cd21d2e52aabf388d5782746baae52a92ed3"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/tinder-next.zip",
+          "sha256": "2874e49fc0bcc625b1aad987bb8b4a39107845634610a141a73176ae5b4948ed"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/tinder.md",
+          "sha256": "57151eaa977fdfd6c61be06e82df949b40ba3369ee115bf5f2d27765238235df"
+        }
+      ],
+      "tailwindMajor": 4,
+      "tested": "4.3.2"
+    }
+  ]
+}
