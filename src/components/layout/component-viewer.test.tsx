@@ -9,6 +9,26 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ComponentViewer from "./component-viewer";
 
+vi.mock("./tsx-syntax-highlighter", () => ({
+  default: ({ code }: { code: string }) => (
+    <pre data-testid="syntax-highlighter">
+      <code>{code}</code>
+    </pre>
+  ),
+}));
+
+const reactExport = {
+  code: "export function ReactExample() { return <div />; }",
+  language: "React TSX",
+  description: "Copy this into a React application.",
+};
+
+const nextJsExport = {
+  code: '"use client";\nexport function NextExample() { return <div />; }',
+  language: "Next.js TSX",
+  description: "Keep this inside a Next.js client boundary.",
+};
+
 describe("ComponentViewer", () => {
   beforeEach(() => {
     Object.assign(navigator, {
@@ -19,7 +39,7 @@ describe("ComponentViewer", () => {
   });
 
   it("loads the syntax-highlighted code view on demand", async () => {
-    const { container } = render(
+    render(
       <ComponentViewer
         title="Example"
         description="Example component"
@@ -36,11 +56,9 @@ describe("ComponentViewer", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Code" }));
 
-    await waitFor(() => {
-      expect(container.querySelector("code")).toHaveTextContent(
-        "const answer = 42;",
-      );
-    });
+    expect(await screen.findByTestId("syntax-highlighter")).toHaveTextContent(
+      "const answer = 42;",
+    );
 
     expect(screen.getByRole("tab", { name: "Code" })).toHaveAttribute(
       "aria-selected",
@@ -198,5 +216,174 @@ describe("ComponentViewer", () => {
     );
 
     expect(within(livePreview).getByText("Alex")).toBeInTheDocument();
+  });
+
+  it("orders optional tabs and keeps every tab connected to its panel", () => {
+    render(
+      <ComponentViewer
+        title="Complete example"
+        description="All tabs"
+        usageCode="const code = true;"
+        component={<div>Preview content</div>}
+        referenceCode="export function Usage() {}"
+        reactExport={reactExport}
+        nextJsExport={nextJsExport}
+      />,
+    );
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      "Preview",
+      "Code",
+      "Usage",
+      "React Export",
+      "Next.js Export",
+    ]);
+    expect(screen.getAllByRole("tabpanel", { hidden: true })).toHaveLength(5);
+
+    tabs.forEach((tab, index) => {
+      const panelId = tab.getAttribute("aria-controls");
+      const panel = panelId ? document.getElementById(panelId) : null;
+
+      expect(panel).not.toBeNull();
+      expect(panel).toHaveAttribute("role", "tabpanel");
+      expect(panel).toHaveAttribute("aria-labelledby", tab.id);
+      expect(tab).toHaveAttribute(
+        "aria-selected",
+        index === 0 ? "true" : "false",
+      );
+      expect(tab).toHaveAttribute("tabindex", index === 0 ? "0" : "-1");
+      if (index === 0) {
+        expect(panel).not.toHaveAttribute("hidden");
+      } else {
+        expect(panel).toHaveAttribute("hidden");
+      }
+    });
+  });
+
+  it("moves, wraps, activates, and focuses tabs with the keyboard", () => {
+    render(
+      <ComponentViewer
+        title="Keyboard example"
+        description="All tabs"
+        usageCode="const code = true;"
+        component={<div>Preview content</div>}
+        referenceCode="export function Usage() {}"
+        reactExport={reactExport}
+        nextJsExport={nextJsExport}
+      />,
+    );
+
+    const previewTab = screen.getByRole("tab", { name: "Preview" });
+    const nextJsTab = screen.getByRole("tab", { name: "Next.js Export" });
+
+    previewTab.focus();
+    fireEvent.keyDown(previewTab, { key: "ArrowLeft" });
+    expect(nextJsTab).toHaveFocus();
+    expect(nextJsTab).toHaveAttribute("aria-selected", "true");
+    expect(nextJsTab).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(nextJsTab, { key: "ArrowRight" });
+    expect(previewTab).toHaveFocus();
+    expect(previewTab).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.keyDown(previewTab, { key: "End" });
+    expect(nextJsTab).toHaveFocus();
+    expect(nextJsTab).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.keyDown(nextJsTab, { key: "Home" });
+    expect(previewTab).toHaveFocus();
+    expect(previewTab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("shows only optional source tabs that receive content", () => {
+    render(
+      <ComponentViewer
+        title="Minimal example"
+        description="Required tabs only"
+        usageCode="const code = true;"
+        component={<div>Preview content</div>}
+        reactExport={reactExport}
+      />,
+    );
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Preview",
+      "Code",
+      "React Export",
+    ]);
+    expect(
+      screen.queryByRole("tab", { name: "Usage" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: "Next.js Export" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("highlights and copies each export independently", async () => {
+    render(
+      <ComponentViewer
+        title="Export example"
+        description="Export tabs"
+        usageCode="const code = true;"
+        component={<div>Preview content</div>}
+        reactExport={reactExport}
+        nextJsExport={nextJsExport}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
+    expect(await screen.findByTestId("syntax-highlighter")).toHaveTextContent(
+      "export function ReactExample()",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Copy this into a React application.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+      reactExport.code,
+    );
+    expect(screen.getByRole("button", { name: "Copied!" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
+    expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+    expect(await screen.findByTestId("syntax-highlighter")).toHaveTextContent(
+      '"use client"',
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Keep this inside a Next.js client boundary.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
+      nextJsExport.code,
+    );
+  });
+
+  it("returns to Preview when the active optional tab is removed", async () => {
+    const baseProps = {
+      title: "Changing example",
+      description: "Optional tabs can change",
+      usageCode: "const code = true;",
+      component: <div>Preview content</div>,
+    };
+    const { rerender } = render(
+      <ComponentViewer {...baseProps} nextJsExport={nextJsExport} />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
+    expect(screen.getByRole("tab", { name: "Next.js Export" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    rerender(<ComponentViewer {...baseProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "Preview" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+    });
+    expect(screen.getByText("Preview content")).toBeInTheDocument();
   });
 });
