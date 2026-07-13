@@ -105,6 +105,85 @@ describe("ClickWheel", () => {
     expect(onPlayPause).toHaveBeenCalledTimes(1);
   });
 
+  it("scales circular drag thresholds with a safe sensitivity multiplier", () => {
+    const lowSensitivityRotate = vi.fn();
+    const defaultSensitivityRotate = vi.fn();
+    const highSensitivityRotate = vi.fn();
+    const invalidSensitivityRotate = vi.fn();
+
+    render(
+      <>
+        <ClickWheel
+          data-testid="low-sensitivity-wheel"
+          sensitivity={0.5}
+          onRotate={lowSensitivityRotate}
+        />
+        <ClickWheel
+          data-testid="default-sensitivity-wheel"
+          onRotate={defaultSensitivityRotate}
+        />
+        <ClickWheel
+          data-testid="high-sensitivity-wheel"
+          sensitivity={2}
+          onRotate={highSensitivityRotate}
+        />
+        <ClickWheel
+          data-testid="invalid-sensitivity-wheel"
+          sensitivity={Number.NaN}
+          onRotate={invalidSensitivityRotate}
+        />
+      </>,
+    );
+
+    const wheels = [
+      screen.getByTestId("low-sensitivity-wheel"),
+      screen.getByTestId("default-sensitivity-wheel"),
+      screen.getByTestId("high-sensitivity-wheel"),
+      screen.getByTestId("invalid-sensitivity-wheel"),
+    ];
+    const rect = {
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 200,
+      width: 200,
+      height: 200,
+      toJSON: () => ({}),
+    };
+
+    wheels.forEach((wheel, index) => {
+      vi.spyOn(wheel, "getBoundingClientRect").mockReturnValue(rect);
+      const pointerId = index + 20;
+      fireEvent.pointerDown(wheel, {
+        pointerId,
+        pointerType: "mouse",
+        button: 0,
+        clientX: 200,
+        clientY: 100,
+      });
+      fireEvent.pointerMove(wheel, {
+        pointerId,
+        pointerType: "mouse",
+        clientX: 197,
+        clientY: 124,
+      });
+      fireEvent.pointerUp(wheel, { pointerId, pointerType: "mouse" });
+    });
+
+    expect(lowSensitivityRotate).not.toHaveBeenCalled();
+    expect(defaultSensitivityRotate).toHaveBeenCalledTimes(1);
+    expect(highSensitivityRotate).toHaveBeenCalledTimes(2);
+    expect(invalidSensitivityRotate).toHaveBeenCalledTimes(1);
+    expect(wheels.map((wheel) => wheel.dataset.sensitivity)).toEqual([
+      "0.5",
+      "1",
+      "2",
+      "1",
+    ]);
+  });
+
   it("lets a native button handler cancel its semantic action", () => {
     const onNext = vi.fn();
     render(

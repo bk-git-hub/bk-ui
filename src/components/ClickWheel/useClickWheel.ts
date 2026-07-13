@@ -7,10 +7,14 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-const SENSITIVITY = 15;
+const ROTATION_THRESHOLD = 15;
 const INITIAL_ROTATION_THRESHOLD = 8;
 const LONG_PRESS_DELAY = 650;
 const LONG_PRESS_MOVE_TOLERANCE = 8;
+
+export const CLICK_WHEEL_MIN_SENSITIVITY = 0.5;
+export const CLICK_WHEEL_MAX_SENSITIVITY = 2;
+export const CLICK_WHEEL_DEFAULT_SENSITIVITY = 1;
 
 export type ClickWheelDirection = -1 | 1;
 
@@ -24,13 +28,24 @@ export interface UseClickWheelOptions {
   onRotate?: ClickWheelRotateHandler;
   onLongPress?: ClickWheelLongPressHandler;
   disabled?: boolean;
+  sensitivity?: number;
+}
+
+function normalizeSensitivity(sensitivity: number) {
+  if (!Number.isFinite(sensitivity)) return CLICK_WHEEL_DEFAULT_SENSITIVITY;
+  return Math.min(
+    CLICK_WHEEL_MAX_SENSITIVITY,
+    Math.max(CLICK_WHEEL_MIN_SENSITIVITY, sensitivity),
+  );
 }
 
 export function useClickWheel({
   onRotate,
   onLongPress,
   disabled = false,
+  sensitivity = CLICK_WHEEL_DEFAULT_SENSITIVITY,
 }: UseClickWheelOptions = {}) {
+  const normalizedSensitivity = normalizeSensitivity(sensitivity);
   const wheelRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const activePointerId = useRef<number | null>(null);
@@ -174,9 +189,9 @@ export function useClickWheel({
     }
     accumulatedAngle.current += delta;
 
-    let rotationThreshold = didDrag.current
-      ? SENSITIVITY
-      : INITIAL_ROTATION_THRESHOLD;
+    let rotationThreshold =
+      (didDrag.current ? ROTATION_THRESHOLD : INITIAL_ROTATION_THRESHOLD) /
+      normalizedSensitivity;
 
     while (Math.abs(accumulatedAngle.current) >= rotationThreshold) {
       if (longPressTimer.current !== null) {
@@ -189,7 +204,7 @@ export function useClickWheel({
         accumulatedAngle.current > 0 ? 1 : -1;
       onRotate?.(direction);
       accumulatedAngle.current -= direction * rotationThreshold;
-      rotationThreshold = SENSITIVITY;
+      rotationThreshold = ROTATION_THRESHOLD / normalizedSensitivity;
     }
   };
 
@@ -277,6 +292,7 @@ export function useClickWheel({
 
   return {
     wheelRef,
+    sensitivity: normalizedSensitivity,
     wheelProps: {
       onPointerDown,
       onPointerMove,

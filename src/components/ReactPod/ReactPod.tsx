@@ -23,12 +23,14 @@ export interface ReactPodProps
   deviceName?: string;
   menuItems?: readonly ReactPodMenuItem[];
   photoAlbums?: readonly ReactPodPhotoAlbum[];
+  wheelSensitivity?: number;
 }
 
 export function ReactPod({
   deviceName = "ReactPod",
   menuItems = MAIN_MENU_ITEMS,
   photoAlbums = EMPTY_PHOTO_ALBUMS,
+  wheelSensitivity,
   className,
   ...rootProps
 }: ReactPodProps) {
@@ -48,7 +50,7 @@ export function ReactPod({
         )}
       >
         <Display />
-        <ClickWheel />
+        <ClickWheel sensitivity={wheelSensitivity} />
       </div>
     </ReactPodProvider>
   );

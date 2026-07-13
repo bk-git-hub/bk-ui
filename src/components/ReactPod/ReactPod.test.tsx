@@ -442,6 +442,7 @@ describe("ReactPod", () => {
       <ReactPod
         deviceName="Pocket Mix"
         menuItems={menuItems}
+        wheelSensitivity={2}
         data-testid="custom-pod"
         data-theme="midnight"
         title="Custom music player"
@@ -462,6 +463,10 @@ describe("ReactPod", () => {
     expect(pod).toHaveAttribute("title", "Custom music player");
     expect(pod).toHaveClass("w-[360px]");
     expect(pod).not.toHaveClass("w-[300px]");
+    expect(screen.getByLabelText(/Click wheel/)).toHaveAttribute(
+      "data-sensitivity",
+      "2",
+    );
 
     fireEvent.click(pod);
     expect(handleClick).toHaveBeenCalledTimes(1);

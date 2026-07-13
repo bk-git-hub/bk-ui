@@ -11,12 +11,15 @@ describe("ClickWheel SSR", () => {
     const html = renderToString(
       <ClickWheel
         aria-label="Server-rendered wheel"
+        sensitivity={2}
         buttonProps={{ select: { children: "OK" } }}
       />,
     );
 
     expect(html).toContain("Server-rendered wheel");
     expect(html).toContain('data-slot="click-wheel"');
+    expect(html).toContain('data-sensitivity="2"');
+    expect(html).not.toContain(' sensitivity="');
     expect(html).toContain(">OK<");
   });
 });

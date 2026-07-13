@@ -16,6 +16,7 @@ export function PlayerControls() {
 
   return (
     <ClickWheel
+      sensitivity={1.25}
       onRotate={(direction) => setValue((current) => current + direction)}
       onMenu={() => setValue(0)}
       onPrevious={() => setValue((current) => current - 1)}
@@ -45,6 +46,8 @@ export function PlayerControls() {
 ```
 
 루트에는 `div`의 표준 속성과 이벤트를 전달할 수 있습니다. `buttonProps`의 각 항목에는 `button` 속성, `children`, `className`, `aria-*`, `data-*`, `ref`, 네이티브 이벤트를 전달할 수 있습니다. 버튼의 `onClick`이 `preventDefault()`를 호출하면 대응하는 의미 callback은 실행하지 않습니다. `wheelDrag`를 사용하면 해당 버튼에서 시작한 포인터 이동을 휠 회전으로 처리할지 선택할 수 있습니다.
+
+`sensitivity`는 원형 포인터 드래그 민감도 배율입니다. 기본값은 `1`, 허용 범위는 `0.5`–`2`이며 값이 클수록 작은 회전에도 빠르게 반응합니다. 방향키와 마우스 휠은 이 값과 관계없이 입력 한 번에 한 단계씩 이동합니다. 범위를 벗어난 유한한 값은 안전하게 제한되고 `NaN`과 `Infinity`는 기본값을 사용합니다.
 
 ## Next.js App Router
 

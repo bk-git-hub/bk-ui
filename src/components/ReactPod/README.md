@@ -8,11 +8,13 @@
 import { ReactPod } from "@/components/ReactPod";
 
 export function PlayerPreview() {
-  return <ReactPod deviceName="My Pod" />;
+  return <ReactPod deviceName="My Pod" wheelSensitivity={1.25} />;
 }
 ```
 
 휠만 필요한 경우에는 `@/components/ClickWheel`에서 가져오고, 버튼 내용·ARIA·클래스·이벤트는 `buttonProps`로 바꿉니다. 자세한 예시는 [ClickWheel README](../ClickWheel/README.md)에 있습니다.
+
+`wheelSensitivity`는 원형 드래그 민감도 배율이며 기본값은 `1`입니다. `0.5`–`2` 범위에서 값이 클수록 작은 원형 움직임에 더 빠르게 반응합니다. 키보드와 마우스 휠 입력은 항상 한 번에 한 단계씩 이동합니다.
 
 ## Next.js App Router
 
@@ -23,7 +25,7 @@ export function PlayerPreview() {
 import { ReactPod } from "@/components/ReactPod/client";
 
 export default function PlayerPage() {
-  return <ReactPod deviceName="My Pod" />;
+  return <ReactPod deviceName="My Pod" wheelSensitivity={1.25} />;
 }
 ```
 

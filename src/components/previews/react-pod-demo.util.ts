@@ -2,14 +2,21 @@ import type {
   ReactPodMenuItem,
   ReactPodMenuItemId,
 } from "@/components/ReactPod";
+import {
+  CLICK_WHEEL_DEFAULT_SENSITIVITY,
+  CLICK_WHEEL_MAX_SENSITIVITY,
+  CLICK_WHEEL_MIN_SENSITIVITY,
+} from "@/components/ClickWheel";
 
 export interface ReactPodDemoConfig {
   deviceName: string;
   menuItems: ReactPodMenuItem[];
+  wheelSensitivity: number;
 }
 
 export const DEFAULT_REACT_POD_DEMO_CONFIG: ReactPodDemoConfig = {
   deviceName: "ReactPod",
+  wheelSensitivity: CLICK_WHEEL_DEFAULT_SENSITIVITY,
   menuItems: [
     { id: "now-playing", label: "Now Playing" },
     { id: "songs", label: "Songs" },
@@ -58,6 +65,22 @@ export function parseReactPodDemoCode(source: string): ParseResult {
     return { config: null, error: "deviceName must be a non-empty string." };
   }
 
+  const wheelSensitivity =
+    config.wheelSensitivity === undefined
+      ? CLICK_WHEEL_DEFAULT_SENSITIVITY
+      : config.wheelSensitivity;
+  if (
+    typeof wheelSensitivity !== "number" ||
+    !Number.isFinite(wheelSensitivity) ||
+    wheelSensitivity < CLICK_WHEEL_MIN_SENSITIVITY ||
+    wheelSensitivity > CLICK_WHEEL_MAX_SENSITIVITY
+  ) {
+    return {
+      config: null,
+      error: `wheelSensitivity must be a number from ${CLICK_WHEEL_MIN_SENSITIVITY} to ${CLICK_WHEEL_MAX_SENSITIVITY}.`,
+    };
+  }
+
   if (!Array.isArray(config.menuItems) || config.menuItems.length === 0) {
     return { config: null, error: "menuItems must contain at least one item." };
   }
@@ -99,5 +122,8 @@ export function parseReactPodDemoCode(source: string): ParseResult {
     menuItems.push({ id: menuItemId, label });
   }
 
-  return { config: { deviceName, menuItems }, error: null };
+  return {
+    config: { deviceName, menuItems, wheelSensitivity },
+    error: null,
+  };
 }

@@ -46,6 +46,7 @@ export interface ClickWheelProps
   onPlayPause?: () => void;
   buttonProps?: ClickWheelButtonPropsMap;
   disabled?: boolean;
+  sensitivity?: number;
 }
 
 interface WheelButtonProps {
@@ -136,6 +137,7 @@ export function ClickWheel({
   className,
   buttonProps = {},
   disabled = false,
+  sensitivity,
   onRotate,
   onMenu,
   onMenuLongPress,
@@ -156,9 +158,14 @@ export function ClickWheel({
   "aria-label": ariaLabel = DEFAULT_WHEEL_LABEL,
   ...rootProps
 }: ClickWheelProps) {
-  const { wheelRef, wheelProps } = useClickWheel({
+  const {
+    wheelRef,
+    wheelProps,
+    sensitivity: normalizedSensitivity,
+  } = useClickWheel({
     onRotate,
     disabled,
+    sensitivity,
     onLongPress: (button) => {
       if (
         button.dataset.clickWheelButton === "menu" &&
@@ -225,6 +232,7 @@ export function ClickWheel({
       ref={wheelRef}
       data-slot="click-wheel"
       data-disabled={disabled ? "" : undefined}
+      data-sensitivity={normalizedSensitivity}
       className={twMerge(
         clsx(
           "relative h-[200px] w-[200px] cursor-grab touch-none rounded-full border border-zinc-300 bg-gradient-to-br from-white to-zinc-100 text-zinc-500 shadow-[inset_0_2px_12px_rgba(0,0,0,0.12)] outline-none select-none focus-visible:ring-4 focus-visible:ring-blue-400/60 active:cursor-grabbing data-disabled:cursor-not-allowed data-disabled:opacity-60",

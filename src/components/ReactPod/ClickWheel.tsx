@@ -3,7 +3,11 @@
 import { ClickWheel as ClickWheelPrimitive } from "@/components/ClickWheel";
 import { useReactPod } from "./ReactPodContext";
 
-export function ReactPodClickWheel() {
+export interface ReactPodClickWheelProps {
+  sensitivity?: number;
+}
+
+export function ReactPodClickWheel({ sensitivity }: ReactPodClickWheelProps) {
   const {
     state,
     rotate,
@@ -20,6 +24,7 @@ export function ReactPodClickWheel() {
   return (
     <div className="flex h-[55%] items-center justify-center bg-zinc-200">
       <ClickWheelPrimitive
+        sensitivity={sensitivity}
         onRotate={rotate}
         onMenu={back}
         onMenuLongPress={goToMainMenu}

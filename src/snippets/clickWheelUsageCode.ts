@@ -9,6 +9,7 @@ export default function PocketControls() {
     <div className="grid justify-items-center gap-4">
       <p aria-live="polite">Selected item: {index}</p>
       <ClickWheel
+        sensitivity={1.25}
         onRotate={(direction) => setIndex((value) => value + direction)}
         onMenu={() => setIndex(0)}
         onMenuLongPress={() => setIndex(0)}
