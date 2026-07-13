@@ -16,6 +16,8 @@ export const LazyImage = ({ src, alt, isPriority = false }: LazyImageProps) => {
         alt={alt}
         onLoad={signalReady}
         loading={isPriority ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={isPriority ? "high" : undefined}
         className="pointer-events-none h-full w-full rounded-md object-cover select-none"
         style={{
           // WebkitBoxReflect를 사용하여 네이티브 반사 효과를 적용합니다.

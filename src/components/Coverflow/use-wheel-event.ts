@@ -1,66 +1,97 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 interface WheelEventConfig {
   containerRef: React.RefObject<HTMLDivElement | null>;
   positionRef: React.RefObject<number>;
-  onScroll: (position: number) => void; // 스크롤 중 DOM 업데이트
-  onScrollEnd?: (index: number) => void; // 스크롤 끝났을 때 React state 업데이트
+  onScroll: React.Dispatch<number>;
+  onScrollEnd?: React.Dispatch<number>;
   size: number;
   maxIndex: number;
 }
 
 export const useWheelEvent = (config: WheelEventConfig) => {
-  const {
-    positionRef: scrollPosition,
-    containerRef,
-    onScroll,
-    onScrollEnd,
-    size,
-    maxIndex,
-  } = config;
+  const configRef = useRef(config);
+  const containerRef = config.containerRef;
+  const cancelPendingRef = useRef<() => void>(() => undefined);
+  const cancelPending = useCallback(() => cancelPendingRef.current(), []);
 
-  const scrollEndTimer = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    configRef.current = config;
+  });
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
+    let pendingDelta = 0;
+    let animationFrame: number | null = null;
+    let scrollEndTimer: number | null = null;
+    const cancelCurrentScroll = () => {
+      pendingDelta = 0;
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
       }
-
-      let scrollAmount = 0;
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        scrollAmount = e.deltaX / (size * 1.5);
-      } else {
-        scrollAmount = (e.deltaY * 1.5) / size;
+      if (scrollEndTimer !== null) {
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = null;
       }
+    };
+    cancelPendingRef.current = cancelCurrentScroll;
 
-      scrollPosition.current += scrollAmount;
-      scrollPosition.current = Math.max(
+    const flushPendingScroll = () => {
+      animationFrame = null;
+      if (pendingDelta === 0) return;
+
+      const { positionRef, maxIndex, onScroll } = configRef.current;
+      positionRef.current = Math.max(
         -0.4,
-        Math.min(scrollPosition.current, maxIndex + 0.4),
+        Math.min(positionRef.current + pendingDelta, maxIndex + 0.4),
       );
+      pendingDelta = 0;
+      onScroll(positionRef.current);
+    };
 
-      // ✅ 스크롤 중에는 DOM만 업데이트
-      onScroll(scrollPosition.current);
+    const scheduleScroll = () => {
+      if (animationFrame !== null) return;
+      animationFrame = requestAnimationFrame(flushPendingScroll);
+    };
 
-      // ✅ 스크롤이 끝난 후 스냅 처리 (React state 업데이트)
-      scrollEndTimer.current = window.setTimeout(() => {
-        const snapped = Math.round(scrollPosition.current);
-        const finalTarget = Math.max(0, Math.min(snapped, maxIndex));
-        scrollPosition.current = finalTarget;
+    const finishScroll = () => {
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+        flushPendingScroll();
+      }
 
-        if (onScrollEnd) {
-          onScrollEnd(finalTarget);
-        }
-      }, 100); // 100ms 후 스냅
+      const { positionRef, maxIndex, onScrollEnd } = configRef.current;
+      const finalTarget = Math.max(
+        0,
+        Math.min(Math.round(positionRef.current), maxIndex),
+      );
+      positionRef.current = finalTarget;
+      onScrollEnd?.(finalTarget);
+      scrollEndTimer = null;
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const { size } = configRef.current;
+      pendingDelta +=
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+          ? event.deltaX / (size * 1.5)
+          : (event.deltaY * 1.5) / size;
+      scheduleScroll();
+
+      if (scrollEndTimer !== null) clearTimeout(scrollEndTimer);
+      scrollEndTimer = window.setTimeout(finishScroll, 100);
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [size, maxIndex, containerRef, onScroll, onScrollEnd, scrollPosition]);
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      cancelCurrentScroll();
+      cancelPendingRef.current = () => undefined;
+    };
+  }, [containerRef]);
+  return cancelPending;
 };

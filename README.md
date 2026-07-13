@@ -13,14 +13,17 @@ React 19와 Tailwind CSS v4를 기반으로 구축된 고성능 인터랙티브 
 ## 주요 컴포넌트
 
 ### 1. Coverflow (3D Carousel)
+
 - **성능 최적화**: 고빈도 드래그/휠 이벤트 발생 시 `useRef`와 직접적인 DOM 조작을 통해 리액트 리렌더링을 최소화하고 부드러운 60fps 애니메이션을 구현했습니다.
 - **인터랙션**: 마우스 드래그, 터치 스와이프, 마우스 휠, 키보드 네비게이션을 모두 지원합니다.
 
 ### 2. Tinder Swipe (Card Deck)
+
 - **설계 패턴**: Compound Component 패턴을 적용하여 UI 구조를 유연하게 정의할 수 있습니다.
 - **기능**: 스와이프 방향에 따른 콜백(Like/Nope), 실행 취소(Undo), 초기화(Reset) 기능을 지원합니다.
 
 ### 3. ReactPod (Retro UI)
+
 - **구조**: `Context API`를 활용한 상태 관리로 클릭 휠 인터랙션과 디스플레이 동기화를 구현했습니다.
 
 ## 프로젝트 구조
@@ -33,16 +36,49 @@ React 19와 Tailwind CSS v4를 기반으로 구축된 고성능 인터랙티브 
 ## 실행 방법
 
 ### 패키지 설치
+
 ```bash
 pnpm install
 ```
 
 ### 개발 서버 실행
+
 ```bash
 pnpm dev
 ```
 
 ### 빌드
+
 ```bash
 pnpm build
 ```
+
+## Coverflow performance benchmark
+
+The benchmark builds a dedicated production page and repeats a fixed wheel and drag scenario. Wheel input is dispatched in same-frame bursts so requestAnimationFrame coalescing is measurable, and frame statistics include only the active wheel and drag/inertia phases.
+
+```bash
+# Baseline
+pnpm test:perf -- --label before --runs 10 --cpu 4 --assets fixture
+
+# Optimized implementation
+pnpm test:perf -- --label after --runs 10 --cpu 4 --assets fixture
+
+# Compare both reports
+pnpm test:perf:compare -- performance-results/before.json performance-results/after.json --output performance-results/comparison.md
+```
+
+Use `--assets fixture` for publishable before/after numbers because it removes external image and font variance. Use `--assets real` only as a network-inclusive reference. Test scalability with an option such as `--items 100`. Boolean options accept explicit values, so `--headed=false` and `--skip-build=false` remain disabled. `--connect http://127.0.0.1:9222` reuses an externally launched browser without requiring a locally discoverable Chrome executable.
+
+Reports are written to `performance-results/<label>.json` and `.md`. Use at least 10 runs and report the median. The comparison command rejects different report schemas, harness workloads, run counts, browser/headless modes, platforms, CPU models, Node versions, viewports, CPU throttles, item counts, or asset modes. Unobserved metrics are reported as `n/a` rather than zero.
+
+Key metrics:
+
+- `p95 active frame time`: lower is better; 16.7ms is the 60fps frame budget.
+- `active frames over 20ms`: percentage of visibly slow frames during the measured interaction phases.
+- `p95 burst wheel handler`: synchronous cost per wheel event while several events arrive in one animation frame.
+- `task/script/style/layout time`: main-thread time for the fixed interaction.
+- `image requests/completed images`: initial image work affected by windowing; fixture runs fail if displayed images are not ready.
+- `listener additions/removals`: event-listener churn during interaction.
+
+Calculate reduction with `(before - after) / before * 100`. For percentage metrics, report the absolute difference in percentage points (`%p`) as well. Do not use total benchmark wall time as a performance claim because it includes browser startup and server waiting.

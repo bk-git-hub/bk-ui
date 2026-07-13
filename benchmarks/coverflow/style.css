@@ -1,0 +1,126 @@
+:root {
+  color-scheme: dark;
+  background: #020617;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+.benchmark-shell {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.benchmark-index {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  color: white;
+  font:
+    700 2rem/1 system-ui,
+    sans-serif;
+  pointer-events: none;
+  user-select: none;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.mx-auto {
+  margin-inline: auto;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+.top-0 {
+  top: 0;
+}
+
+.left-0 {
+  left: 0;
+}
+
+.inset-0 {
+  inset: 0;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.aspect-square {
+  aspect-ratio: 1;
+}
+
+.aspect-1\/2 {
+  aspect-ratio: 1 / 2;
+}
+
+.rounded-md {
+  border-radius: 0.375rem;
+}
+
+.bg-black {
+  background: #000;
+}
+
+.bg-neutral-800 {
+  background: #262626;
+}
+
+.select-none {
+  user-select: none;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.object-cover {
+  object-fit: cover;
+}
+
+.animate-pulse {
+  animation: benchmark-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+img {
+  display: block;
+}
+
+@keyframes benchmark-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}

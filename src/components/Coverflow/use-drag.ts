@@ -1,171 +1,206 @@
-// src/components/Coverflow/use-drag.ts
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+const DRAG_SENSITIVITY = 0.3;
+const DRAG_THRESHOLD = 2;
+const LERP_FACTOR = 0.1;
+const INERTIA_MULTIPLIER = 6;
+const FRICTION = 0.96;
+const MIN_VELOCITY = 0.01;
 
-// --- 설정 상수 ---
-const DRAG_SENSITIVITY = 0.3; // 드래그 민감도
-const DRAG_THRESHOLD = 2; // 드래그 시작으로 간주하는 최소 이동 거리 (px)
-
-// ✅ 물리 효과 관련 상수
-const LERP_FACTOR = 0.1; // 드래그 따라오는 부드러움 (0.1 ~ 0.2 추천)
-const INERTIA_MULTIPLIER = 6; // 스와이프 관성 강도
-const FRICTION = 0.96; // 마찰 계수
-const MIN_VELOCITY = 0.01; // 애니메이션 중지 속도 임계값
+const cancelFrame = (frameRef: { current: number | null }) => {
+  if (frameRef.current === null) return;
+  cancelAnimationFrame(frameRef.current);
+  frameRef.current = null;
+};
 
 interface DragConfig {
-  onDrag: (position: number) => void;
-  onDragEnd: (position: number) => void;
+  onDragStart?(): void;
+  onDrag: React.Dispatch<number>;
+  onDragEnd: React.Dispatch<number>;
   size: number;
   maxIndex: number;
 }
 
 export const useDrag = (config: DragConfig) => {
   const configRef = useRef(config);
-  useEffect(() => {
-    configRef.current = config;
-  }, [config]);
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragMoved, setDragMoved] = useState(false);
-
-  const animationFrameRef = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragMovedRef = useRef(false);
+  const dragFrameRef = useRef<number | null>(null);
+  const inertiaFrameRef = useRef<number | null>(null);
   const positionRef = useRef(0);
-  const velocityRef = useRef(0);
-  // ✅ 손가락의 목표 위치를 저장할 ref 추가
   const targetPositionRef = useRef(0);
-
-  const gesture = useRef({
-    startTime: 0,
+  const velocityRef = useRef(0);
+  const gestureRef = useRef({
     startPosition: { x: 0, initialScore: 0 },
     history: [] as { x: number; time: number }[],
-  }).current;
+  });
 
-  // 드래그 시작 핸들러
-  const handleDragStart = useCallback(
-    (e: React.MouseEvent | React.TouchEvent, initialPosition: number) => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      const startX = "touches" in e ? e.touches[0].clientX : e.clientX;
+  useLayoutEffect(() => {
+    const previousMaxIndex = configRef.current.maxIndex;
+    configRef.current = config;
+    if (previousMaxIndex === config.maxIndex) return;
 
-      // ✅ 위치 초기화
-      positionRef.current = initialPosition;
-      targetPositionRef.current = initialPosition; // 목표 위치도 함께 초기화
-      velocityRef.current = 0;
+    const previousPosition = positionRef.current;
+    const nextPosition = Math.max(
+      0,
+      Math.min(previousPosition, config.maxIndex),
+    );
+    const hadInertia = inertiaFrameRef.current !== null;
 
-      gesture.startPosition = { x: startX, initialScore: initialPosition };
-      gesture.startTime = Date.now();
-      gesture.history = [{ x: startX, time: gesture.startTime }];
+    cancelFrame(inertiaFrameRef);
+    velocityRef.current = 0;
+    positionRef.current = nextPosition;
+    targetPositionRef.current = Math.max(
+      0,
+      Math.min(targetPositionRef.current, config.maxIndex),
+    );
+    gestureRef.current.startPosition.initialScore = Math.max(
+      0,
+      Math.min(gestureRef.current.startPosition.initialScore, config.maxIndex),
+    );
 
-      setIsDragging(true);
-      setDragMoved(false);
-    },
-    [gesture],
-  );
+    if (isDraggingRef.current) {
+      config.onDrag(nextPosition);
+    } else if (hadInertia || nextPosition !== previousPosition) {
+      const finalPosition = Math.round(nextPosition);
+      positionRef.current = finalPosition;
+      targetPositionRef.current = finalPosition;
+      config.onDragEnd(finalPosition);
+    }
+  });
 
-  // 관성 스크롤 애니메이션 루프 (기존 코드와 거의 동일)
   const inertiaLoop = useCallback(() => {
     const { onDrag, onDragEnd, maxIndex } = configRef.current;
 
     if (Math.abs(velocityRef.current) < MIN_VELOCITY) {
-      if (animationFrameRef.current)
-        cancelAnimationFrame(animationFrameRef.current);
+      inertiaFrameRef.current = null;
       const finalPosition = Math.max(
         0,
         Math.min(Math.round(positionRef.current), maxIndex),
       );
+      positionRef.current = finalPosition;
       onDragEnd(finalPosition);
       return;
     }
 
-    const newPosition = positionRef.current + velocityRef.current;
-    if (newPosition < 0 || newPosition > maxIndex) {
+    const nextPosition = positionRef.current + velocityRef.current;
+    if (nextPosition < 0 || nextPosition > maxIndex) {
       velocityRef.current *= 0.5;
     }
-    positionRef.current += velocityRef.current;
+    positionRef.current = Math.max(
+      -0.8,
+      Math.min(nextPosition, maxIndex + 0.8),
+    );
     velocityRef.current *= FRICTION;
-
     onDrag(positionRef.current);
-    animationFrameRef.current = requestAnimationFrame(inertiaLoop);
+    inertiaFrameRef.current = requestAnimationFrame(inertiaLoop);
   }, []);
 
-  // 드래그 중/후 이벤트 핸들러
+  const handleDragStart = useCallback(
+    (event: React.MouseEvent | React.TouchEvent, initialPosition: number) => {
+      configRef.current.onDragStart?.();
+      cancelFrame(dragFrameRef);
+      cancelFrame(inertiaFrameRef);
+
+      const point = "touches" in event ? event.touches[0] : event;
+      if (!point) return;
+
+      const startedAt = Date.now();
+      positionRef.current = initialPosition;
+      targetPositionRef.current = initialPosition;
+      velocityRef.current = 0;
+      dragMovedRef.current = false;
+      isDraggingRef.current = true;
+      gestureRef.current = {
+        startPosition: { x: point.clientX, initialScore: initialPosition },
+        history: [{ x: point.clientX, time: startedAt }],
+      };
+
+      const dragLoop = () => {
+        if (!isDraggingRef.current) {
+          dragFrameRef.current = null;
+          return;
+        }
+
+        const distance = targetPositionRef.current - positionRef.current;
+        positionRef.current += distance * LERP_FACTOR;
+        configRef.current.onDrag(positionRef.current);
+        dragFrameRef.current = requestAnimationFrame(dragLoop);
+      };
+
+      dragFrameRef.current = requestAnimationFrame(dragLoop);
+    },
+    [],
+  );
+
+  const consumeDragClick = useCallback(() => {
+    if (!dragMovedRef.current) return false;
+    dragMovedRef.current = false;
+    return true;
+  }, []);
+
   useEffect(() => {
-    if (!isDragging) return;
+    const handleDragMove = (event: MouseEvent | TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      if (event.cancelable) event.preventDefault();
 
-    // ✅ 드래그 중에만 실행되는 '탄성' 효과를 위한 루프
-    let dragFrame: number;
-    const dragLoop = () => {
-      // 목표 위치와 현재 위치의 차이를 계산해서 부드럽게 따라가도록 함
-      const distance = targetPositionRef.current - positionRef.current;
-      positionRef.current += distance * LERP_FACTOR;
-      configRef.current.onDrag(positionRef.current);
-      dragFrame = requestAnimationFrame(dragLoop);
-    };
-    dragLoop(); // 드래그 시작 시 루프 실행
+      const point = "touches" in event ? event.touches[0] : event;
+      if (!point) return;
 
-    const handleDragMove = (e: MouseEvent | TouchEvent) => {
-      if (e.cancelable) e.preventDefault();
       const { size, maxIndex } = configRef.current;
-      const currentX = "touches" in e ? e.touches[0].clientX : e.clientX;
-
-      gesture.history.push({ x: currentX, time: Date.now() });
+      const gesture = gestureRef.current;
+      gesture.history.push({ x: point.clientX, time: Date.now() });
       if (gesture.history.length > 4) gesture.history.shift();
 
-      const deltaX = currentX - gesture.startPosition.x;
-      if (!dragMoved && Math.abs(deltaX) > DRAG_THRESHOLD) {
-        setDragMoved(true);
-      }
+      const deltaX = point.clientX - gesture.startPosition.x;
+      if (Math.abs(deltaX) > DRAG_THRESHOLD) dragMovedRef.current = true;
 
-      // ✅ 중요: 실제 위치(positionRef) 대신 목표 위치(targetPositionRef)만 업데이트
       const dragAmount = deltaX / (size * DRAG_SENSITIVITY);
-      let newTarget = gesture.startPosition.initialScore - dragAmount;
-      newTarget = Math.max(-0.8, Math.min(newTarget, maxIndex + 0.8));
-      targetPositionRef.current = newTarget;
+      const nextTarget = gesture.startPosition.initialScore - dragAmount;
+      targetPositionRef.current = Math.max(
+        -0.8,
+        Math.min(nextTarget, maxIndex + 0.8),
+      );
     };
 
     const handleDragEnd = () => {
-      setIsDragging(false);
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      cancelFrame(dragFrameRef);
 
-      // ✅ handleDragEnd가 호출되면 dragLoop는 자연스럽게 멈춤 (아래 return에서)
-
-      // 마지막 두 기록으로 속도 계산 (기존 로직과 동일)
-      const last = gesture.history[gesture.history.length - 1];
-      const secondLast =
-        gesture.history[gesture.history.length - 2] || gesture.history[0];
-      const timeDiff = last.time - secondLast.time;
-      const posDiff = last.x - secondLast.x;
-
-      if (timeDiff > 0) {
-        const speed = (posDiff / timeDiff) * INERTIA_MULTIPLIER;
+      const history = gestureRef.current.history;
+      const last = history[history.length - 1];
+      const previous = history[history.length - 2] ?? history[0];
+      if (last && previous && last.time > previous.time) {
+        const speed =
+          ((last.x - previous.x) / (last.time - previous.time)) *
+          INERTIA_MULTIPLIER;
         velocityRef.current =
           (-speed / configRef.current.size) * DRAG_SENSITIVITY * 10;
       } else {
         velocityRef.current = 0;
       }
 
-      // 관성 애니메이션 시작 (기존 로직과 동일)
       inertiaLoop();
-
-      if (dragMoved) {
-        setTimeout(() => setDragMoved(false), 0);
-      }
     };
 
     window.addEventListener("mousemove", handleDragMove, { passive: false });
     window.addEventListener("touchmove", handleDragMove, { passive: false });
     window.addEventListener("mouseup", handleDragEnd);
     window.addEventListener("touchend", handleDragEnd);
+    window.addEventListener("touchcancel", handleDragEnd);
 
     return () => {
-      // ✅ 드래그가 끝나면 '탄성' 루프를 반드시 정리
-      cancelAnimationFrame(dragFrame);
+      isDraggingRef.current = false;
       window.removeEventListener("mousemove", handleDragMove);
       window.removeEventListener("touchmove", handleDragMove);
       window.removeEventListener("mouseup", handleDragEnd);
       window.removeEventListener("touchend", handleDragEnd);
+      window.removeEventListener("touchcancel", handleDragEnd);
+      cancelFrame(dragFrameRef);
+      cancelFrame(inertiaFrameRef);
     };
-  }, [isDragging, dragMoved, gesture, inertiaLoop]);
+  }, [inertiaLoop]);
 
-  return { isDragging, dragMoved, handleDragStart };
+  return { consumeDragClick, handleDragStart };
 };
