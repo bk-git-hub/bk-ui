@@ -2,6 +2,10 @@ import type { ComponentViewerCodeTab } from "@/components/layout/component-viewe
 
 export const lottoReactExportCode = `// React / Vite export
 //
+// Use the verified React ZIP, Registry JSON, or Copy for AI resource shown
+// above this source. This listing is the integration example for that source.
+// A release-blocked resource is not a published download or install command.
+//
 // Required files (keep this single framework-neutral core together):
 //   src/components/Lotto/LottoDraw.tsx
 //   src/components/Lotto/LottoMachine.tsx
@@ -11,9 +15,9 @@ export const lottoReactExportCode = `// React / Vite export
 //   src/components/Lotto/index.ts
 //
 // Runtime helpers already used by the core:
-//   pnpm add lucide-react tailwind-merge
-// Tailwind v4 for Vite (when it is not already configured):
-//   pnpm add -D tailwindcss @tailwindcss/vite
+//   pnpm add lucide-react@^0.542.0 tailwind-merge@^3.3.1
+// Tailwind 4.3.2 for Vite (when it is not already configured):
+//   pnpm add -D tailwindcss@4.3.2 @tailwindcss/vite@4.3.2
 
 // vite.config.ts
 import { defineConfig } from "vite";
@@ -87,17 +91,15 @@ export function ProductLotto() {
 
 // Tailwind CSS v4
 // Files copied below your app's src directory are detected automatically.
-// If you import BK-UI from node_modules, register the package source in the
-// stylesheet that already imports Tailwind (adjust the path as needed):
-//
 // src/index.css
 // @import "tailwindcss";
-// @source "../node_modules/@your-scope/bk-ui/src/components/Lotto";
+// If this source is moved outside the scanned app tree, add a stylesheet-
+// relative @source directive for the actual components/Lotto directory.
 `;
 
 export const lottoReactExport: ComponentViewerCodeTab = {
   code: lottoReactExportCode,
   language: "React TSX",
   description:
-    "Copy the six framework-neutral Lotto files into src/components/Lotto. Tailwind v4 scans local source automatically; package source needs @source. The Vite plugin and existing lucide-react plus tailwind-merge helpers are listed in the export.",
+    "Use the verified React ZIP, Registry JSON, or Copy for AI resource above. The code below integrates the six-file core in Vite; Tailwind v4 scans local source automatically, and external source needs a stylesheet-relative @source.",
 };

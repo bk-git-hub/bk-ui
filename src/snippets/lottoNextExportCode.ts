@@ -2,6 +2,10 @@ import type { ComponentViewerCodeTab } from "@/components/layout/component-viewe
 
 export const lottoNextExportCode = `// Next.js App Router export
 //
+// Use the verified Next.js ZIP, Registry JSON, or Copy for AI resource shown
+// above this source. This listing is the integration example for that source.
+// A release-blocked resource is not a published download or install command.
+//
 // Required files (the same React + Tailwind core used by every framework):
 //   src/components/Lotto/LottoDraw.tsx
 //   src/components/Lotto/LottoMachine.tsx
@@ -9,12 +13,13 @@ export const lottoNextExportCode = `// Next.js App Router export
 //   src/components/Lotto/useLottoMachinePhysics.ts
 //   src/components/Lotto/lottoMachinePhysics.ts
 //   src/components/Lotto/index.ts
+//   src/components/Lotto/client.ts  (Next-only "use client" entry)
 //
 // Runtime helpers already used by the core:
-//   pnpm add lucide-react tailwind-merge
+//   pnpm add lucide-react@^0.542.0 tailwind-merge@^3.3.1
 // No next/* import or Next.js runtime dependency is required by the core.
-// Tailwind v4 for Next.js (when it is not already configured):
-//   pnpm add -D tailwindcss @tailwindcss/postcss
+// Tailwind 4.3.2 for Next.js (when it is not already configured):
+//   pnpm add -D tailwindcss@4.3.2 @tailwindcss/postcss@4.3.2
 
 // app/_components/LottoMachineClient.tsx
 // Keep hooks, timers, event handlers, and function-valued props behind this
@@ -26,7 +31,7 @@ import {
   LottoAction,
   LottoMachine,
   useLottoDraw,
-} from "@/components/Lotto";
+} from "../../components/Lotto/client";
 
 const balls = Array.from({ length: 45 }, (_, index) => index + 1);
 
@@ -111,17 +116,16 @@ export default config;
 //   Server-to-Client boundary.
 
 // Tailwind CSS v4
-// Files copied into app or src are detected automatically. If BK-UI is imported
-// from node_modules, register its source relative to app/globals.css:
-//
+// Files copied into app or src are detected automatically.
 // app/globals.css
 // @import "tailwindcss";
-// @source "../node_modules/@your-scope/bk-ui/src/components/Lotto";
+// If this source is moved outside the scanned app tree, add a stylesheet-
+// relative @source directive for the actual components/Lotto directory.
 `;
 
 export const lottoNextExport: ComponentViewerCodeTab = {
   code: lottoNextExportCode,
   language: "Next.js TSX",
   description:
-    "App Router: keep hooks, callbacks, and timers in the shown 'use client' wrapper and import the same @/components/Lotto core. Deterministic initial data hydrates safely, disabling SSR is unnecessary, and external Tailwind source needs @source.",
+    "Use the verified Next.js ZIP, Registry JSON, or Copy for AI resource above. Its client entry re-exports the same core; keep callbacks and timers in the shown wrapper. Deterministic initial data hydrates safely without disabling SSR, and source outside app needs a stylesheet-relative @source.",
 };

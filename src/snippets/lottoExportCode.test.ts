@@ -27,26 +27,31 @@ describe("Lotto export snippets", () => {
 
   it("provides a copyable React and Vite integration", () => {
     expect(lottoReactExportCode).toContain(
-      "pnpm add lucide-react tailwind-merge",
+      "pnpm add lucide-react@^0.542.0 tailwind-merge@^3.3.1",
     );
     expect(lottoReactExportCode).toContain(
-      "pnpm add -D tailwindcss @tailwindcss/vite",
+      "pnpm add -D tailwindcss@4.3.2 @tailwindcss/vite@4.3.2",
     );
     expect(lottoReactExportCode).toContain('from "@tailwindcss/vite"');
     expect(lottoReactExportCode).toContain(
       "LottoAction, LottoMachine, useLottoDraw",
     );
     expect(lottoReactExportCode).toContain('from "./Lotto"');
-    expect(lottoReactExportCode).toContain(
-      '@source "../node_modules/@your-scope/bk-ui/src/components/Lotto"',
-    );
+    expect(lottoReactExportCode).toContain("stylesheet-");
+    expect(lottoReactExportCode).toContain("relative @source");
     expect(lottoReactExportCode).toContain("prefers-reduced-motion: reduce");
     expect(lottoReactExportCode).toContain("window.clearTimeout");
+    expect(lottoReactExportCode).not.toContain("@your-scope");
   });
 
   it("uses the same core behind a safe Next.js App Router boundary", () => {
     expect(lottoNextExportCode).toContain('"use client";');
-    expect(lottoNextExportCode).toContain('from "@/components/Lotto"');
+    expect(lottoNextExportCode).toContain(
+      "src/components/Lotto/client.ts",
+    );
+    expect(lottoNextExportCode).toContain(
+      'from "../../components/Lotto/client"',
+    );
     expect(lottoNextExportCode).toContain(
       "app/page.tsx remains a Server Component",
     );
@@ -55,10 +60,17 @@ describe("Lotto export snippets", () => {
     expect(lottoNextExportCode).toContain("not serializable across");
     expect(lottoNextExportCode).toContain("dynamic import with ssr: false");
     expect(lottoNextExportCode).toContain("@tailwindcss/postcss");
-    expect(lottoNextExportCode).toContain(
-      '@source "../node_modules/@your-scope/bk-ui/src/components/Lotto"',
-    );
-    expect(lottoNextExportCode).not.toContain("@/components/Lotto/client");
+    expect(lottoNextExportCode).toContain("stylesheet-");
+    expect(lottoNextExportCode).toContain("relative @source");
+    expect(lottoNextExportCode).not.toContain("@/components/Lotto");
+    expect(lottoNextExportCode).not.toContain("@your-scope");
     expect(lottoNextExportCode).not.toMatch(/from ["']next\//);
+  });
+
+  it("does not present a blocked BK-UI command as installable", () => {
+    for (const source of [lottoReactExportCode, lottoNextExportCode]) {
+      expect(source).toContain("release-blocked");
+      expect(source).not.toMatch(/\b(?:npx|pnpm\s+dlx)\s+bk-ui@/);
+    }
   });
 });

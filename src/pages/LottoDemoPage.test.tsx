@@ -82,12 +82,14 @@ describe("LottoDemoPage", () => {
       name: "Next.js TSX source code",
     });
     expect(nextExport).toHaveTextContent('"use client"');
-    expect(nextExport).toHaveTextContent('from "@/components/Lotto"');
+    expect(nextExport).toHaveTextContent(
+      'from "../../components/Lotto/client"',
+    );
     expect(nextExport).toHaveTextContent(
       "app/page.tsx remains a Server Component",
     );
     expect(screen.getByRole("note")).toHaveTextContent(
-      "disabling SSR is unnecessary",
+      "without disabling SSR",
     );
     expect(screen.getByRole("note")).toHaveTextContent("@source");
 
