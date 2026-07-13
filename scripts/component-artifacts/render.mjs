@@ -308,8 +308,8 @@ function copyForAi(component, leafHashes) {
     lines.push(
       `### ${file.target}`,
       "",
-      `Source: \`${file.source}\`  `,
-      `SHA-256: \`${file.sha256}\``,
+      `- Source: \`${file.source}\``,
+      `- SHA-256: \`${file.sha256}\``,
       "",
       `${fence}${language}`,
       content.replace(/\r\n?/g, "\n").replace(/\n*$/, ""),

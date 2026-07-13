@@ -137,6 +137,7 @@ test("artifact rendering is deterministic and uses a one-way hash graph", () => 
 
   const ai = first.get("public/ai/demo.md").toString();
   assert.doesNotMatch(ai, /bk-ui@latest|<SHA>|\{\{/);
+  assert.doesNotMatch(ai, /[ \t]+\n/);
   assert.match(ai, new RegExp(sha256(first.get("public/r/demo.json"))));
   assert.match(
     ai,
