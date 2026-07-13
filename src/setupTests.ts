@@ -19,10 +19,16 @@ global.ResizeObserver = class ResizeObserver {
 class MockPointerEvent extends Event {
   clientX: number;
   clientY: number;
+  pointerId: number;
+  button: number;
+  pointerType: string;
   constructor(type: string, props: PointerEventInit) {
     super(type, props);
     this.clientX = props.clientX || 0;
     this.clientY = props.clientY || 0;
+    this.pointerId = props.pointerId || 0;
+    this.button = props.button || 0;
+    this.pointerType = props.pointerType || "mouse";
   }
 }
 window.PointerEvent = MockPointerEvent as any;

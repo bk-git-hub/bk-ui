@@ -1,10 +1,179 @@
 import { useReactPod } from "./ReactPodContext";
+import { MAIN_MENU_ITEMS, TRACKS } from "./reactPodState";
+import { BatteryFull, ChevronRight, Pause, Play, Shuffle } from "lucide-react";
+
+function formatTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function StatusBar() {
+  const { state } = useReactPod();
+
+  return (
+    <div className="flex h-7 shrink-0 items-center justify-between border-b border-slate-400 bg-gradient-to-b from-white to-slate-300 px-2 text-[11px] font-semibold text-slate-800">
+      <span className="flex w-8 items-center gap-1" aria-label={state.isPlaying ? "Playing" : "Paused"}>
+        {state.isPlaying ? <Play className="h-3 w-3 fill-current" /> : <Pause className="h-3 w-3" />}
+      </span>
+      <span>ReactPod</span>
+      <BatteryFull className="h-4 w-4" aria-label="Battery full" />
+    </div>
+  );
+}
+
+function MainMenu() {
+  const { state } = useReactPod();
+
+  return (
+    <div className="grid h-full grid-cols-[62%_38%] bg-white">
+      <div className="py-1" role="listbox" aria-label="Main menu">
+        {MAIN_MENU_ITEMS.map((item, index) => {
+          const isSelected = index === state.menuIndex;
+          return (
+            <div
+              key={item.id}
+              role="option"
+              aria-selected={isSelected}
+              className={`flex h-10 items-center justify-between px-2 text-[13px] font-semibold ${
+                isSelected
+                  ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
+                  : "text-slate-900"
+              }`}
+            >
+              <span>{item.label}</span>
+              {isSelected && <ChevronRight className="h-4 w-4" />}
+            </div>
+          );
+        })}
+      </div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-sky-100 via-blue-300 to-indigo-700">
+        <div className="absolute -right-7 -bottom-7 h-32 w-32 rounded-full bg-white/20" />
+        <div className="absolute top-7 left-3 h-16 w-16 rotate-12 rounded-2xl bg-white/30 shadow-lg backdrop-blur-sm" />
+        <span className="absolute right-2 bottom-2 text-[10px] font-bold tracking-widest text-white/80">
+          MUSIC
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Songs() {
+  const { state } = useReactPod();
+
+  return (
+    <div className="h-full overflow-hidden bg-white py-0.5" role="listbox" aria-label="Songs">
+      {TRACKS.map((track, index) => {
+        const isSelected = index === state.songIndex;
+        return (
+          <div
+            key={track.id}
+            role="option"
+            aria-selected={isSelected}
+            className={`flex h-[32px] items-center justify-between px-2 ${
+              isSelected
+                ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
+                : "text-slate-900"
+            }`}
+          >
+            <div className="min-w-0">
+              <p className="truncate text-[12px] leading-tight font-semibold">
+                {track.title}
+              </p>
+              <p className={`truncate text-[9px] ${isSelected ? "text-blue-100" : "text-slate-500"}`}>
+                {track.artist}
+              </p>
+            </div>
+            {isSelected && <ChevronRight className="h-4 w-4 shrink-0" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function NowPlaying() {
+  const { state } = useReactPod();
+  const track = TRACKS[state.currentTrackIndex];
+  const progress = (state.progress / track.duration) * 100;
+
+  return (
+    <div className="flex h-full flex-col bg-gradient-to-b from-white to-slate-200 px-3 py-2 text-slate-900">
+      <div className="flex min-h-0 flex-1 items-center gap-3">
+        <div
+          className="h-[76px] w-[76px] shrink-0 rounded-sm border border-black/20 shadow-md"
+          style={{ background: track.artwork }}
+          aria-label={`${track.album} artwork`}
+          role="img"
+        >
+          <div className="flex h-full items-end p-1.5 text-[8px] font-bold tracking-wider text-white/90">
+            {track.album.toUpperCase()}
+          </div>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[14px] font-bold">{track.title}</p>
+          <p className="truncate text-[11px] text-slate-600">{track.artist}</p>
+          <p className="truncate text-[10px] text-slate-500">{track.album}</p>
+          <p className="mt-2 flex items-center gap-1 text-[9px] font-semibold text-blue-700">
+            {state.isShuffling && <Shuffle className="h-3 w-3" />}
+            {state.isPlaying ? "PLAYING" : "PAUSED"}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <div>
+          <div className="h-2 overflow-hidden rounded-full border border-slate-500 bg-white shadow-inner">
+            <div
+              className="h-full bg-gradient-to-b from-blue-400 to-blue-700 transition-[width] duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="mt-0.5 flex justify-between text-[9px] font-medium tabular-nums">
+            <span>{formatTime(state.progress)}</span>
+            <span>-{formatTime(track.duration - state.progress)}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-[9px] font-semibold text-slate-600">
+          <span>VOL</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-400">
+            <div className="h-full bg-blue-600" style={{ width: `${state.volume}%` }} />
+          </div>
+          <span className="w-6 text-right tabular-nums">{state.volume}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function About() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-200 px-5 text-center text-slate-800">
+      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-400 to-indigo-700 text-xl font-black text-white shadow-md">
+        R
+      </div>
+      <p className="text-sm font-bold">ReactPod</p>
+      <p className="mt-1 text-[10px] leading-relaxed text-slate-600">
+        A click-wheel music player built with React Context, pointer gestures,
+        and keyboard controls.
+      </p>
+      <p className="mt-2 text-[9px] font-semibold text-slate-400">5 songs · 16 min</p>
+    </div>
+  );
+}
 
 export default function Display() {
-  const { index } = useReactPod();
+  const { state } = useReactPod();
+
   return (
-    <div className="flex h-[45%] items-center justify-center rounded-2xl border-2 border-black bg-gradient-to-b from-slate-200 to-white p-5">
-      <h2 className="text-5xl">{index}</h2>
+    <div className="flex h-[45%] flex-col overflow-hidden rounded-lg border-2 border-slate-700 bg-white shadow-[inset_0_0_8px_rgba(0,0,0,0.22)]">
+      <StatusBar />
+      <div className="min-h-0 flex-1">
+        {state.screen === "menu" && <MainMenu />}
+        {state.screen === "songs" && <Songs />}
+        {state.screen === "now-playing" && <NowPlaying />}
+        {state.screen === "about" && <About />}
+      </div>
     </div>
   );
 }

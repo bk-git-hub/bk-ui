@@ -1,34 +1,22 @@
-import React, {
-  createContext,
-  useState,
-  useContext,
-  type ReactNode,
-} from "react";
+import { createContext, useContext } from "react";
+import type { ReactPodState } from "./reactPodState";
 
-interface ReactPodContextType {
-  index: number;
-  setIndex: React.Dispatch<React.SetStateAction<number>>;
+// The base ESLint rule cannot distinguish type-only function parameters.
+// eslint-disable-next-line no-unused-vars
+type RotateHandler = (direction: -1 | 1) => void;
+
+export interface ReactPodContextValue {
+  state: ReactPodState;
+  rotate: RotateHandler;
+  select: () => void;
+  back: () => void;
+  togglePlay: () => void;
+  next: () => void;
+  previous: () => void;
 }
 
-const ReactPodContext = createContext<ReactPodContextType | null>(null);
+export const ReactPodContext = createContext<ReactPodContextValue | null>(null);
 
-interface ReactPodProviderProps {
-  children: ReactNode;
-}
-
-export function ReactPodProvider({ children }: ReactPodProviderProps) {
-  const [index, setIndex] = useState<number>(0);
-
-  const value = { index, setIndex };
-
-  return (
-    <ReactPodContext.Provider value={value}>
-      {children}
-    </ReactPodContext.Provider>
-  );
-}
-
-// 5. Context를 편하게 사용하기 위한 커스텀 훅
 export function useReactPod() {
   const context = useContext(ReactPodContext);
   if (!context) {
