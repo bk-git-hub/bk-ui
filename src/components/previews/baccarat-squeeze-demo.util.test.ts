@@ -5,6 +5,7 @@ import {
   BACCARAT_SQUEEZE_DEMO_SUITS,
   DEFAULT_BACCARAT_SQUEEZE_DEMO_CODE,
   DEFAULT_BACCARAT_SQUEEZE_DEMO_CONFIG,
+  getRandomBaccaratSqueezeDemoCard,
   parseBaccaratSqueezeDemoCode,
 } from "./baccarat-squeeze-demo.util";
 
@@ -90,5 +91,28 @@ describe("parseBaccaratSqueezeDemoCode", () => {
         createSource({ revealThreshold: 1, edgeHitArea: 0.35 }),
       ).error,
     ).toBeNull();
+  });
+});
+
+describe("getRandomBaccaratSqueezeDemoCard", () => {
+  it("maps the random range across the other 51 cards", () => {
+    expect(
+      getRandomBaccaratSqueezeDemoCard(
+        { rank: "8", suit: "diamonds" },
+        () => 0,
+      ),
+    ).toEqual({ rank: "A", suit: "clubs" });
+    expect(
+      getRandomBaccaratSqueezeDemoCard(
+        { rank: "K", suit: "spades" },
+        () => 0.999999,
+      ),
+    ).toEqual({ rank: "Q", suit: "spades" });
+  });
+
+  it("never returns the currently selected card", () => {
+    expect(
+      getRandomBaccaratSqueezeDemoCard({ rank: "A", suit: "clubs" }, () => 0),
+    ).toEqual({ rank: "2", suit: "clubs" });
   });
 });

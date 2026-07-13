@@ -135,6 +135,68 @@ describe("BaccaratSqueezeDemoPreview", () => {
     expect(container.querySelector('[aria-label="클럽 Q"]')).not.toBeNull();
   });
 
+  it("draws a concealed random card only on demand and resets the squeeze", () => {
+    const random = vi.fn(() => 0);
+    const onConfigChange = vi.fn();
+    const initialConfig = { ...DEFAULT_BACCARAT_SQUEEZE_DEMO_CONFIG };
+    const { container, getByRole, queryByLabelText, rerender } = render(
+      <BaccaratSqueezeDemoPreview
+        config={initialConfig}
+        onConfigChange={onConfigChange}
+        random={random}
+      />,
+    );
+    const card = container.querySelector<HTMLElement>(
+      '[data-slot="baccarat-squeeze-card"]',
+    );
+    const result = container.querySelector<HTMLElement>(
+      '[data-slot="baccarat-random-result"]',
+    );
+    expect(card).not.toBeNull();
+    expect(result).not.toBeNull();
+    expect(random).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(card!, { key: "End" });
+    expect(card).toHaveAttribute("aria-valuenow", "100");
+
+    const drawButton = getByRole("button", { name: "랜덤 카드 뽑기" });
+    expect(drawButton).toHaveAttribute("type", "button");
+    fireEvent.click(drawButton);
+
+    const nextConfig: BaccaratSqueezeDemoConfig = {
+      ...initialConfig,
+      rank: "A",
+      suit: "clubs",
+    };
+    expect(random).toHaveBeenCalledTimes(1);
+    expect(onConfigChange).toHaveBeenLastCalledWith(nextConfig);
+    expect(card).toHaveAttribute("aria-valuenow", "0");
+
+    rerender(
+      <BaccaratSqueezeDemoPreview
+        config={nextConfig}
+        onConfigChange={onConfigChange}
+        random={random}
+      />,
+    );
+    expect(random).toHaveBeenCalledTimes(1);
+    expect(result).toHaveTextContent("???");
+    expect(queryByLabelText("Rank")).not.toBeVisible();
+    expect(
+      container.querySelector('[data-slot="baccarat-squeeze-face"]'),
+    ).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.keyDown(card!, { key: "End" });
+    expect(result).toHaveTextContent("♣ A");
+    expect(
+      container.querySelector('[data-slot="baccarat-squeeze-face"]'),
+    ).toHaveAttribute("aria-hidden", "false");
+
+    fireEvent.click(getByRole("button", { name: "직접 설정으로 전환" }));
+    expect(queryByLabelText("Rank")).toBeVisible();
+    expect(queryByLabelText("Rank")).toHaveValue("A");
+  });
+
   it("applies revealThreshold and edgeHitArea to real pointer interaction", () => {
     const strictConfig: BaccaratSqueezeDemoConfig = {
       ...DEFAULT_BACCARAT_SQUEEZE_DEMO_CONFIG,

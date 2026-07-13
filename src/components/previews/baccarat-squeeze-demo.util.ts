@@ -42,6 +42,11 @@ export interface BaccaratSqueezeDemoConfig {
   edgeHitArea: number;
 }
 
+export type BaccaratSqueezeDemoCard = Pick<
+  BaccaratSqueezeDemoConfig,
+  "rank" | "suit"
+>;
+
 export const DEFAULT_BACCARAT_SQUEEZE_DEMO_CONFIG: BaccaratSqueezeDemoConfig = {
   rank: "8",
   suit: "diamonds",
@@ -55,6 +60,36 @@ export const DEFAULT_BACCARAT_SQUEEZE_DEMO_CODE = JSON.stringify(
   null,
   2,
 );
+
+/** Preview-only card draw. Do not use Math.random for real game outcomes. */
+export function getRandomBaccaratSqueezeDemoCard(
+  currentCard: BaccaratSqueezeDemoCard,
+  random: () => number = Math.random,
+): BaccaratSqueezeDemoCard {
+  const rankCount = BACCARAT_SQUEEZE_DEMO_RANKS.length;
+  const suitCount = BACCARAT_SQUEEZE_DEMO_SUITS.length;
+  const deckSize = rankCount * suitCount;
+  const currentRankIndex = BACCARAT_SQUEEZE_DEMO_RANKS.indexOf(
+    currentCard.rank,
+  );
+  const currentSuitIndex = BACCARAT_SQUEEZE_DEMO_SUITS.indexOf(
+    currentCard.suit,
+  );
+  const currentCardIndex = currentSuitIndex * rankCount + currentRankIndex;
+  const remainingCardIndex = Math.min(
+    deckSize - 2,
+    Math.max(0, Math.floor(random() * (deckSize - 1))),
+  );
+  const nextCardIndex =
+    remainingCardIndex >= currentCardIndex
+      ? remainingCardIndex + 1
+      : remainingCardIndex;
+
+  return {
+    rank: BACCARAT_SQUEEZE_DEMO_RANKS[nextCardIndex % rankCount],
+    suit: BACCARAT_SQUEEZE_DEMO_SUITS[Math.floor(nextCardIndex / rankCount)],
+  };
+}
 
 export type BaccaratSqueezeDemoParseResult =
   | { config: BaccaratSqueezeDemoConfig; error: null }
