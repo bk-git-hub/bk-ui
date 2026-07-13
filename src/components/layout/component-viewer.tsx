@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { twMerge } from "tailwind-merge";
 import type { ComponentInstallDescriptor } from "./component-install-guide";
 import {
   COMPONENT_EXPORT_TABS_ENABLED,
@@ -52,6 +53,7 @@ export interface ComponentViewerProps {
   installDescriptor?: ComponentInstallDescriptor;
   showExportTabs?: boolean;
   showPreviewAlongsideCode?: boolean;
+  previewClassName?: string;
   // The base ESLint rule treats type-only callback parameters as runtime values.
   // eslint-disable-next-line no-unused-vars
   onUsageCodeChange?: (nextCode: string) => void;
@@ -85,6 +87,7 @@ export default function ComponentViewer({
   installDescriptor,
   showExportTabs = COMPONENT_EXPORT_TABS_ENABLED,
   showPreviewAlongsideCode = false,
+  previewClassName,
   onUsageCodeChange,
   codeLanguage = "TSX",
   codeError = null,
@@ -288,7 +291,12 @@ export default function ComponentViewer({
                 hidden={!isActive}
                 tabIndex={0}
                 className={
-                  isActive ? "min-h-0 flex-1 overflow-auto p-2" : "hidden"
+                  isActive
+                    ? twMerge(
+                        "min-h-0 flex-1 overflow-auto p-2",
+                        previewClassName,
+                      )
+                    : "hidden"
                 }
               >
                 {isActive ? component : null}
@@ -395,7 +403,10 @@ export default function ComponentViewer({
                         <div
                           role="region"
                           aria-label={`${title} live preview`}
-                          className="hidden min-h-0 min-w-0 flex-1 overflow-auto border-l border-slate-700 bg-white p-2 lg:block"
+                          className={twMerge(
+                            "hidden min-h-0 min-w-0 flex-1 overflow-auto border-l border-slate-700 bg-white p-2 lg:block",
+                            previewClassName,
+                          )}
                         >
                           {component}
                         </div>

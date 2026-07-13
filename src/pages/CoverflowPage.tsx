@@ -24,6 +24,12 @@ export default function CoverflowPage() {
     if (result.config) setConfig(result.config);
   };
 
+  const handlePreviewConfigChange = (nextConfig: CoverflowDemoConfig) => {
+    setConfig(nextConfig);
+    setCode(JSON.stringify(nextConfig, null, 2));
+    setCodeError(null);
+  };
+
   const resetCode = () => {
     setCode(DEFAULT_COVERFLOW_DEMO_CODE);
     setConfig(DEFAULT_COVERFLOW_DEMO_CONFIG);
@@ -35,7 +41,13 @@ export default function CoverflowPage() {
     <ComponentViewer
       title="Coverflow"
       description="Edit the live album JSON, flip a cover for its track list, or copy the complete React example from Usage."
-      component={<CoverflowDemoPreview key={previewRevision} config={config} />}
+      component={
+        <CoverflowDemoPreview
+          key={previewRevision}
+          config={config}
+          onConfigChange={handlePreviewConfigChange}
+        />
+      }
       usageCode={code}
       codeLanguage="LIVE JSON"
       codeError={codeError}
@@ -43,6 +55,7 @@ export default function CoverflowPage() {
       onResetCode={resetCode}
       referenceCode={coverflowUsageCode}
       showPreviewAlongsideCode
+      previewClassName="overflow-hidden bg-black p-0"
     />
   );
 }

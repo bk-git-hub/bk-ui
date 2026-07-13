@@ -276,6 +276,35 @@ describe("ComponentViewer", () => {
     expect(within(livePreview).getByText("Alex")).toBeInTheDocument();
   });
 
+  it("applies opt-in surface classes to both preview containers", () => {
+    render(
+      <ComponentViewer
+        title="Dark preview"
+        description="Custom preview surface"
+        usageCode="{}"
+        component={<div>Preview content</div>}
+        codeLanguage="LIVE JSON"
+        onUsageCodeChange={() => undefined}
+        showPreviewAlongsideCode
+        previewClassName="overflow-hidden bg-black p-0"
+      />,
+    );
+
+    const previewTab = screen.getByRole("tab", { name: "Preview" });
+    const previewPanel = document.getElementById(
+      previewTab.getAttribute("aria-controls")!,
+    );
+    expect(previewPanel).toHaveClass("overflow-hidden", "bg-black", "p-0");
+    expect(previewPanel).not.toHaveClass("overflow-auto", "p-2");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    const livePreview = screen.getByRole("region", {
+      name: "Dark preview live preview",
+    });
+    expect(livePreview).toHaveClass("overflow-hidden", "bg-black", "p-0");
+    expect(livePreview).not.toHaveClass("overflow-auto", "bg-white", "p-2");
+  });
+
   it("orders optional tabs and keeps every tab connected to its panel", () => {
     render(
       <ComponentViewer

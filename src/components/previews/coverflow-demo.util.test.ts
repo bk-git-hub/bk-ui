@@ -8,6 +8,7 @@ import {
 const readDefaultConfig = () =>
   JSON.parse(DEFAULT_COVERFLOW_DEMO_CODE) as {
     ariaLabel: string;
+    itemSize: number;
     showIndexes: boolean;
     albums: Array<{
       id: string;
@@ -22,6 +23,7 @@ describe("parseCoverflowDemoCode", () => {
     const result = parseCoverflowDemoCode(DEFAULT_COVERFLOW_DEMO_CODE);
 
     expect(result.error).toBeNull();
+    expect(result.config?.itemSize).toBe(280);
     expect(result.config?.albums).toHaveLength(8);
     expect(result.config?.albums[0]).toMatchObject({
       title: "Hollow Nomad",
@@ -35,6 +37,7 @@ describe("parseCoverflowDemoCode", () => {
   it("accepts editable labels, album content, and bundled image keys", () => {
     const config = readDefaultConfig();
     config.ariaLabel = "Edited albums";
+    config.itemSize = 360;
     config.showIndexes = false;
     config.albums[0] = {
       ...config.albums[0]!,
@@ -48,6 +51,7 @@ describe("parseCoverflowDemoCode", () => {
     expect(result.error).toBeNull();
     expect(result.config).toMatchObject({
       ariaLabel: "Edited albums",
+      itemSize: 360,
       showIndexes: false,
     });
     expect(result.config?.albums[0]).toMatchObject({
@@ -64,6 +68,33 @@ describe("parseCoverflowDemoCode", () => {
     expect(parseCoverflowDemoCode(" ".repeat(50_001)).error).toBe(
       "The configuration is too large to preview.",
     );
+  });
+
+  it("validates itemSize and defaults older configurations", () => {
+    const legacyConfig = readDefaultConfig() as Partial<
+      ReturnType<typeof readDefaultConfig>
+    >;
+    delete legacyConfig.itemSize;
+    expect(
+      parseCoverflowDemoCode(JSON.stringify(legacyConfig)).config?.itemSize,
+    ).toBe(280);
+
+    const invalidItemSize = readDefaultConfig();
+    invalidItemSize.itemSize = 801;
+    expect(parseCoverflowDemoCode(JSON.stringify(invalidItemSize)).error).toBe(
+      "itemSize must be an integer from 80 to 800.",
+    );
+
+    invalidItemSize.itemSize = 120.5;
+    expect(parseCoverflowDemoCode(JSON.stringify(invalidItemSize)).error).toBe(
+      "itemSize must be an integer from 80 to 800.",
+    );
+
+    expect(
+      parseCoverflowDemoCode(
+        JSON.stringify({ ...readDefaultConfig(), itemSize: null }),
+      ).error,
+    ).toBe("itemSize must be an integer from 80 to 800.");
   });
 
   it("rejects duplicate ids and unsupported image keys", () => {

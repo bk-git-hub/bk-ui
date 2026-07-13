@@ -20,11 +20,20 @@ const WINDOW_SIZE = RENDER_RADIUS * 2 + 1;
 const DEFAULT_ITEM_SIZE = 200;
 const MAX_ITEM_SIZE = 800;
 
-const getItemSize = (width: number, height: number) => {
+const getPreferredItemSize = (itemSize?: number) =>
+  itemSize !== undefined && Number.isFinite(itemSize) && itemSize > 0
+    ? Math.min(itemSize, MAX_ITEM_SIZE)
+    : null;
+
+const getInitialItemSize = (itemSize?: number) =>
+  getPreferredItemSize(itemSize) ?? DEFAULT_ITEM_SIZE;
+
+const getItemSize = (width: number, height: number, itemSize?: number) => {
   const availableHeight =
     Number.isFinite(height) && height > 0 ? height : width / 3.6;
+  const preferredItemSize = getPreferredItemSize(itemSize) ?? MAX_ITEM_SIZE;
 
-  return Math.min(width, availableHeight, MAX_ITEM_SIZE);
+  return Math.min(width, availableHeight, preferredItemSize);
 };
 
 const getWindowStart = (position: number, itemCount: number) =>
@@ -49,9 +58,10 @@ export const Coverflow = ({
   activeIndex,
   defaultActiveIndex = 0,
   onActiveIndexChange,
+  itemSize,
   ...props
 }: CoverflowProps) => {
-  const [size, setSize] = useState(DEFAULT_ITEM_SIZE);
+  const [size, setSize] = useState(() => getInitialItemSize(itemSize));
   const [uncontrolledIndex, setUncontrolledIndex] = useState(() =>
     Math.max(0, Math.round(defaultActiveIndex)),
   );
@@ -64,6 +74,10 @@ export const Coverflow = ({
   const cancelDragMotionRef = useRef<() => void>(() => undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef(new Map<number, HTMLDivElement>());
+  const itemSizeRef = useRef(itemSize);
+  const measuredBoundsRef = useRef<{ width: number; height: number } | null>(
+    null,
+  );
 
   const childrenArray = useMemo(() => Children.toArray(children), [children]);
   const itemCount = childrenArray.length;
@@ -196,7 +210,8 @@ export const Coverflow = ({
       const { width, height } = entries[0].contentRect;
       if (!Number.isFinite(width) || width <= 0) return;
 
-      const nextSize = getItemSize(width, height);
+      measuredBoundsRef.current = { width, height };
+      const nextSize = getItemSize(width, height, itemSizeRef.current);
       setSize((currentSize) =>
         currentSize === nextSize ? currentSize : nextSize,
       );
@@ -204,6 +219,17 @@ export const Coverflow = ({
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
+
+  useLayoutEffect(() => {
+    itemSizeRef.current = itemSize;
+    const bounds = measuredBoundsRef.current;
+    const nextSize = bounds
+      ? getItemSize(bounds.width, bounds.height, itemSize)
+      : getInitialItemSize(itemSize);
+    setSize((currentSize) =>
+      currentSize === nextSize ? currentSize : nextSize,
+    );
+  }, [itemSize]);
 
   useEffect(() => {
     setFlippedKey((currentKey) =>
@@ -418,6 +444,7 @@ export const Coverflow = ({
 export interface CoverflowProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
   children: React.ReactNode;
+  itemSize?: number;
   activeIndex?: number;
   defaultActiveIndex?: number;
   // The base ESLint rule treats type-only callback parameters as runtime values.

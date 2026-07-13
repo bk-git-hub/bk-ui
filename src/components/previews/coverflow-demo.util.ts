@@ -7,6 +7,8 @@ const MAX_ID_LENGTH = 60;
 const MAX_TITLE_LENGTH = 80;
 const MAX_TRACK_LENGTH = 100;
 const MAX_LABEL_LENGTH = 120;
+export const MIN_COVERFLOW_DEMO_ITEM_SIZE = 80;
+export const MAX_COVERFLOW_DEMO_ITEM_SIZE = 800;
 
 const toImageKey = (title: string) =>
   title
@@ -33,12 +35,14 @@ export interface CoverflowDemoAlbumConfig {
 
 export interface CoverflowDemoConfig {
   ariaLabel: string;
+  itemSize: number;
   showIndexes: boolean;
   albums: CoverflowDemoAlbumConfig[];
 }
 
 export const DEFAULT_COVERFLOW_DEMO_CONFIG: CoverflowDemoConfig = {
   ariaLabel: "Album covers",
+  itemSize: 280,
   showIndexes: true,
   albums: demoCovers.slice(0, 8).map((cover, index) => ({
     id: "album-" + (index + 1),
@@ -102,6 +106,27 @@ export function parseCoverflowDemoCode(source: string): ParseResult {
 
   const ariaLabel = readText(value.ariaLabel, "ariaLabel", MAX_LABEL_LENGTH);
   if (ariaLabel.error !== null) return { config: null, error: ariaLabel.error };
+
+  const itemSizeValue =
+    value.itemSize === undefined
+      ? DEFAULT_COVERFLOW_DEMO_CONFIG.itemSize
+      : value.itemSize;
+  if (
+    typeof itemSizeValue !== "number" ||
+    !Number.isInteger(itemSizeValue) ||
+    itemSizeValue < MIN_COVERFLOW_DEMO_ITEM_SIZE ||
+    itemSizeValue > MAX_COVERFLOW_DEMO_ITEM_SIZE
+  ) {
+    return {
+      config: null,
+      error:
+        "itemSize must be an integer from " +
+        MIN_COVERFLOW_DEMO_ITEM_SIZE +
+        " to " +
+        MAX_COVERFLOW_DEMO_ITEM_SIZE +
+        ".",
+    };
+  }
 
   if (typeof value.showIndexes !== "boolean") {
     return { config: null, error: "showIndexes must be a boolean." };
@@ -192,6 +217,7 @@ export function parseCoverflowDemoCode(source: string): ParseResult {
   return {
     config: {
       ariaLabel: ariaLabel.value,
+      itemSize: itemSizeValue,
       showIndexes: value.showIndexes,
       albums,
     },

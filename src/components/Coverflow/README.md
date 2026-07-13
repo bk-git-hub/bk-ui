@@ -15,7 +15,7 @@ import { Coverflow, CoverflowItem, LazyImage } from "@/components/Coverflow";
 export function AlbumGallery({ albums }: { albums: Album[] }) {
   return (
     <div className="h-96 w-full">
-      <Coverflow aria-label="Album covers">
+      <Coverflow aria-label="Album covers" itemSize={280}>
         {albums.map((album, index) => (
           <CoverflowItem
             key={album.id}
@@ -74,6 +74,9 @@ the available item range.
 the largest square item that fits inside it. Give the parent a definite height
 when it should fill a fixed area. Without one, the component uses a 3.6:1
 fallback aspect ratio so width-only layouts retain a useful natural height.
+Set `itemSize` to choose the preferred square size in pixels. It acts as an
+upper bound: the item still shrinks when the container is narrower or shorter,
+so responsive centering is preserved.
 
 ## Next.js App Router
 
@@ -93,7 +96,7 @@ import {
 export function AlbumCoverflow({ albums }: { albums: Album[] }) {
   return (
     <div className="h-96 w-full">
-      <Coverflow aria-label="Album covers">
+      <Coverflow aria-label="Album covers" itemSize={280}>
         {albums.map((album) => (
           <CoverflowItem
             key={album.id}
@@ -129,9 +132,10 @@ that contains the Coverflow classes.
 
 ## SSR and hydration
 
-- Server rendering starts from a deterministic 200 px item size. A
-  `ResizeObserver` measures the parent content box after mount and fits the
-  square item to both its width and height.
+- Server rendering starts from the deterministic `itemSize` value, capped at
+  800 px, or 200 px when `itemSize` is omitted. A `ResizeObserver` measures the
+  parent content box after mount and fits the square item to both its width and
+  height.
 - `window`, `ResizeObserver`, media queries, and global input listeners are
   accessed only from effects.
 - `requestAnimationFrame` runs only after user input.
@@ -143,6 +147,8 @@ that contains the Coverflow classes.
 - Next.js entry: `@/components/Coverflow/client`
 - `Coverflow` accepts children, `className`, standard div attributes,
   ARIA/data attributes, and event handlers.
+- `itemSize` sets the preferred square size in pixels while retaining automatic
+  container fitting. Invalid runtime values fall back to auto-fit behavior.
 - `activeIndex`, `defaultActiveIndex`, and `onActiveIndexChange` support
   controlled or uncontrolled navigation without changing the rendering core.
 - `CoverflowItem` uses `children` as the front face and optional

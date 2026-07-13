@@ -28,7 +28,7 @@ const albums = [
 export default function AlbumCoverflow() {
   return (
     <div className="h-96 w-full">
-      <Coverflow aria-label="Album covers">
+      <Coverflow aria-label="Album covers" itemSize={280}>
         {albums.map((album, index) => (
           <CoverflowItem
             key={album.id}
