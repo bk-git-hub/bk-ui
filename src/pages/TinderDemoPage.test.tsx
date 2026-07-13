@@ -88,4 +88,44 @@ describe("TinderDemoPage", () => {
     expect(usage).toHaveTextContent("export default function TinderExample()");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
+
+  it("provides framework export tabs after Usage", async () => {
+    render(<TinderDemoPage />);
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Preview",
+      "Code",
+      "Usage",
+      "React Export",
+      "Next.js Export",
+    ]);
+
+    fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
+
+    const reactExport = await screen.findByRole("region", {
+      name: "React TSX source code",
+    });
+    expect(reactExport).toHaveTextContent('from "@/components/Tinder"');
+    expect(reactExport).toHaveTextContent("export function TinderDeck");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Tailwind v4 scans local source automatically",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent("Tailwind v3");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
+
+    const nextJsExport = await screen.findByRole("region", {
+      name: "Next.js TSX source code",
+    });
+    expect(nextJsExport).toHaveTextContent('"use client"');
+    expect(nextJsExport).toHaveTextContent('from "next/image"');
+    expect(nextJsExport).toHaveTextContent('from "@/components/Tinder/client"');
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Server Components should pass only serializable cards and deckKey",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "disabling SSR is unnecessary",
+    );
+    expect(screen.getByRole("note")).toHaveTextContent("@source");
+  });
 });

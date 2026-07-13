@@ -7,6 +7,10 @@ import {
   parseTinderDemoCode,
   type TinderDemoConfig,
 } from "@/components/previews/tinder-demo.util";
+import {
+  tinderNextJsExport,
+  tinderReactExport,
+} from "@/snippets/tinderExportCode";
 import { tinderUsageCode } from "@/snippets/tinderUsageCode";
 
 export default function TinderDemoPage() {
@@ -40,6 +44,8 @@ export default function TinderDemoPage() {
       onUsageCodeChange={handleCodeChange}
       onResetCode={resetCode}
       referenceCode={tinderUsageCode}
+      reactExport={tinderReactExport}
+      nextJsExport={tinderNextJsExport}
       showPreviewAlongsideCode
     />
   );
