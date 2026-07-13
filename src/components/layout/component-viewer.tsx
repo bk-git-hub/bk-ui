@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useId, useState } from "react";
 import { Check, Copy } from "lucide-react";
 
 const loadSyntaxHighlighter = () => import("./tsx-syntax-highlighter");
@@ -6,12 +6,18 @@ const SyntaxHighlighter = lazy(loadSyntaxHighlighter);
 
 const syntaxHighlighterStyle = {
   margin: 0,
-  padding: "1.5rem",
-  paddingTop: "3.5rem",
+  boxSizing: "border-box",
+  width: "max-content",
+  minWidth: "100%",
   backgroundColor: "transparent",
   minHeight: "100%",
-  fontSize: "14px",
-  lineHeight: "1.5",
+  overflow: "visible",
+  padding: "1.5rem",
+  fontFamily:
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  fontSize: "15px",
+  lineHeight: "1.7",
+  tabSize: 2,
 } as const;
 
 interface Props {
@@ -29,6 +35,11 @@ export default function ComponentViewer({
 }: Props) {
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [isCopied, setIsCopied] = useState(false);
+  const tabId = useId();
+  const previewTabId = `${tabId}-preview-tab`;
+  const codeTabId = `${tabId}-code-tab`;
+  const previewPanelId = `${tabId}-preview-panel`;
+  const codePanelId = `${tabId}-code-panel`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(usageCode.trim());
@@ -37,59 +48,76 @@ export default function ComponentViewer({
   };
 
   return (
-    // [중요] 부모가 h-screen이므로, 여기도 h-full을 줘서 꽉 채웁니다.
-    // min-h-0이 있어야 flex container 내부에서 자식이 넘칠 때 부모를 뚫지 않고 스크롤이 생깁니다.
     <div className="flex h-full min-h-0 w-full max-w-4xl flex-1 flex-col gap-6">
-      {/* 상단 텍스트 영역 (고정 높이) */}
       <section className="flex-none">
         <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
         <p className="mt-2 text-lg text-slate-400">{description}</p>
       </section>
 
-      {/* [핵심 수정 사항] 
-        1. flex-1: 남은 공간을 전부 차지함
-        2. min-h-0: 내용물이 많아도 이 박스 자체가 커지지 않고, 내부에서 스크롤 처리하게 함 (Flexbox 필수 테크닉)
-        3. flex-col: 내부 구성을 상하로 나눔
-      */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-700 shadow-sm">
-        {/* 탭 헤더 (고정 높이) */}
-        <div className="flex shrink-0 border-b border-slate-700 bg-slate-900/50 backdrop-blur">
+        <div
+          role="tablist"
+          aria-label={`${title} view`}
+          className="flex shrink-0 border-b border-slate-700 bg-slate-950"
+        >
           <button
+            type="button"
+            id={previewTabId}
+            role="tab"
+            aria-selected={activeTab === "preview"}
+            aria-controls={previewPanelId}
             onClick={() => setActiveTab("preview")}
-            className={`px-6 py-3 text-sm font-medium transition-all ${
+            className={`px-6 py-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400 ${
               activeTab === "preview"
-                ? "border-b-2 border-sky-400 bg-slate-800/50 text-sky-400"
-                : "text-slate-400 hover:bg-slate-800/30 hover:text-sky-200"
+                ? "border-b-2 border-sky-400 bg-slate-800 text-sky-300"
+                : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
             }`}
           >
             Preview
           </button>
           <button
+            type="button"
+            id={codeTabId}
+            role="tab"
+            aria-selected={activeTab === "code"}
+            aria-controls={codePanelId}
             onClick={() => setActiveTab("code")}
             onPointerEnter={() => void loadSyntaxHighlighter()}
             onFocus={() => void loadSyntaxHighlighter()}
-            className={`px-6 py-3 text-sm font-medium transition-all ${
+            className={`px-6 py-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400 ${
               activeTab === "code"
-                ? "border-b-2 border-sky-400 bg-slate-800/50 text-sky-400"
-                : "text-slate-400 hover:bg-slate-800/30 hover:text-sky-200"
+                ? "border-b-2 border-sky-400 bg-slate-800 text-sky-300"
+                : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
             }`}
           >
             Code
           </button>
         </div>
 
-        {/* 컨텐츠 영역 (남은 공간 꽉 채움) */}
-        <div className="relative flex flex-1 flex-col overflow-hidden p-2">
-          {activeTab === "preview" ? (
-            // Preview: overflow-auto로 내용이 넘치면 이 안에서만 스크롤
-
-            component
-          ) : (
-            // Code: absolute inset-0으로 부모 영역에 강제로 딱 맞춤 -> 스크롤은 이 안에서만 발생
-            <div className="overflow-scroll bg-slate-900">
+        {activeTab === "preview" ? (
+          <div
+            id={previewPanelId}
+            role="tabpanel"
+            aria-labelledby={previewTabId}
+            className="min-h-0 flex-1 overflow-auto p-2"
+          >
+            {component}
+          </div>
+        ) : (
+          <div
+            id={codePanelId}
+            role="tabpanel"
+            aria-labelledby={codeTabId}
+            className="flex min-h-0 flex-1 flex-col bg-slate-950"
+          >
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-slate-700 bg-slate-900 px-4">
+              <span className="font-mono text-xs font-semibold tracking-widest text-slate-400">
+                TSX
+              </span>
               <button
+                type="button"
                 onClick={handleCopy}
-                className="absolute top-4 right-4 z-10 flex items-center gap-1.5 rounded-md border border-slate-600 bg-slate-700/80 px-3 py-1.5 text-xs font-medium text-slate-200 backdrop-blur transition-colors hover:bg-slate-600"
+                className="flex items-center gap-1.5 rounded-md border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
               >
                 {isCopied ? (
                   <>
@@ -103,10 +131,19 @@ export default function ComponentViewer({
                   </>
                 )}
               </button>
+            </div>
 
+            <div
+              role="region"
+              aria-label="TSX source code"
+              className="min-h-0 flex-1 overflow-auto overscroll-contain [scrollbar-gutter:stable]"
+            >
               <Suspense
                 fallback={
-                  <pre style={syntaxHighlighterStyle}>
+                  <pre
+                    className="text-slate-100"
+                    style={syntaxHighlighterStyle}
+                  >
                     <code>{usageCode.trim()}</code>
                   </pre>
                 }
@@ -114,8 +151,8 @@ export default function ComponentViewer({
                 <SyntaxHighlighter code={usageCode.trim()} />
               </Suspense>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

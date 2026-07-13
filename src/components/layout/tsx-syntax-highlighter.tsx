@@ -15,12 +15,18 @@ export default function TsxSyntaxHighlighter({ code }: Props) {
       style={vscDarkPlus}
       customStyle={{
         margin: 0,
-        padding: "1.5rem",
-        paddingTop: "3.5rem",
+        boxSizing: "border-box",
+        width: "max-content",
+        minWidth: "100%",
         backgroundColor: "transparent",
         minHeight: "100%",
-        fontSize: "14px",
-        lineHeight: "1.5",
+        overflow: "visible",
+        padding: "1.5rem",
+        fontFamily:
+          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        fontSize: "15px",
+        lineHeight: "1.7",
+        tabSize: 2,
       }}
     >
       {code}
