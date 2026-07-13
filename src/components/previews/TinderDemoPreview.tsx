@@ -57,7 +57,10 @@ export default function TinderDemoPreview() {
 
             {/* 4. 컨트롤 버튼들을 원하는 위치에 배치합니다. */}
             <div className="mt-8 flex space-x-8">
-              <TinderNopeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
+              <TinderNopeButton
+                aria-label="Pass card"
+                className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-8 w-8 text-red-500"
@@ -73,7 +76,10 @@ export default function TinderDemoPreview() {
                   />
                 </svg>
               </TinderNopeButton>
-              <TinderLikeButton className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95">
+              <TinderLikeButton
+                aria-label="Like card"
+                className="cursor-pointer rounded-full bg-white p-4 shadow-xl transition-transform active:scale-95"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-8 w-8 text-green-500"
