@@ -14,6 +14,10 @@ import {
   SHUTTER_SLIDER_DATA,
   SHUTTER_SLIDER_IMAGES,
 } from "@/mocks/shutterSliderData";
+import {
+  DEFAULT_SHUTTER_SLIDER_DEMO_CONFIG,
+  type ShutterSliderDemoConfig,
+} from "./shutter-slider-demo.util";
 
 const ORIENTATION_OPTIONS: readonly {
   value: ShutterSliderOrientation;
@@ -24,23 +28,38 @@ const ORIENTATION_OPTIONS: readonly {
 ];
 
 const STRIP_OPTIONS = [5, 7] as const;
-type StripCount = (typeof STRIP_OPTIONS)[number];
 
-export default function ShutterSliderDemoPreview() {
-  const [orientation, setOrientation] =
-    useState<ShutterSliderOrientation>("vertical");
-  const [stripCount, setStripCount] = useState<StripCount>(5);
+export interface ShutterSliderDemoPreviewProps {
+  config?: ShutterSliderDemoConfig;
+  // The base ESLint rule treats type-only callback parameters as runtime values.
+  // eslint-disable-next-line no-unused-vars
+  onConfigChange?: (nextConfig: ShutterSliderDemoConfig) => void;
+}
+
+export default function ShutterSliderDemoPreview({
+  config: controlledConfig,
+  onConfigChange,
+}: ShutterSliderDemoPreviewProps = {}) {
+  const [uncontrolledConfig, setUncontrolledConfig] =
+    useState<ShutterSliderDemoConfig>(DEFAULT_SHUTTER_SLIDER_DEMO_CONFIG);
+  const config = controlledConfig ?? uncontrolledConfig;
   const controlId = useId();
+
+  const updateConfig = (patch: Partial<ShutterSliderDemoConfig>) => {
+    const nextConfig = { ...config, ...patch };
+    if (controlledConfig === undefined) setUncontrolledConfig(nextConfig);
+    onConfigChange?.(nextConfig);
+  };
 
   return (
     <div className="h-full min-h-[46rem] w-full overflow-auto rounded-lg bg-[#d9d4ca] p-2 text-white sm:p-4">
       <ShutterSliderRoot
         slides={SHUTTER_SLIDER_IMAGES}
-        stripCount={stripCount}
-        orientation={orientation}
-        transitionDuration={820}
-        stagger={52}
-        loop
+        stripCount={config.stripCount}
+        orientation={config.orientation}
+        transitionDuration={config.transitionDuration}
+        stagger={config.stagger}
+        loop={config.loop}
         aria-label="한국의 네 가지 여행 장면"
         className="relative isolate mx-auto h-full min-h-[44rem] w-full max-w-6xl overflow-hidden rounded-[1.75rem] border border-black/15 bg-[#11100e] shadow-2xl shadow-stone-950/35"
       >
@@ -131,7 +150,7 @@ export default function ShutterSliderDemoPreview() {
                   <label
                     key={item.value}
                     className={`cursor-pointer rounded-full px-3 py-1.5 text-[0.62rem] font-bold tracking-[0.08em] transition-colors has-focus-visible:ring-2 has-focus-visible:ring-amber-200 has-focus-visible:outline-none ${
-                      orientation === item.value
+                      config.orientation === item.value
                         ? "bg-white text-stone-950"
                         : "text-white/60 hover:text-white"
                     }`}
@@ -140,8 +159,8 @@ export default function ShutterSliderDemoPreview() {
                       type="radio"
                       name={`${controlId}-orientation`}
                       value={item.value}
-                      checked={orientation === item.value}
-                      onChange={() => setOrientation(item.value)}
+                      checked={config.orientation === item.value}
+                      onChange={() => updateConfig({ orientation: item.value })}
                       className="sr-only"
                     />
                     {item.label}
@@ -157,7 +176,7 @@ export default function ShutterSliderDemoPreview() {
                   <label
                     key={count}
                     className={`cursor-pointer rounded-full px-3 py-1.5 font-mono text-[0.62rem] font-bold transition-colors has-focus-visible:ring-2 has-focus-visible:ring-amber-200 has-focus-visible:outline-none ${
-                      stripCount === count
+                      config.stripCount === count
                         ? "bg-amber-200 text-stone-950"
                         : "text-white/60 hover:text-white"
                     }`}
@@ -166,8 +185,8 @@ export default function ShutterSliderDemoPreview() {
                       type="radio"
                       name={`${controlId}-strip-count`}
                       value={count}
-                      checked={stripCount === count}
-                      onChange={() => setStripCount(count)}
+                      checked={config.stripCount === count}
+                      onChange={() => updateConfig({ stripCount: count })}
                       className="sr-only"
                     />
                     {count} CUTS
