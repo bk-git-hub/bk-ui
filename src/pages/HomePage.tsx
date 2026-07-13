@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Cherry, Dices, ScanLine } from "lucide-react";
+import { ArrowRight, Cherry, Dices, Layers3, ScanLine } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -72,6 +72,13 @@ export default function HomePage() {
               description="Tactile corner reveal with pointer, touch, and keyboard controls."
               icon={<ScanLine aria-hidden="true" className="h-10 w-10" />}
               href="/components/baccarat-squeeze"
+            />
+
+            <FeatureCard
+              title="Cards Stack Slider"
+              description="Looping 3D cards with drag, flip, and orientation controls."
+              icon={<Layers3 aria-hidden="true" className="h-10 w-10" />}
+              href="/components/cards-stack-slider"
             />
           </div>
         </div>
