@@ -17,6 +17,7 @@ export interface ReactPodContextValue {
   rotate: RotateHandler;
   select: () => void;
   back: () => void;
+  goToMainMenu: () => void;
   togglePlay: () => void;
   next: () => void;
   previous: () => void;

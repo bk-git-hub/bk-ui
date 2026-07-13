@@ -54,6 +54,10 @@ export function ReactPodProvider({
   }, []);
 
   const back = useCallback(() => dispatch({ type: "BACK" }), []);
+  const goToMainMenu = useCallback(
+    () => dispatch({ type: "GO_TO_MAIN_MENU" }),
+    [],
+  );
   const togglePlay = useCallback(() => dispatch({ type: "TOGGLE_PLAY" }), []);
   const previous = useCallback(() => dispatch({ type: "PREVIOUS" }), []);
   const next = useCallback(() => {
@@ -87,6 +91,7 @@ export function ReactPodProvider({
       rotate,
       select,
       back,
+      goToMainMenu,
       togglePlay,
       next,
       previous,
@@ -99,6 +104,7 @@ export function ReactPodProvider({
       rotate,
       select,
       back,
+      goToMainMenu,
       togglePlay,
       next,
       previous,

@@ -94,6 +94,7 @@ export const MAIN_MENU_ITEMS: readonly ReactPodMenuItem[] = [
 
 export interface ReactPodState {
   screen: ReactPodScreen;
+  navigationHistory: readonly ReactPodScreen[];
   menuIndex: number;
   songIndex: number;
   albumIndex: number;
@@ -107,6 +108,7 @@ export interface ReactPodState {
 
 export const initialReactPodState: ReactPodState = {
   screen: "menu",
+  navigationHistory: [],
   menuIndex: 0,
   songIndex: 0,
   albumIndex: 0,
@@ -122,6 +124,7 @@ export type ReactPodAction =
   | { type: "ROTATE"; direction: -1 | 1 }
   | { type: "SELECT"; shuffledTrackIndex?: number }
   | { type: "BACK" }
+  | { type: "GO_TO_MAIN_MENU" }
   | { type: "TOGGLE_PLAY" }
   | { type: "NEXT"; trackIndex: number }
   | { type: "ADVANCE_TRACK"; trackIndex: number }
@@ -144,6 +147,37 @@ function clampIndex(index: number, length: number) {
   return Math.min(index, length - 1);
 }
 
+function navigateTo(
+  state: ReactPodState,
+  screen: ReactPodScreen,
+  updates: Partial<Omit<ReactPodState, "screen" | "navigationHistory">> = {},
+): ReactPodState {
+  if (screen === state.screen) return { ...state, ...updates };
+
+  return {
+    ...state,
+    ...updates,
+    screen,
+    navigationHistory: [...state.navigationHistory, state.screen],
+  };
+}
+
+function getFallbackPreviousScreen(screen: ReactPodScreen): ReactPodScreen {
+  if (screen === "photo-viewer") return "photo-grid";
+  if (screen === "photo-grid") return "photo-albums";
+  return "menu";
+}
+
+function rewindHistoryTo(
+  navigationHistory: readonly ReactPodScreen[],
+  screen: ReactPodScreen,
+) {
+  const screenIndex = navigationHistory.lastIndexOf(screen);
+  return screenIndex === -1
+    ? navigationHistory
+    : navigationHistory.slice(0, screenIndex);
+}
+
 function syncPhotoSelection(
   state: ReactPodState,
   photoAlbums: readonly ReactPodPhotoAlbum[],
@@ -156,16 +190,21 @@ function syncPhotoSelection(
     photoLength === 0
       ? "photo-albums"
       : state.screen;
+  const navigationHistory =
+    screen === state.screen
+      ? state.navigationHistory
+      : rewindHistoryTo(state.navigationHistory, screen);
 
   if (
     albumIndex === state.albumIndex &&
     photoIndex === state.photoIndex &&
-    screen === state.screen
+    screen === state.screen &&
+    navigationHistory === state.navigationHistory
   ) {
     return state;
   }
 
-  return { ...state, albumIndex, photoIndex, screen };
+  return { ...state, albumIndex, photoIndex, screen, navigationHistory };
 }
 
 function advanceTrack(state: ReactPodState, trackIndex: number) {
@@ -253,14 +292,12 @@ export function reactPodReducer(
 
     case "SELECT": {
       if (state.screen === "songs") {
-        return {
-          ...state,
-          screen: "now-playing",
+        return navigateTo(state, "now-playing", {
           currentTrackIndex: state.songIndex,
           progress: 0,
           isPlaying: true,
           isShuffling: false,
-        };
+        });
       }
 
       if (state.screen === "now-playing") {
@@ -271,14 +308,14 @@ export function reactPodReducer(
         const selectedAlbum = photoAlbums[state.albumIndex];
         if (!selectedAlbum || selectedAlbum.photos.length === 0) return state;
 
-        return { ...state, screen: "photo-grid", photoIndex: 0 };
+        return navigateTo(state, "photo-grid", { photoIndex: 0 });
       }
 
       if (state.screen === "photo-grid") {
         const selectedAlbum = photoAlbums[state.albumIndex];
         if (!selectedAlbum || selectedAlbum.photos.length === 0) return state;
 
-        return { ...state, screen: "photo-viewer" };
+        return navigateTo(state, "photo-viewer");
       }
 
       if (state.screen !== "menu") return state;
@@ -287,45 +324,49 @@ export function reactPodReducer(
       if (!selectedItem) return state;
 
       if (selectedItem.id === "songs") {
-        return {
-          ...state,
-          screen: "songs",
+        return navigateTo(state, "songs", {
           songIndex: state.currentTrackIndex,
-        };
+        });
       }
       if (selectedItem.id === "about") {
-        return { ...state, screen: "about" };
+        return navigateTo(state, "about");
       }
       if (selectedItem.id === "photos") {
-        return {
-          ...state,
-          screen: "photo-albums",
+        return navigateTo(state, "photo-albums", {
           albumIndex: clampIndex(state.albumIndex, photoAlbums.length),
           photoIndex: 0,
-        };
+        });
       }
       if (selectedItem.id === "shuffle") {
-        return {
-          ...state,
-          screen: "now-playing",
+        return navigateTo(state, "now-playing", {
           currentTrackIndex: action.shuffledTrackIndex ?? 0,
           progress: 0,
           isPlaying: true,
           isShuffling: true,
-        };
+        });
       }
-      return { ...state, screen: "now-playing" };
+      return navigateTo(state, "now-playing");
     }
 
-    case "BACK":
+    case "BACK": {
       if (state.screen === "menu") return state;
-      if (state.screen === "photo-viewer") {
-        return { ...state, screen: "photo-grid" };
+
+      const previousScreen =
+        state.navigationHistory[state.navigationHistory.length - 1] ??
+        getFallbackPreviousScreen(state.screen);
+
+      return {
+        ...state,
+        screen: previousScreen,
+        navigationHistory: state.navigationHistory.slice(0, -1),
+      };
+    }
+
+    case "GO_TO_MAIN_MENU":
+      if (state.screen === "menu" && state.navigationHistory.length === 0) {
+        return state;
       }
-      if (state.screen === "photo-grid") {
-        return { ...state, screen: "photo-albums" };
-      }
-      return { ...state, screen: "menu" };
+      return { ...state, screen: "menu", navigationHistory: [] };
 
     case "TOGGLE_PLAY":
       return { ...state, isPlaying: !state.isPlaying };

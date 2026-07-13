@@ -41,7 +41,7 @@ describe("reactPodReducer", () => {
     expect(wrappedSongs.songIndex).toBe(TRACKS.length - 1);
   });
 
-  it("opens songs and starts the selected track", () => {
+  it("returns from a selected song one menu at a time", () => {
     const songsMenu = { ...initialReactPodState, menuIndex: 1 };
     const songs = reactPodReducer(songsMenu, { type: "SELECT" });
     expect(songs.screen).toBe("songs");
@@ -50,9 +50,40 @@ describe("reactPodReducer", () => {
     const nowPlaying = reactPodReducer(selectedSong, { type: "SELECT" });
     expect(nowPlaying).toMatchObject({
       screen: "now-playing",
+      navigationHistory: ["menu", "songs"],
       currentTrackIndex: 2,
       isPlaying: true,
       progress: 0,
+    });
+
+    const returnedToSongs = reactPodReducer(nowPlaying, { type: "BACK" });
+    expect(returnedToSongs).toMatchObject({
+      screen: "songs",
+      navigationHistory: ["menu"],
+      songIndex: 2,
+      currentTrackIndex: 2,
+      isPlaying: true,
+    });
+
+    const returnedToMain = reactPodReducer(returnedToSongs, { type: "BACK" });
+    expect(returnedToMain).toMatchObject({
+      screen: "menu",
+      navigationHistory: [],
+    });
+  });
+
+  it("returns directly opened Now Playing to the main menu", () => {
+    const nowPlaying = reactPodReducer(initialReactPodState, {
+      type: "SELECT",
+    });
+
+    expect(nowPlaying).toMatchObject({
+      screen: "now-playing",
+      navigationHistory: ["menu"],
+    });
+    expect(reactPodReducer(nowPlaying, { type: "BACK" })).toMatchObject({
+      screen: "menu",
+      navigationHistory: [],
     });
   });
 
@@ -263,6 +294,25 @@ describe("reactPodReducer", () => {
       photoIndex: 1,
       progress: 0,
       isPlaying: true,
+    });
+  });
+
+  it("goes straight to the main menu from a nested screen", () => {
+    const nestedState = {
+      ...initialReactPodState,
+      screen: "photo-viewer" as const,
+      navigationHistory: ["menu", "photo-albums", "photo-grid"] as const,
+      albumIndex: 1,
+      photoIndex: 2,
+    };
+
+    expect(
+      reactPodReducer(nestedState, { type: "GO_TO_MAIN_MENU" }),
+    ).toMatchObject({
+      screen: "menu",
+      navigationHistory: [],
+      albumIndex: 1,
+      photoIndex: 2,
     });
   });
 });

@@ -3,12 +3,21 @@ import { useClickWheel } from "./useClickWheel";
 import type { KeyboardEvent } from "react";
 
 export default function ClickWheel() {
-  const { state, rotate, select, back, togglePlay, next, previous } =
-    useReactPod();
+  const {
+    state,
+    rotate,
+    select,
+    back,
+    goToMainMenu,
+    togglePlay,
+    next,
+    previous,
+  } = useReactPod();
   const isBrowsingPhotos =
     state.screen === "photo-grid" || state.screen === "photo-viewer";
   const { wheelRef, wheelProps } = useClickWheel({
     onRotate: rotate,
+    onLongPress: goToMainMenu,
   });
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -23,6 +32,7 @@ export default function ClickWheel() {
       ArrowRight: () => rotate(1),
       Enter: select,
       Escape: back,
+      Home: goToMainMenu,
       " ": togglePlay,
     };
 
@@ -38,7 +48,7 @@ export default function ClickWheel() {
         ref={wheelRef}
         className="relative h-[200px] w-[200px] cursor-grab touch-none rounded-full border border-zinc-300 bg-gradient-to-br from-white to-zinc-100 shadow-[inset_0_2px_12px_rgba(0,0,0,0.12)] outline-none select-none focus-visible:ring-4 focus-visible:ring-blue-400/60 active:cursor-grabbing"
         tabIndex={0}
-        aria-label="Click wheel. Drag or use arrow keys to navigate."
+        aria-label="Click wheel. Drag or use arrow keys to navigate. Escape returns to the previous menu; Home opens the main menu."
         onKeyDown={handleKeyDown}
         onWheel={(event) => {
           if (event.deltaY === 0) return;
@@ -51,7 +61,9 @@ export default function ClickWheel() {
           type="button"
           onClick={back}
           data-wheel-drag
-          aria-label="Back to menu"
+          data-wheel-long-press
+          aria-label="Previous menu"
+          title="Press for the previous menu. Hold for the main menu."
           className="absolute top-2 left-1/2 flex h-10 -translate-x-1/2 items-center px-2 text-sm font-bold text-zinc-500 outline-none hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           MENU

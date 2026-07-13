@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import ReactPod from "./ReactPod";
 import type { ReactPodMenuItem, ReactPodPhotoAlbum } from "./ReactPod";
@@ -40,7 +40,14 @@ describe("ReactPod", () => {
       "false",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to menu" }));
+    const menuButton = screen.getByRole("button", { name: "Previous menu" });
+    fireEvent.click(menuButton);
+    expect(screen.getByRole("listbox", { name: "Songs" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /Seoul at 2AM/ }),
+    ).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.click(menuButton);
     expect(
       screen.getByRole("listbox", { name: "Main menu" }),
     ).toBeInTheDocument();
@@ -84,7 +91,7 @@ describe("ReactPod", () => {
   it("treats a drag starting on MENU as wheel rotation, not a menu click", () => {
     render(<ReactPod />);
     const wheel = screen.getByLabelText(/Click wheel/);
-    const menuButton = screen.getByRole("button", { name: "Back to menu" });
+    const menuButton = screen.getByRole("button", { name: "Previous menu" });
     const selectButton = screen.getByRole("button", { name: "Select" });
 
     fireEvent.keyDown(wheel, { key: "ArrowDown" });
@@ -129,7 +136,7 @@ describe("ReactPod", () => {
   it("keeps a slightly shaky MENU tap as a normal click", () => {
     render(<ReactPod />);
     const wheel = screen.getByLabelText(/Click wheel/);
-    const menuButton = screen.getByRole("button", { name: "Back to menu" });
+    const menuButton = screen.getByRole("button", { name: "Previous menu" });
     const selectButton = screen.getByRole("button", { name: "Select" });
 
     fireEvent.keyDown(wheel, { key: "ArrowDown" });
@@ -172,7 +179,7 @@ describe("ReactPod", () => {
   it("keeps pointer capture on MENU so a tap clicks the button", () => {
     render(<ReactPod />);
     const wheel = screen.getByLabelText(/Click wheel/);
-    const menuButton = screen.getByRole("button", { name: "Back to menu" });
+    const menuButton = screen.getByRole("button", { name: "Previous menu" });
     const captureOnMenu = vi.fn();
     const captureOnWheel = vi.fn();
 
@@ -195,6 +202,151 @@ describe("ReactPod", () => {
 
     expect(captureOnMenu).toHaveBeenCalledWith(6);
     expect(captureOnWheel).not.toHaveBeenCalled();
+  });
+
+  it("returns directly to the main menu when MENU is held", () => {
+    vi.useFakeTimers();
+
+    try {
+      render(
+        <ReactPod
+          menuItems={[{ id: "photos", label: "Photos" }]}
+          photoAlbums={[
+            {
+              id: "favorites",
+              title: "Favorites",
+              photos: [
+                {
+                  id: "favorite-1",
+                  src: "/favorite.webp",
+                  alt: "A favorite photo",
+                },
+              ],
+            },
+          ]}
+        />,
+      );
+
+      const select = screen.getByRole("button", { name: "Select" });
+      fireEvent.click(select);
+      fireEvent.click(select);
+      expect(
+        screen.getByRole("grid", { name: "Favorites photos" }),
+      ).toBeInTheDocument();
+
+      const menuButton = screen.getByRole("button", {
+        name: "Previous menu",
+      });
+      fireEvent.pointerDown(menuButton, {
+        pointerId: 7,
+        pointerType: "mouse",
+        button: 0,
+        clientX: 100,
+        clientY: 20,
+      });
+
+      act(() => vi.advanceTimersByTime(650));
+
+      expect(
+        screen.getByRole("listbox", { name: "Main menu" }),
+      ).toBeInTheDocument();
+
+      fireEvent.pointerUp(menuButton, {
+        pointerId: 7,
+        pointerType: "mouse",
+      });
+      fireEvent.click(menuButton);
+      expect(
+        screen.getByRole("listbox", { name: "Main menu" }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancels a MENU hold when the gesture becomes a wheel drag", () => {
+    vi.useFakeTimers();
+
+    try {
+      render(
+        <ReactPod
+          menuItems={[{ id: "photos", label: "Photos" }]}
+          photoAlbums={[
+            {
+              id: "favorites",
+              title: "Favorites",
+              photos: [
+                {
+                  id: "favorite-1",
+                  src: "/favorite-1.webp",
+                  alt: "First favorite",
+                },
+                {
+                  id: "favorite-2",
+                  src: "/favorite-2.webp",
+                  alt: "Second favorite",
+                },
+              ],
+            },
+          ]}
+        />,
+      );
+
+      const wheel = screen.getByLabelText(/Click wheel/);
+      const select = screen.getByRole("button", { name: "Select" });
+      const menuButton = screen.getByRole("button", {
+        name: "Previous menu",
+      });
+
+      fireEvent.click(select);
+      fireEvent.click(select);
+
+      vi.spyOn(wheel, "getBoundingClientRect").mockReturnValue({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 200,
+        width: 200,
+        height: 200,
+        toJSON: () => ({}),
+      });
+
+      fireEvent.pointerDown(menuButton, {
+        pointerId: 8,
+        pointerType: "mouse",
+        button: 0,
+        clientX: 100,
+        clientY: 20,
+      });
+      fireEvent.pointerMove(wheel, {
+        pointerId: 8,
+        pointerType: "mouse",
+        clientX: 122,
+        clientY: 25,
+      });
+
+      act(() => vi.advanceTimersByTime(700));
+
+      expect(
+        screen.getByRole("grid", { name: "Favorites photos" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", { name: /Second favorite/ }),
+      ).toHaveAttribute("aria-selected", "true");
+
+      fireEvent.pointerUp(wheel, {
+        pointerId: 8,
+        pointerType: "mouse",
+      });
+      fireEvent.click(menuButton);
+      expect(
+        screen.getByRole("grid", { name: "Favorites photos" }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("treats a drag starting on play as wheel rotation, not playback", () => {
@@ -390,7 +542,7 @@ describe("ReactPod", () => {
 
     const wheel = screen.getByLabelText(/Click wheel/);
     const select = screen.getByRole("button", { name: "Select" });
-    const menu = screen.getByRole("button", { name: "Back to menu" });
+    const menu = screen.getByRole("button", { name: "Previous menu" });
 
     fireEvent.click(select);
     expect(
