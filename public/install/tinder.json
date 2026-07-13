@@ -31,16 +31,7 @@
       "id": "tailwind-3",
       "label": "Tailwind 3",
       "notes": [
-        "Add \"./src/components/Tinder/**/*.{js,ts,jsx,tsx}\" (or the copied equivalent) to tailwind.config content.",
-        "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
-        "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
-        "Render output is deterministic for the same ordered cards and does not require ssr: false.",
-        "Use the same ordered cards and stable deckKey for the server render and first hydration render.",
-        "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
-        "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
-        "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
-        "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
-        "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+        "Add \"./src/components/Tinder/**/*.{js,ts,jsx,tsx}\" (or the copied equivalent) to tailwind.config content."
       ],
       "range": ">=3.4.0 <4",
       "resources": [
@@ -100,16 +91,7 @@
       "id": "tailwind-4",
       "label": "Tailwind 4",
       "notes": [
-        "Keep components/Tinder in the locally scanned source tree; for shared source add a stylesheet-relative @source directive for that directory.",
-        "Browser globals, requestAnimationFrame, and element mutation are used only by effects or interaction handlers; do not invoke those handlers during server render.",
-        "Keep render-prop children and callback props inside the Next.js Client Component boundary, and pass only serializable cards and deckKey from Server Components.",
-        "Render output is deterministic for the same ordered cards and does not require ssr: false.",
-        "Use the same ordered cards and stable deckKey for the server render and first hydration render.",
-        "Keep the native Like, Nope, Undo, and Reset button semantics, provide meaningful accessible names, and preserve visible focus styles.",
-        "Mark non-current stacked cards aria-hidden so assistive technology reads only the active card.",
-        "Pointer dragging has button-based keyboard equivalents; do not remove those controls.",
-        "Provide visible profile text and appropriate image alternative text; use an empty alt only when an image duplicates that text.",
-        "The current core does not disable its imperative swipe animation for prefers-reduced-motion; adapt the locally copied source when strict reduced-motion support is required."
+        "Keep components/Tinder in the locally scanned source tree; for shared source add a stylesheet-relative @source directive for that directory."
       ],
       "range": ">=4.0.0 <5",
       "resources": [
