@@ -20,45 +20,66 @@ const createUnsplashImage = (photoUrl: string) => {
   };
 };
 
+export const TINDER_DEMO_IMAGES = {
+  jennifer: createUnsplashImage(
+    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e",
+  ),
+  david: createUnsplashImage(
+    "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6",
+  ),
+  sophia: createUnsplashImage(
+    "https://images.unsplash.com/photo-1580489944761-15a19d654956",
+  ),
+  michael: createUnsplashImage(
+    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d",
+  ),
+  emily: createUnsplashImage(
+    "https://images.unsplash.com/photo-1544005313-94ddf0286df2",
+  ),
+} as const;
+
+export type TinderDemoImageKey = keyof typeof TINDER_DEMO_IMAGES;
+
 export const SAMPLE_CARDS = [
   {
     id: "1",
     name: "Jennifer",
     age: 24,
-    image: createUnsplashImage(
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e",
-    ),
+    imageKey: "jennifer",
+    image: TINDER_DEMO_IMAGES.jennifer,
   },
   {
     id: "2",
     name: "David",
     age: 28,
-    image: createUnsplashImage(
-      "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6",
-    ),
+    imageKey: "david",
+    image: TINDER_DEMO_IMAGES.david,
   },
   {
     id: "3",
     name: "Sophia",
     age: 26,
-    image: createUnsplashImage(
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956",
-    ),
+    imageKey: "sophia",
+    image: TINDER_DEMO_IMAGES.sophia,
   },
   {
     id: "4",
     name: "Michael",
     age: 30,
-    image: createUnsplashImage(
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d",
-    ),
+    imageKey: "michael",
+    image: TINDER_DEMO_IMAGES.michael,
   },
   {
     id: "5",
     name: "Emily",
     age: 22,
-    image: createUnsplashImage(
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2",
-    ),
+    imageKey: "emily",
+    image: TINDER_DEMO_IMAGES.emily,
   },
-];
+] as const satisfies readonly {
+  id: string;
+  name: string;
+  age: number;
+  imageKey: TinderDemoImageKey;
+  image: { src: string; srcSet: string };
+}[];
