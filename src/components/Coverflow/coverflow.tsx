@@ -61,6 +61,7 @@ export const Coverflow = ({
   const windowStartRef = useRef(0);
   const pendingAnimationRef = useRef(false);
   const reducedMotionRef = useRef(false);
+  const cancelDragMotionRef = useRef<() => void>(() => undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef(new Map<number, HTMLDivElement>());
 
@@ -218,8 +219,9 @@ export const Coverflow = ({
   const cancelWheel = useWheelEvent({
     containerRef,
     positionRef,
-    size,
+    reducedMotionRef,
     maxIndex,
+    onScrollStart: () => cancelDragMotionRef.current(),
     onScroll: (position) => {
       setFlippedKey(null);
       applyPosition(position);
@@ -238,6 +240,13 @@ export const Coverflow = ({
     },
     onDragEnd: navigateTo,
   });
+
+  useLayoutEffect(() => {
+    cancelDragMotionRef.current = cancelMotion;
+    return () => {
+      cancelDragMotionRef.current = () => undefined;
+    };
+  }, [cancelMotion]);
 
   useLayoutEffect(() => {
     if (!isControlled && uncontrolledIndex !== index) {
@@ -359,6 +368,7 @@ export const Coverflow = ({
         tabIndex={0}
         className="relative h-full w-full touch-none outline-none focus-visible:ring-4 focus-visible:ring-white/80 focus-visible:ring-inset"
         style={{ perspective: "600px" }}
+        onDragStart={(event) => event.preventDefault()}
         onMouseDown={(event) => handleDragStart(event, positionRef.current)}
         onTouchStart={(event) => handleDragStart(event, positionRef.current)}
       >

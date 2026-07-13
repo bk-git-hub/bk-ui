@@ -669,15 +669,24 @@ describe("ReactPod", () => {
         name: "Show details for Night Drive",
       }),
     ).toHaveAttribute("aria-pressed", "false");
+    const coverImage = within(coverflow).getByAltText(
+      "Blue city lights on the Night Drive album cover",
+    );
+    expect(coverImage).toHaveAttribute("draggable", "false");
+    expect(fireEvent.dragStart(coverImage)).toBe(false);
   });
 
   it("preserves Coverflow wheel, keyboard, flip, close, outside click, and MENU behavior", () => {
     vi.useFakeTimers();
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-      callback(Date.now());
-      return 1;
-    });
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn((callback: FrameRequestCallback) =>
+        window.setTimeout(() => callback(Date.now()), 16),
+      ),
+    );
+    vi.stubGlobal("cancelAnimationFrame", (frameId: number) =>
+      window.clearTimeout(frameId),
+    );
 
     try {
       render(
@@ -761,43 +770,84 @@ describe("ReactPod", () => {
   });
 
   it("keeps the Coverflow index synchronized with the ReactPod click wheel", () => {
-    render(
-      <ReactPod
-        menuItems={[{ id: "coverflow", label: "Coverflow" }]}
-        coverflowAlbums={COVERFLOW_ALBUMS}
-      />,
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn((callback: FrameRequestCallback) =>
+        window.setTimeout(() => callback(Date.now()), 16),
+      ),
+    );
+    vi.stubGlobal("cancelAnimationFrame", (frameId: number) =>
+      window.clearTimeout(frameId),
     );
 
-    const wheel = screen.getByLabelText(/Click wheel/);
-    fireEvent.keyDown(wheel, { key: "Enter" });
+    try {
+      render(
+        <ReactPod
+          menuItems={[{ id: "coverflow", label: "Coverflow" }]}
+          coverflowAlbums={COVERFLOW_ALBUMS}
+        />,
+      );
 
-    const coverflow = screen.getByRole("region", { name: "Album coverflow" });
-    const viewport = within(coverflow).getByRole("group", {
-      name: "Coverflow navigation",
-    });
-    const activeCardFor = (title: string) =>
-      within(coverflow)
-        .getByRole("button", { name: `Show details for ${title}` })
-        .closest('[data-slot="coverflow-card"]');
+      const wheel = screen.getByLabelText(/Click wheel/);
+      fireEvent.keyDown(wheel, { key: "Enter" });
 
-    expect(activeCardFor("Night Drive")).toHaveAttribute("data-active", "true");
+      const coverflow = screen.getByRole("region", {
+        name: "Album coverflow",
+      });
+      const viewport = within(coverflow).getByRole("group", {
+        name: "Coverflow navigation",
+      });
+      const activeCardFor = (title: string) =>
+        within(coverflow)
+          .getByRole("button", { name: `Show details for ${title}` })
+          .closest('[data-slot="coverflow-card"]');
 
-    wheel.focus();
-    fireEvent.wheel(wheel, { deltaY: 1 });
-    expect(activeCardFor("Sea Glass")).toHaveAttribute("data-active", "true");
-    expect(wheel).toHaveFocus();
+      expect(activeCardFor("Night Drive")).toHaveAttribute(
+        "data-active",
+        "true",
+      );
 
-    fireEvent.keyDown(wheel, { key: "ArrowRight" });
-    expect(activeCardFor("Paper Moon")).toHaveAttribute("data-active", "true");
+      wheel.focus();
+      fireEvent.wheel(wheel, { deltaY: 1 });
+      expect(activeCardFor("Sea Glass")).toHaveAttribute("data-active", "true");
+      expect(wheel).toHaveFocus();
 
-    fireEvent.keyDown(wheel, { key: "ArrowRight" });
-    expect(activeCardFor("Paper Moon")).toHaveAttribute("data-active", "true");
+      fireEvent.wheel(viewport, { deltaY: 100 });
+      act(() => vi.advanceTimersByTime(250));
+      expect(activeCardFor("Paper Moon")).toHaveAttribute(
+        "data-active",
+        "true",
+      );
 
-    fireEvent.keyDown(viewport, { key: "ArrowLeft" });
-    expect(activeCardFor("Sea Glass")).toHaveAttribute("data-active", "true");
+      fireEvent.wheel(wheel, { deltaY: -1 });
+      expect(activeCardFor("Sea Glass")).toHaveAttribute("data-active", "true");
 
-    fireEvent.wheel(wheel, { deltaY: 1 });
-    expect(activeCardFor("Paper Moon")).toHaveAttribute("data-active", "true");
+      fireEvent.keyDown(wheel, { key: "ArrowRight" });
+      expect(activeCardFor("Paper Moon")).toHaveAttribute(
+        "data-active",
+        "true",
+      );
+
+      fireEvent.keyDown(wheel, { key: "ArrowRight" });
+      expect(activeCardFor("Paper Moon")).toHaveAttribute(
+        "data-active",
+        "true",
+      );
+
+      fireEvent.keyDown(viewport, { key: "ArrowLeft" });
+      expect(activeCardFor("Sea Glass")).toHaveAttribute("data-active", "true");
+
+      fireEvent.wheel(wheel, { deltaY: 1 });
+      expect(activeCardFor("Paper Moon")).toHaveAttribute(
+        "data-active",
+        "true",
+      );
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("restores click-wheel focus after Coverflow keyboard exits", () => {

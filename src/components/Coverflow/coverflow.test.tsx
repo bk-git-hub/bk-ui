@@ -8,12 +8,21 @@ let cancelAnimationFrameMock: ReturnType<typeof vi.fn>;
 
 // 테스트 시간을 조작하기 위해 가짜 타이머 사용
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({
+    toFake: [
+      "Date",
+      "performance",
+      "setTimeout",
+      "clearTimeout",
+      "setInterval",
+      "clearInterval",
+    ],
+  });
   vi.setSystemTime(0);
   requestAnimationFrameMock = vi.fn((callback: FrameRequestCallback) =>
     window.setTimeout(() => callback(Date.now()), 16),
   );
-  cancelAnimationFrameMock = vi.fn((id: number) => clearTimeout(id));
+  cancelAnimationFrameMock = vi.fn((id: number) => window.clearTimeout(id));
   vi.stubGlobal("requestAnimationFrame", requestAnimationFrameMock);
   vi.stubGlobal("cancelAnimationFrame", cancelAnimationFrameMock);
 });
