@@ -1,6 +1,9 @@
 import { createRef } from "react";
+import { renderToString } from "react-dom/server";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as clientEntry from "./client";
+import * as coreEntry from "./index";
 import {
   BaccaratPlayingCard,
   BaccaratSqueezeAction,
@@ -395,6 +398,47 @@ describe("BaccaratSqueeze", () => {
     expect(
       screen.getByRole("button", { name: "다시 가리기" }),
     ).toBeInTheDocument();
+  });
+
+  it("shares one core through the Next.js client entry and renders without browser globals", () => {
+    const clientExports = clientEntry as Record<string, unknown>;
+    const coreExports = coreEntry as Record<string, unknown>;
+
+    expect(Object.keys(clientExports).sort()).toEqual(
+      Object.keys(coreExports).sort(),
+    );
+    Object.keys(coreExports).forEach((exportName) => {
+      expect(clientExports[exportName]).toBe(coreExports[exportName]);
+    });
+
+    vi.stubGlobal("window", undefined);
+    vi.stubGlobal("document", undefined);
+
+    let markup = "";
+    try {
+      expect(() => {
+        markup = renderToString(
+          <clientEntry.BaccaratSqueezeRoot defaultValue={0.35}>
+            <clientEntry.BaccaratSqueezeCard>
+              <clientEntry.BaccaratSqueezeBack />
+              <clientEntry.BaccaratSqueezeFace>
+                <clientEntry.BaccaratPlayingCard rank="8" suit="diamonds" />
+              </clientEntry.BaccaratSqueezeFace>
+              <clientEntry.BaccaratSqueezeFold />
+              <clientEntry.BaccaratSqueezeHandle />
+            </clientEntry.BaccaratSqueezeCard>
+            <clientEntry.BaccaratSqueezeHint />
+            <clientEntry.BaccaratSqueezeAction />
+          </clientEntry.BaccaratSqueezeRoot>,
+        );
+      }).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(markup).toContain('data-slot="baccarat-squeeze"');
+    expect(markup).toContain('data-slot="baccarat-playing-card"');
+    expect(markup).toContain('aria-valuenow="35"');
   });
 
   it("does not announce an externally controlled reveal again", () => {
