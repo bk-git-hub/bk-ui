@@ -125,6 +125,77 @@ describe("ReactPod", () => {
     expect(screen.getByRole("listbox", { name: "Songs" })).toBeInTheDocument();
   });
 
+  it("keeps a slightly shaky MENU tap as a normal click", () => {
+    render(<ReactPod />);
+    const wheel = screen.getByLabelText(/Click wheel/);
+    const menuButton = screen.getByRole("button", { name: "Back to menu" });
+    const selectButton = screen.getByRole("button", { name: "Select" });
+
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+    fireEvent.click(selectButton);
+    expect(screen.getByRole("listbox", { name: "Songs" })).toBeInTheDocument();
+
+    vi.spyOn(wheel, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 200,
+      width: 200,
+      height: 200,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerDown(menuButton, {
+      pointerId: 5,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 100,
+      clientY: 20,
+    });
+    fireEvent.pointerMove(wheel, {
+      pointerId: 5,
+      pointerType: "mouse",
+      clientX: 106,
+      clientY: 20,
+    });
+    fireEvent.pointerUp(wheel, { pointerId: 5, pointerType: "mouse" });
+    fireEvent.click(menuButton);
+
+    expect(
+      screen.getByRole("listbox", { name: "Main menu" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps pointer capture on MENU so a tap clicks the button", () => {
+    render(<ReactPod />);
+    const wheel = screen.getByLabelText(/Click wheel/);
+    const menuButton = screen.getByRole("button", { name: "Back to menu" });
+    const captureOnMenu = vi.fn();
+    const captureOnWheel = vi.fn();
+
+    Object.defineProperty(menuButton, "setPointerCapture", {
+      configurable: true,
+      value: captureOnMenu,
+    });
+    Object.defineProperty(wheel, "setPointerCapture", {
+      configurable: true,
+      value: captureOnWheel,
+    });
+
+    fireEvent.pointerDown(menuButton, {
+      pointerId: 6,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 100,
+      clientY: 20,
+    });
+
+    expect(captureOnMenu).toHaveBeenCalledWith(6);
+    expect(captureOnWheel).not.toHaveBeenCalled();
+  });
+
   it("treats a drag starting on play as wheel rotation, not playback", () => {
     render(<ReactPod />);
     const wheel = screen.getByLabelText(/Click wheel/);

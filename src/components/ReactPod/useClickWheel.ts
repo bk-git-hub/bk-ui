@@ -6,7 +6,7 @@ import {
 } from "react";
 
 const SENSITIVITY = 15;
-const DRAG_THRESHOLD = 4;
+const INITIAL_ROTATION_THRESHOLD = 8;
 type RotationDirection = -1 | 1;
 // The base ESLint rule cannot distinguish type-only function parameters.
 // eslint-disable-next-line no-unused-vars
@@ -20,9 +20,9 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
   const wheelRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const activePointerId = useRef<number | null>(null);
+  const captureTarget = useRef<HTMLElement | null>(null);
   const lastAngle = useRef<number>(0);
   const accumulatedAngle = useRef<number>(0);
-  const travelledAngle = useRef<number>(0);
   const didDrag = useRef(false);
   const suppressClick = useRef(false);
   const dragOriginButton = useRef<HTMLButtonElement | null>(null);
@@ -94,7 +94,11 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
 
     isDragging.current = true;
     activePointerId.current = event.pointerId;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    captureTarget.current =
+      targetButton instanceof HTMLButtonElement
+        ? targetButton
+        : event.currentTarget;
+    captureTarget.current.setPointerCapture?.(event.pointerId);
 
     const rect = event.currentTarget.getBoundingClientRect();
     center.current = {
@@ -105,7 +109,6 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
     const angle = getAngle(event);
     lastAngle.current = angle;
     accumulatedAngle.current = 0;
-    travelledAngle.current = 0;
     didDrag.current = false;
   };
 
@@ -121,18 +124,20 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
     if (Math.abs(delta) > 180) {
       delta = delta > 0 ? delta - 360 : delta + 360;
     }
-    travelledAngle.current += Math.abs(delta);
-    if (travelledAngle.current >= DRAG_THRESHOLD) {
-      didDrag.current = true;
-      event.preventDefault();
-    }
     accumulatedAngle.current += delta;
 
-    while (Math.abs(accumulatedAngle.current) >= SENSITIVITY) {
+    let rotationThreshold = didDrag.current
+      ? SENSITIVITY
+      : INITIAL_ROTATION_THRESHOLD;
+
+    while (Math.abs(accumulatedAngle.current) >= rotationThreshold) {
+      didDrag.current = true;
+      event.preventDefault();
       const direction: RotationDirection =
         accumulatedAngle.current > 0 ? 1 : -1;
       onRotate(direction);
-      accumulatedAngle.current -= direction * SENSITIVITY;
+      accumulatedAngle.current -= direction * rotationThreshold;
+      rotationThreshold = SENSITIVITY;
     }
   };
 
@@ -152,13 +157,13 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
     isDragging.current = false;
     activePointerId.current = null;
     accumulatedAngle.current = 0;
-    travelledAngle.current = 0;
     didDrag.current = false;
     dragOriginButton.current = null;
 
-    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (captureTarget.current?.hasPointerCapture?.(event.pointerId)) {
+      captureTarget.current.releasePointerCapture?.(event.pointerId);
     }
+    captureTarget.current = null;
   };
 
   const onLostPointerCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -166,8 +171,8 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
 
     isDragging.current = false;
     activePointerId.current = null;
+    captureTarget.current = null;
     accumulatedAngle.current = 0;
-    travelledAngle.current = 0;
     didDrag.current = false;
     dragOriginButton.current = null;
   };
@@ -178,13 +183,13 @@ export function useClickWheel({ onRotate }: UseClickWheelOptions) {
     isDragging.current = false;
     activePointerId.current = null;
     accumulatedAngle.current = 0;
-    travelledAngle.current = 0;
     didDrag.current = false;
     dragOriginButton.current = null;
 
-    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (captureTarget.current?.hasPointerCapture?.(event.pointerId)) {
+      captureTarget.current.releasePointerCapture?.(event.pointerId);
     }
+    captureTarget.current = null;
   };
 
   const onClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
