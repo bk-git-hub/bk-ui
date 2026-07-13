@@ -86,7 +86,7 @@ export default function CardsStackSliderDemoPreview() {
               다음 여정을 고르세요
             </h2>
             <p className="mt-1 text-sm text-stone-500">
-              드래그하거나 화살표 키로 카드를 넘길 수 있어요.
+              길게 드래그하면 여러 카드를 한 번에 넘길 수 있어요.
             </p>
           </div>
 

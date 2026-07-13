@@ -27,6 +27,7 @@ import {
 const cards = ["Alpha", "Beta", "Gamma"];
 
 interface TestSliderProps {
+  items?: string[];
   value?: number;
   defaultValue?: number;
   loop?: boolean;
@@ -36,6 +37,7 @@ interface TestSliderProps {
 }
 
 function TestSlider({
+  items = cards,
   value,
   defaultValue,
   loop = true,
@@ -45,7 +47,7 @@ function TestSlider({
 }: TestSliderProps) {
   return (
     <CardsStackRoot
-      count={cards.length}
+      count={items.length}
       value={value}
       defaultValue={defaultValue}
       loop={loop}
@@ -57,7 +59,7 @@ function TestSlider({
         data-testid="viewport"
         onLostPointerCapture={onViewportLostPointerCapture}
       >
-        {cards.map((card, index) => (
+        {items.map((card, index) => (
           <CardsStackItem key={card} index={index}>
             <CardsStackFront>{card} front</CardsStackFront>
             <CardsStackBack>{card} back</CardsStackBack>
@@ -81,6 +83,14 @@ function getPositioner(index: number) {
   return document.querySelector(
     `[data-slot="cards-stack-item-positioner"][data-index="${index}"]`,
   ) as HTMLElement;
+}
+
+function getHorizontalPrimaryOffset(index: number) {
+  return Number(
+    getPositioner(index).style.transform.match(
+      /^translate3d\((-?[\d.]+)%/,
+    )?.[1],
+  );
 }
 
 function finishTransition() {
@@ -326,6 +336,129 @@ describe("CardsStackSlider", () => {
 
     expect(onValueChange).toHaveBeenCalledWith(1, {
       previousValue: 0,
+      direction: 1,
+      source: "pointer",
+    });
+  });
+
+  it("drags continuously across multiple cards and settles on the nearest one", () => {
+    const onValueChange = vi.fn();
+    const longDeck = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
+    render(<TestSlider items={longDeck} onValueChange={onValueChange} />);
+    const viewport = screen.getByTestId("viewport");
+    vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 400,
+      bottom: 240,
+      width: 400,
+      height: 240,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerDown(viewport, {
+      pointerId: 17,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 300,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(viewport, {
+      pointerId: 17,
+      pointerType: "mouse",
+      clientX: -500,
+      clientY: 100,
+    });
+    act(() => vi.advanceTimersByTime(1));
+
+    expect(getHorizontalPrimaryOffset(2)).toBeCloseTo(-19.2, 5);
+    expect(Number(getPositioner(2).style.zIndex)).toBeGreaterThan(
+      Number(getPositioner(0).style.zIndex),
+    );
+
+    act(() => vi.advanceTimersByTime(120));
+    fireEvent.pointerUp(viewport, {
+      pointerId: 17,
+      pointerType: "mouse",
+      clientX: -500,
+      clientY: 100,
+    });
+    finishTransition();
+
+    expect(getActivePositioner()).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange).toHaveBeenCalledWith(2, {
+      previousValue: 0,
+      direction: 1,
+      source: "pointer",
+    });
+  });
+
+  it("only resists at the actual end of a non-looping deck", () => {
+    const onValueChange = vi.fn();
+    const longDeck = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
+    render(
+      <TestSlider
+        items={longDeck}
+        loop={false}
+        defaultValue={1}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = screen.getByTestId("viewport");
+    vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 400,
+      bottom: 240,
+      width: 400,
+      height: 240,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerDown(viewport, {
+      pointerId: 18,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 300,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(viewport, {
+      pointerId: 18,
+      pointerType: "mouse",
+      clientX: -900,
+      clientY: 100,
+    });
+    act(() => vi.advanceTimersByTime(1));
+
+    expect(getHorizontalPrimaryOffset(4)).toBeCloseTo(-8.064, 5);
+
+    fireEvent.pointerMove(viewport, {
+      pointerId: 18,
+      pointerType: "mouse",
+      clientX: -10000,
+      clientY: 100,
+    });
+    act(() => vi.advanceTimersByTime(1));
+
+    expect(getHorizontalPrimaryOffset(4)).toBeCloseTo(-28.8, 5);
+
+    act(() => vi.advanceTimersByTime(120));
+    fireEvent.pointerUp(viewport, {
+      pointerId: 18,
+      pointerType: "mouse",
+      clientX: -10000,
+      clientY: 100,
+    });
+    finishTransition();
+
+    expect(getActivePositioner()).toHaveAttribute("data-index", "4");
+    expect(onValueChange).toHaveBeenCalledWith(4, {
+      previousValue: 1,
       direction: 1,
       source: "pointer",
     });

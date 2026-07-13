@@ -34,4 +34,6 @@ import {
 
 `value`, `defaultValue`, `onValueChange`로 controlled 또는 uncontrolled 상태를 선택할 수 있습니다. `orientation`은 `horizontal`과 `vertical`을 지원하며, 첫 이전·다음 카드가 가로에서는 좌우, 세로에서는 위아래에 자리합니다. 카드 크기 대비 기본 간격은 `sideOffset={64}`이고 필요하면 조정할 수 있습니다. `loop`, `visibleCount`, `dragThreshold`, `velocityThreshold`, `touchRatio`, `transitionDuration`으로 나머지 동작을 조정합니다. 3장 이상일 때 `loop`가 순환 동작을 활성화하고, 2장 이하는 안정적인 양 끝 탐색으로 동작합니다.
 
+한 번의 드래그로 여러 카드를 연속해서 통과할 수 있고, 손을 놓으면 가장 가까운 카드로 스냅됩니다. `loop={false}`일 때는 바로 다음 카드가 아니라 실제 덱의 처음과 끝에서만 탄성이 적용됩니다.
+
 `CardsStackViewport`에 포커스가 있을 때 방향에 맞는 화살표 키로 이동할 수 있습니다. 이전·다음 버튼은 키보드와 터치 사용자를 위한 대체 조작 수단이며, 비활성 카드는 `inert`와 `aria-hidden`으로 상호작용에서 제외됩니다. 카드 안에서 드래그를 시작하지 않아야 하는 요소에는 `data-cards-stack-no-drag`를 추가합니다.

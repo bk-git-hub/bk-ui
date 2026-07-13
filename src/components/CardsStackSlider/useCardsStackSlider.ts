@@ -72,6 +72,7 @@ interface MotionState {
   progress: number;
   isDragging: boolean;
   isAnimating: boolean;
+  layerValue: number;
 }
 
 const INTERACTIVE_SELECTOR =
@@ -108,11 +109,33 @@ export function getCardsStackRelativeProgress(
 
   if (loop && count > 1) {
     const halfCount = count / 2;
-    while (distance > halfCount) distance -= count;
-    while (distance < -halfCount) distance += count;
+    const originalDistance = distance;
+    distance = ((((distance + halfCount) % count) + count) % count) - halfCount;
+    if (distance === -halfCount && originalDistance > 0) {
+      distance = halfCount;
+    }
   }
 
   return distance;
+}
+
+function getCardsStackLayerValue(
+  currentValue: number,
+  progress: number,
+  count: number,
+  loop: boolean,
+) {
+  return normalizeCardsStackValue(
+    Math.floor(currentValue - progress),
+    count,
+    loop,
+  );
+}
+
+function getCardsStackSnapDelta(progress: number) {
+  const slides = -progress;
+  if (slides === 0) return 0;
+  return Math.sign(slides) * Math.floor(Math.abs(slides) + 0.5);
 }
 
 function prefersReducedMotion() {
@@ -156,6 +179,7 @@ export function useCardsStackSlider({
     progress: 0,
     isDragging: false,
     isAnimating: false,
+    layerValue: currentValue,
   });
 
   const currentValueRef = useRef(currentValue);
@@ -225,12 +249,19 @@ export function useCardsStackSlider({
     if (!wasControlledRef.current) {
       setUncontrolledValue(pendingNavigation.to);
     }
-    setMotion({ progress: 0, isDragging: false, isAnimating: false });
-    onValueChangeRef.current?.(pendingNavigation.to, {
-      previousValue: pendingNavigation.from,
-      direction: pendingNavigation.direction,
-      source: pendingNavigation.source,
+    setMotion({
+      progress: 0,
+      isDragging: false,
+      isAnimating: false,
+      layerValue: pendingNavigation.to,
     });
+    if (pendingNavigation.to !== pendingNavigation.from) {
+      onValueChangeRef.current?.(pendingNavigation.to, {
+        previousValue: pendingNavigation.from,
+        direction: pendingNavigation.direction,
+        source: pendingNavigation.source,
+      });
+    }
   }, [clearFallbackTimer]);
 
   const canNavigate = useCallback((direction: CardsStackDirection) => {
@@ -246,8 +277,15 @@ export function useCardsStackSlider({
     return direction === 1 ? latestValue < latestCount - 1 : latestValue > 0;
   }, []);
 
-  const navigate = useCallback(
-    (direction: CardsStackDirection, source: CardsStackChangeSource) => {
+  const navigateBy = useCallback(
+    (
+      delta: number,
+      source: CardsStackChangeSource,
+      layerValue = currentValueRef.current,
+    ) => {
+      const integerDelta = Number.isFinite(delta) ? Math.trunc(delta) : 0;
+      if (integerDelta === 0) return false;
+      const direction: CardsStackDirection = integerDelta > 0 ? 1 : -1;
       if (
         pointerSessionRef.current ||
         pendingNavigationRef.current ||
@@ -262,16 +300,21 @@ export function useCardsStackSlider({
         transitionDuration: latestDuration,
       } = optionsRef.current;
       const from = currentValueRef.current;
+      const boundedDelta = latestLoop
+        ? integerDelta
+        : clamp(integerDelta, -from, latestCount - 1 - from);
+      if (boundedDelta === 0) return false;
       const to = normalizeCardsStackValue(
-        from + direction,
+        from + boundedDelta,
         latestCount,
         latestLoop,
       );
       pendingNavigationRef.current = { from, to, direction, source };
       setMotion({
-        progress: -direction,
+        progress: -boundedDelta,
         isDragging: false,
         isAnimating: true,
+        layerValue,
       });
 
       if (prefersReducedMotion()) {
@@ -287,18 +330,36 @@ export function useCardsStackSlider({
     [canNavigate, completeNavigation],
   );
 
+  const navigate = useCallback(
+    (direction: CardsStackDirection, source: CardsStackChangeSource) =>
+      navigateBy(direction, source),
+    [navigateBy],
+  );
+
   const snapBack = useCallback(() => {
     cancelFrame();
     pendingProgressRef.current = 0;
-    setMotion({ progress: 0, isDragging: false, isAnimating: false });
+    setMotion({
+      progress: 0,
+      isDragging: false,
+      isAnimating: false,
+      layerValue: currentValueRef.current,
+    });
   }, [cancelFrame]);
 
   const commitPendingProgress = useCallback(() => {
     frameRef.current = null;
+    const { count: latestCount, loop: latestLoop } = optionsRef.current;
     setMotion({
       progress: pendingProgressRef.current,
       isDragging: true,
       isAnimating: false,
+      layerValue: getCardsStackLayerValue(
+        currentValueRef.current,
+        pendingProgressRef.current,
+        latestCount,
+        latestLoop,
+      ),
     });
   }, []);
 
@@ -347,13 +408,20 @@ export function useCardsStackSlider({
 
     if (!latestLoop) {
       const latestValue = currentValueRef.current;
-      const isPastStart = latestValue === 0 && progress > 0;
-      const isPastEnd =
-        latestValue === optionsRef.current.count - 1 && progress < 0;
-      if (isPastStart || isPastEnd) progress *= 0.28;
+      const minimumProgress = -(optionsRef.current.count - 1 - latestValue);
+      const maximumProgress = latestValue;
+      if (progress < minimumProgress) {
+        progress =
+          minimumProgress +
+          clamp((progress - minimumProgress) * 0.28, -0.45, 0.45);
+      } else if (progress > maximumProgress) {
+        progress =
+          maximumProgress +
+          clamp((progress - maximumProgress) * 0.28, -0.45, 0.45);
+      }
     }
 
-    return clamp(progress, -1.15, 1.15);
+    return progress;
   }, []);
 
   const handlePointerDown = useCallback(
@@ -394,7 +462,12 @@ export function useCardsStackSlider({
       if (typeof event.currentTarget.setPointerCapture === "function") {
         event.currentTarget.setPointerCapture(event.pointerId);
       }
-      setMotion({ progress: 0, isDragging: true, isAnimating: false });
+      setMotion({
+        progress: 0,
+        isDragging: true,
+        isAnimating: false,
+        layerValue: currentValueRef.current,
+      });
     },
     [getAxisValues],
   );
@@ -459,18 +532,43 @@ export function useCardsStackSlider({
       const velocity = (axis - oldestSample.axis) / elapsed;
       const delta = axis - session.startAxis;
       const projectedDelta = delta + velocity * PROJECTED_MOTION_MS;
-      const direction: CardsStackDirection = projectedDelta < 0 ? 1 : -1;
       const hasDistance =
         Math.abs(delta) >= session.extent * optionsRef.current.dragThreshold;
       const hasVelocity =
         Math.abs(velocity) >= optionsRef.current.velocityThreshold;
+      const dragProgress = getDragProgress(session);
+      const velocityProgress =
+        (velocity / session.extent) *
+        optionsRef.current.touchRatio *
+        PROJECTED_MOTION_MS;
+      const projectedProgress = dragProgress + clamp(velocityProgress, -1, 1);
+      let navigationDelta = getCardsStackSnapDelta(projectedProgress);
+      if (navigationDelta === 0 && (hasDistance || hasVelocity)) {
+        navigationDelta = projectedDelta < 0 ? 1 : -1;
+      }
+      const layerValue = getCardsStackLayerValue(
+        currentValueRef.current,
+        dragProgress,
+        optionsRef.current.count,
+        optionsRef.current.loop,
+      );
 
-      if ((hasDistance || hasVelocity) && navigate(direction, "pointer")) {
+      if (
+        (hasDistance || hasVelocity) &&
+        navigateBy(navigationDelta, "pointer", layerValue)
+      ) {
         return;
       }
       snapBack();
     },
-    [cancelFrame, getAxisValues, navigate, releasePointerCapture, snapBack],
+    [
+      cancelFrame,
+      getAxisValues,
+      getDragProgress,
+      navigateBy,
+      releasePointerCapture,
+      snapBack,
+    ],
   );
 
   const handleLostPointerCapture = useCallback(
@@ -527,7 +625,12 @@ export function useCardsStackSlider({
     cancelPointerSession(false);
     cancelFrame();
     pendingProgressRef.current = 0;
-    setMotion({ progress: 0, isDragging: false, isAnimating: false });
+    setMotion({
+      progress: 0,
+      isDragging: false,
+      isAnimating: false,
+      layerValue: currentValue,
+    });
   }, [
     cancelFrame,
     cancelPointerSession,
@@ -552,6 +655,10 @@ export function useCardsStackSlider({
     motionProgress: motion.progress,
     isDragging: motion.isDragging,
     isAnimating: motion.isAnimating,
+    topLayerValue:
+      motion.isDragging || motion.isAnimating
+        ? motion.layerValue
+        : currentValue,
     canNavigate,
     navigate,
     transitionDuration,

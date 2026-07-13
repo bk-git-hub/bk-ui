@@ -32,6 +32,7 @@ type CardsStackContextValue = Pick<
   | "isDragging"
   | "motionProgress"
   | "navigate"
+  | "topLayerValue"
   | "transitionDuration"
 > & {
   count: number;
@@ -113,6 +114,7 @@ export function CardsStackRoot({
       count: safeCount,
       currentValue: slider.currentValue,
       motionProgress: slider.motionProgress,
+      topLayerValue: slider.topLayerValue,
       isDragging: slider.isDragging,
       isAnimating: slider.isAnimating,
       loop: effectiveLoop,
@@ -249,7 +251,7 @@ function getSlideTransform(
   visibleCount: number,
   count: number,
   loop: boolean,
-  isCurrent: boolean,
+  isTopLayer: boolean,
 ) {
   const absoluteProgress = Math.abs(progress);
   const clampedProgress = Math.min(absoluteProgress, visibleCount + 1);
@@ -290,7 +292,7 @@ function getSlideTransform(
         : loop
           ? Math.min(Math.max((count / 2 - absoluteProgress) / 0.35, 0), 1)
           : 1,
-    zIndex: isCurrent ? 2000 : 1000 - Math.ceil(absoluteProgress * 10),
+    zIndex: isTopLayer ? 2000 : 1000 - Math.ceil(absoluteProgress * 10),
   };
 }
 
@@ -306,6 +308,7 @@ export function CardsStackItem({
 }: CardsStackItemProps) {
   const context = useCardsStackContext("CardsStackItem");
   const isCurrent = index === context.currentValue;
+  const isTopLayer = index === context.topLayerValue;
   const progress = getCardsStackRelativeProgress(
     index,
     context.currentValue,
@@ -320,7 +323,7 @@ export function CardsStackItem({
     context.visibleCount,
     context.count,
     context.loop,
-    isCurrent,
+    isTopLayer,
   );
   const state = isCurrent ? "active" : progress < 0 ? "previous" : "next";
 
