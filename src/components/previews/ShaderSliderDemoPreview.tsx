@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars -- Base ESLint treats TypeScript callback parameter names as runtime bindings. */
 import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
@@ -15,6 +16,10 @@ import {
   SHADER_SLIDER_DATA,
   SHADER_SLIDER_IMAGES,
 } from "@/mocks/shaderSliderData";
+import {
+  DEFAULT_SHADER_SLIDER_DEMO_CONFIG,
+  type ShaderSliderDemoConfig,
+} from "./shader-slider-demo.util";
 
 const EFFECTS: readonly { value: ShaderSliderEffect; label: string }[] = [
   { value: "wave", label: "Wave" },
@@ -22,18 +27,31 @@ const EFFECTS: readonly { value: ShaderSliderEffect; label: string }[] = [
   { value: "pixel", label: "Pixel" },
 ];
 
-export default function ShaderSliderDemoPreview() {
-  const [effect, setEffect] = useState<ShaderSliderEffect>("wave");
+export interface ShaderSliderDemoPreviewProps {
+  config?: ShaderSliderDemoConfig;
+  onConfigChange?: (config: ShaderSliderDemoConfig) => void;
+}
+
+export default function ShaderSliderDemoPreview({
+  config,
+  onConfigChange,
+}: ShaderSliderDemoPreviewProps) {
+  const [localConfig, setLocalConfig] = useState(
+    DEFAULT_SHADER_SLIDER_DEMO_CONFIG,
+  );
+  const resolvedConfig = config ?? localConfig;
+  const updateConfig = onConfigChange ?? setLocalConfig;
 
   return (
     <div className="h-full min-h-[34rem] w-full overflow-auto rounded-lg bg-[#090a0d] p-2 text-white sm:p-3">
       <ShaderSliderRoot
         slides={SHADER_SLIDER_IMAGES}
-        effect={effect}
-        transitionDuration={980}
-        intensity={0.95}
-        frequency={2.8}
-        loop
+        effect={resolvedConfig.effect}
+        transitionDuration={resolvedConfig.transitionDuration}
+        intensity={resolvedConfig.intensity}
+        frequency={resolvedConfig.frequency}
+        dprCap={resolvedConfig.dprCap}
+        loop={resolvedConfig.loop}
         aria-label="Spectra visual stories"
         className="group mx-auto h-full min-h-[32rem] w-full max-w-6xl overflow-hidden rounded-[1.6rem] border border-white/12 bg-slate-950 shadow-2xl shadow-black/60"
       >
@@ -95,7 +113,7 @@ export default function ShaderSliderDemoPreview() {
                 <label
                   key={item.value}
                   className={`cursor-pointer rounded-full px-2.5 py-1.5 text-[0.58rem] font-bold tracking-[0.12em] uppercase transition-colors has-focus-visible:ring-2 has-focus-visible:ring-white/80 has-focus-visible:outline-none sm:px-3 ${
-                    effect === item.value
+                    resolvedConfig.effect === item.value
                       ? "bg-white text-slate-950"
                       : "text-white/58 hover:text-white"
                   }`}
@@ -104,8 +122,13 @@ export default function ShaderSliderDemoPreview() {
                     type="radio"
                     name="shader-effect"
                     value={item.value}
-                    checked={effect === item.value}
-                    onChange={() => setEffect(item.value)}
+                    checked={resolvedConfig.effect === item.value}
+                    onChange={() =>
+                      updateConfig({
+                        ...resolvedConfig,
+                        effect: item.value,
+                      })
+                    }
                     className="sr-only"
                   />
                   {item.label}
