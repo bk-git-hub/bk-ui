@@ -1,0 +1,112 @@
+{
+  "componentVersion": "1.0.0",
+  "constraints": {
+    "accessibility": [
+      "For object items, provide stable getItemKey and meaningful getItemLabel functions inside the client boundary.",
+      "Give LottoDraw or LottoMachine a meaningful accessible name and preserve the polite result status announcement.",
+      "Keep LottoAction as a native button with visible focus styles, disabled behavior, and keyboard activation; do not make drawing pointer-only.",
+      "Keep the decorative chamber pool aria-hidden while exposing the result list and machine state through semantic regions and lists.",
+      "Preserve prefers-reduced-motion handling so the result appears without the mixing delay and the chamber remains static."
+    ],
+    "ssr": [
+      "Browser measurement, ResizeObserver, matchMedia, and animation frames run only after hydration; Lotto does not require ssr: false.",
+      "Define onValueChange, renderBall, getItemKey, getItemLabel, random, timers, refs, and DOM handlers inside a Client Component; pass only serializable data from a Server Component.",
+      "Import the Next.js entrypoint from components/Lotto/client; it re-exports the unchanged React core and contains no next/* runtime import.",
+      "Keep items, initial results, motionSeed, drawCount, and labels deterministic between the server render and the first hydration render.",
+      "Random selection begins only when draw is called from an interaction and is never consumed during render."
+    ]
+  },
+  "defaultVariantId": "tailwind-4",
+  "name": "lotto",
+  "schemaVersion": 1,
+  "sourceCommit": "8cb1677b64f5934db933c15a602ae45741c5bbd3",
+  "status": "release-blocked",
+  "statusMessage": "Public installation is blocked until license terms are approved, the fixture gate passes, and the artifact commit is pushed and verified by full SHA.",
+  "title": "Lotto Draw",
+  "variants": [
+    {
+      "dependencies": [
+        "lucide-react@^0.542.0",
+        "tailwind-merge@^3.3.1"
+      ],
+      "id": "tailwind-4",
+      "label": "Tailwind 4",
+      "notes": [
+        "Keep components/Lotto in the locally scanned source tree; for shared or ignored source add a stylesheet-relative @source directive for that directory."
+      ],
+      "range": ">=4.0.0 <5",
+      "resources": [
+        {
+          "kind": "source",
+          "label": "@components/Lotto/LottoDraw.tsx",
+          "repositoryPath": "src/components/Lotto/LottoDraw.tsx",
+          "sha256": "b93f2ea623d7a652f0ff840753b7d6788fb43692fc750bd959f79cfa79d9f035"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Lotto/LottoMachine.tsx",
+          "repositoryPath": "src/components/Lotto/LottoMachine.tsx",
+          "sha256": "266df325442d7a04c42a6dbb176d503ddad094207c92a300365252d28811993c"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Lotto/client.ts",
+          "repositoryPath": "src/components/Lotto/client.ts",
+          "sha256": "2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Lotto/index.ts",
+          "repositoryPath": "src/components/Lotto/index.ts",
+          "sha256": "46caed85853f5a29ccfab1768c29996f5f86d55556ce07fe3309c628e44296e8"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Lotto/lottoMachinePhysics.ts",
+          "repositoryPath": "src/components/Lotto/lottoMachinePhysics.ts",
+          "sha256": "a1733f72732128644d9cb3cd8efa16f320ea067bdf746de0e9ec6dd5fcbf302a"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Lotto/useLottoDraw.ts",
+          "repositoryPath": "src/components/Lotto/useLottoDraw.ts",
+          "sha256": "fda87ade53d3bb2771a062ce9fa0b8e6af734db8779d7ac2330853d5799391e7"
+        },
+        {
+          "kind": "source",
+          "label": "@components/Lotto/useLottoMachinePhysics.ts",
+          "repositoryPath": "src/components/Lotto/useLottoMachinePhysics.ts",
+          "sha256": "d3e2552849c6aacfabc8326b34f435d9c375e8cad38f9ed4e13e69f02dfe4440"
+        },
+        {
+          "kind": "registry",
+          "label": "lotto Registry JSON",
+          "repositoryPath": "public/r/lotto.json",
+          "sha256": "2180d860c08ebb899c0396d1945046eade751ce2e32e56cccc7cd9f1109a0e63"
+        },
+        {
+          "framework": "react",
+          "kind": "zip",
+          "label": "React/Vite source ZIP",
+          "repositoryPath": "public/downloads/lotto-react.zip",
+          "sha256": "74118772913e9b115c96aba3b7699fbf060388ab40a3cd99da35b10fefbdb795"
+        },
+        {
+          "framework": "nextjs",
+          "kind": "zip",
+          "label": "Next.js App Router source ZIP",
+          "repositoryPath": "public/downloads/lotto-next.zip",
+          "sha256": "fd1ad16d80391888208ce42777b640960ad21785791f9349233c2d5e473cc349"
+        },
+        {
+          "kind": "copy-for-ai",
+          "label": "Copy for AI",
+          "repositoryPath": "public/ai/lotto.md",
+          "sha256": "ef530e986a5ffbb9db6dac50532d4db724a48a753448cc1efca287235db10894"
+        }
+      ],
+      "tailwindMajor": 4,
+      "tested": "4.3.2"
+    }
+  ]
+}
