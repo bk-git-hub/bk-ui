@@ -257,6 +257,7 @@ export function ShaderSliderViewport({
   onPointerUp,
   onPointerCancel,
   onLostPointerCapture,
+  onDragStart,
   children,
   ...props
 }: ShaderSliderViewportProps) {
@@ -507,7 +508,7 @@ export function ShaderSliderViewport({
       data-slot="shader-slider-viewport"
       className={twMerge(
         clsx(
-          "relative isolate [touch-action:pan-y] overflow-hidden bg-slate-950 outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
+          "relative isolate [touch-action:pan-y] overflow-hidden bg-slate-950 outline-none select-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
           context.disabled
             ? "cursor-not-allowed"
             : "cursor-grab active:cursor-grabbing",
@@ -536,6 +537,10 @@ export function ShaderSliderViewport({
         if (!event.defaultPrevented) {
           context.handleLostPointerCapture(event);
         }
+      }}
+      onDragStart={(event) => {
+        onDragStart?.(event);
+        event.preventDefault();
       }}
     >
       <div

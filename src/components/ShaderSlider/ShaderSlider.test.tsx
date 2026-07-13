@@ -37,6 +37,7 @@ interface TestSliderProps {
     detail: ShaderSliderValueChangeDetail,
   ) => void;
   preventNext?: boolean;
+  onViewportDragStart?: () => void;
 }
 
 function TestSlider({
@@ -45,6 +46,7 @@ function TestSlider({
   loop = true,
   onValueChange,
   preventNext = false,
+  onViewportDragStart,
 }: TestSliderProps) {
   return (
     <ShaderSliderRoot
@@ -57,7 +59,10 @@ function TestSlider({
       aria-label="Test stories"
       data-testid="root"
     >
-      <ShaderSliderViewport data-testid="viewport">
+      <ShaderSliderViewport
+        data-testid="viewport"
+        onDragStart={onViewportDragStart}
+      >
         {TEST_SLIDES.map((slide, index) => (
           <ShaderSliderSlide key={slide.src} index={index}>
             {slide.alt}
@@ -254,6 +259,19 @@ describe("ShaderSlider", () => {
       direction: 1,
       source: "pointer",
     });
+  });
+
+  it("prevents text selection and native image dragging in the viewport", () => {
+    const onDragStart = vi.fn();
+    render(<TestSlider onViewportDragStart={onDragStart} />);
+
+    const viewport = screen.getByTestId("viewport");
+    const image = screen.getByRole("img", { name: "First abstract scene" });
+
+    expect(viewport).toHaveClass("select-none");
+    expect(image).toHaveAttribute("draggable", "false");
+    expect(fireEvent.dragStart(image)).toBe(false);
+    expect(onDragStart).toHaveBeenCalledOnce();
   });
 
   it("releases a cancelled pointer gesture without changing slides", () => {
