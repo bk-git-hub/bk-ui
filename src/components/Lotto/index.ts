@@ -11,6 +11,7 @@ export {
   type LottoItemRenderer,
   type LottoRootProps,
 } from "./LottoDraw";
+export { LottoMachine, type LottoMachineProps } from "./LottoMachine";
 export {
   drawRandomItems,
   isValidDrawCount,
