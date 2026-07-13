@@ -1,6 +1,15 @@
 # Shader Slider
 
-`ShaderSlider` is a dependency-free React carousel that renders image transitions through a small WebGL layer. React owns the state, pointer and keyboard input, accessible DOM, and fallback images; the canvas only composites pixels.
+`ShaderSlider` is a React carousel that renders image transitions through a small WebGL layer. React owns the state, pointer and keyboard input, accessible DOM, and fallback images; the canvas only composites pixels.
+
+It targets React 19 and uses `clsx` plus `tailwind-merge`. Use
+`tailwind-merge@2.6.0` with Tailwind CSS 3.4 or `tailwind-merge@^3.3.1` with
+Tailwind CSS 4. The common component source has no `next/*` dependency.
+
+For a Next.js App Router client graph, import from `./client`. That entry starts
+with `'use client'` and re-exports the same React core. Keep callbacks and
+consumer-owned `ReactNode` composition inside a Client Component; pass only
+serializable slide data across a Server Component boundary.
 
 ## Composition
 
