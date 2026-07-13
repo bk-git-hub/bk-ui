@@ -111,6 +111,7 @@ export const TinderCard = ({
     <div
       ref={isTopCard ? topCardRef : isNextCard ? nextCardRef : null}
       onPointerDown={isTopCard ? handlePointerDown : undefined}
+      aria-hidden={!isTopCard}
       className={twMerge(
         clsx(
           "absolute h-full w-full cursor-grab [touch-action:none] overflow-hidden rounded-xl bg-white shadow-lg transition-transform duration-300 ease-out select-none",

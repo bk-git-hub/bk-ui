@@ -111,6 +111,49 @@ describe("Tinder swipe interactions", () => {
     expect(onSwipeRight).toHaveBeenCalledTimes(1);
   });
 
+  it("hides inactive cards from assistive technology by default", () => {
+    renderTinder();
+
+    expect(screen.getByTestId("card-first")).toHaveAttribute(
+      "aria-hidden",
+      "false",
+    );
+    expect(screen.getByTestId("card-second")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(screen.getByTestId("card-third")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  });
+
+  it("lets consumers override the default aria-hidden value", () => {
+    render(
+      <TinderRoot cards={cards}>
+        {cards.map((card, index) => (
+          <TinderCard
+            key={card}
+            index={index}
+            aria-hidden={index === 0}
+            data-testid={`override-${card}`}
+          >
+            {card}
+          </TinderCard>
+        ))}
+      </TinderRoot>,
+    );
+
+    expect(screen.getByTestId("override-first")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(screen.getByTestId("override-second")).toHaveAttribute(
+      "aria-hidden",
+      "false",
+    );
+  });
+
   it("uses a fallback when the browser does not emit transitionend", () => {
     const { onSwipeLeft } = renderTinder();
 
