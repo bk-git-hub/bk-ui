@@ -8,9 +8,11 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import type { ComponentInstallDescriptor } from "./component-install-guide";
 
 const loadSyntaxHighlighter = () => import("./tsx-syntax-highlighter");
 const SyntaxHighlighter = lazy(loadSyntaxHighlighter);
+const ComponentInstallGuide = lazy(() => import("./component-install-guide"));
 
 const syntaxHighlighterStyle = {
   margin: 0,
@@ -43,6 +45,7 @@ export interface ComponentViewerProps {
   referenceCodeLanguage?: string;
   reactExport?: ComponentViewerCodeTab;
   nextJsExport?: ComponentViewerCodeTab;
+  installDescriptor?: ComponentInstallDescriptor;
   showPreviewAlongsideCode?: boolean;
   // The base ESLint rule treats type-only callback parameters as runtime values.
   // eslint-disable-next-line no-unused-vars
@@ -74,6 +77,7 @@ export default function ComponentViewer({
   referenceCodeLanguage = "TSX",
   reactExport,
   nextJsExport,
+  installDescriptor,
   showPreviewAlongsideCode = false,
   onUsageCodeChange,
   codeLanguage = "TSX",
@@ -261,6 +265,23 @@ export default function ComponentViewer({
 
           const language = source.language ?? "TSX";
           const isEditableSource = tab.id === "code" && isEditable;
+          const installFramework =
+            tab.id === "react-export"
+              ? "react"
+              : tab.id === "nextjs-export"
+                ? "nextjs"
+                : undefined;
+          const highlightedSource = (
+            <Suspense
+              fallback={
+                <pre className="text-slate-100" style={syntaxHighlighterStyle}>
+                  <code>{source.code.trim()}</code>
+                </pre>
+              }
+            >
+              <SyntaxHighlighter code={source.code.trim()} />
+            </Suspense>
+          );
 
           return (
             <div
@@ -344,24 +365,40 @@ export default function ComponentViewer({
                         </div>
                       )}
                     </div>
+                  ) : installDescriptor && installFramework ? (
+                    <div className="min-h-0 flex-1 overflow-auto overscroll-contain [scrollbar-gutter:stable]">
+                      <div className="p-4 sm:p-6">
+                        <Suspense
+                          fallback={
+                            <p
+                              role="status"
+                              className="rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm text-slate-300"
+                            >
+                              Loading installation details…
+                            </p>
+                          }
+                        >
+                          <ComponentInstallGuide
+                            descriptor={installDescriptor}
+                            framework={installFramework}
+                          />
+                        </Suspense>
+                      </div>
+                      <div
+                        role="region"
+                        aria-label={`${language} source code`}
+                        className="min-h-[24rem] overflow-auto border-t border-slate-700"
+                      >
+                        {highlightedSource}
+                      </div>
+                    </div>
                   ) : (
                     <div
                       role="region"
                       aria-label={`${language} source code`}
                       className="min-h-0 flex-1 overflow-auto overscroll-contain [scrollbar-gutter:stable]"
                     >
-                      <Suspense
-                        fallback={
-                          <pre
-                            className="text-slate-100"
-                            style={syntaxHighlighterStyle}
-                          >
-                            <code>{source.code.trim()}</code>
-                          </pre>
-                        }
-                      >
-                        <SyntaxHighlighter code={source.code.trim()} />
-                      </Suspense>
+                      {highlightedSource}
                     </div>
                   )}
 

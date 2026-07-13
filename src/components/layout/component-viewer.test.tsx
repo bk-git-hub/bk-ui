@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ComponentInstallDescriptor } from "./component-install-guide";
 import ComponentViewer from "./component-viewer";
 
 vi.mock("./tsx-syntax-highlighter", () => ({
@@ -27,6 +28,48 @@ const nextJsExport = {
   code: '"use client";\nexport function NextExample() { return <div />; }',
   language: "Next.js TSX",
   description: "Keep this inside a Next.js client boundary.",
+};
+
+const installDescriptor: ComponentInstallDescriptor = {
+  schemaVersion: 1,
+  name: "example",
+  title: "Example",
+  componentVersion: "1.0.0",
+  sourceCommit: "a".repeat(40),
+  status: "release-blocked",
+  statusMessage: "License and remote validation are pending.",
+  defaultVariantId: "tailwind-4",
+  constraints: {
+    ssr: ["Use deterministic initial props."],
+    accessibility: ["Keep keyboard controls."],
+  },
+  variants: [
+    {
+      id: "tailwind-4",
+      label: "Tailwind 4",
+      tailwindMajor: 4,
+      range: ">=4 <5",
+      tested: "4.3.2",
+      dependencies: ["clsx@^2.1.1"],
+      notes: ["Keep the copied source in a scanned directory."],
+      resources: [
+        {
+          kind: "zip",
+          label: "React/Vite source ZIP",
+          repositoryPath: "public/downloads/example-react.zip",
+          sha256: "1".repeat(64),
+          framework: "react",
+        },
+        {
+          kind: "zip",
+          label: "Next.js App Router source ZIP",
+          repositoryPath: "public/downloads/example-next.zip",
+          sha256: "2".repeat(64),
+          framework: "nextjs",
+        },
+      ],
+    },
+  ],
 };
 
 describe("ComponentViewer", () => {
@@ -357,6 +400,67 @@ describe("ComponentViewer", () => {
     expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(
       nextJsExport.code,
     );
+  });
+
+  it("embeds framework-specific install guidance without adding a tab", async () => {
+    render(
+      <ComponentViewer
+        title="Install example"
+        description="Install details"
+        usageCode="const code = true;"
+        component={<div>Preview content</div>}
+        referenceCode="export function Usage() {}"
+        reactExport={reactExport}
+        nextJsExport={nextJsExport}
+        installDescriptor={installDescriptor}
+      />,
+    );
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Preview",
+      "Code",
+      "Usage",
+      "React Export",
+      "Next.js Export",
+    ]);
+    expect(
+      screen.queryByRole("tab", { name: /install/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    expect(
+      screen.queryByRole("heading", { name: "Install Example" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Install Example" },
+        { timeout: 5_000 },
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("React/Vite installation")).toBeInTheDocument();
+    expect(screen.getByText("React/Vite source ZIP")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Next.js App Router source ZIP"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "React TSX source code" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
+    expect(
+      await screen.findByText(
+        "Next.js App Router installation",
+        {},
+        { timeout: 5_000 },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Next.js App Router source ZIP"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("React/Vite source ZIP")).not.toBeInTheDocument();
   });
 
   it("returns to Preview when the active optional tab is removed", async () => {
