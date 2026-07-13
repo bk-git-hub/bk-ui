@@ -10,8 +10,13 @@ import {
   CardsStackViewport,
 } from "@/components/CardsStackSlider";
 import { CARDS_STACK_SLIDER_DATA } from "@/mocks/cardsStackSliderData";
+import {
+  DEFAULT_CARDS_STACK_SLIDER_DEMO_CONFIG,
+  type CardsStackSliderDemoConfig,
+  type CardsStackSliderDemoOrientation,
+} from "./cards-stack-slider-demo.util";
 
-type StackOrientation = "horizontal" | "vertical";
+type StackOrientation = CardsStackSliderDemoOrientation;
 
 const ORIENTATIONS: ReadonlyArray<{
   value: StackOrientation;
@@ -55,16 +60,35 @@ function ArrowIcon({
   );
 }
 
-export default function CardsStackSliderDemoPreview() {
-  const [orientation, setOrientation] =
-    useState<StackOrientation>("horizontal");
+export interface CardsStackSliderDemoPreviewProps {
+  config?: CardsStackSliderDemoConfig;
+  // eslint-disable-next-line no-unused-vars
+  onConfigChange?: (config: CardsStackSliderDemoConfig) => void;
+}
+
+export default function CardsStackSliderDemoPreview({
+  config,
+  onConfigChange,
+}: CardsStackSliderDemoPreviewProps) {
+  const [internalConfig, setInternalConfig] = useState(
+    DEFAULT_CARDS_STACK_SLIDER_DEMO_CONFIG,
+  );
+  const activeConfig = config ?? internalConfig;
+  const updateConfig = (nextConfig: CardsStackSliderDemoConfig) => {
+    if (config === undefined) setInternalConfig(nextConfig);
+    onConfigChange?.(nextConfig);
+  };
+  const { orientation } = activeConfig;
 
   return (
     <div className="h-full w-full overflow-y-auto rounded-lg bg-[#e9e4dc] p-4 text-slate-950 sm:p-6">
       <CardsStackRoot
         count={CARDS_STACK_SLIDER_DATA.length}
         orientation={orientation}
-        loop
+        loop={activeConfig.loop}
+        sideOffset={activeConfig.sideOffset}
+        visibleCount={activeConfig.visibleCount}
+        transitionDuration={activeConfig.transitionDuration}
         aria-label="여행 결제 카드"
         className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-0 overflow-hidden rounded-[2rem] border border-white/70 bg-[#f7f4ee] shadow-2xl shadow-stone-900/10"
       >
@@ -107,7 +131,12 @@ export default function CardsStackSliderDemoPreview() {
                     name="cards-stack-orientation"
                     value={item.value}
                     checked={orientation === item.value}
-                    onChange={() => setOrientation(item.value)}
+                    onChange={() =>
+                      updateConfig({
+                        ...activeConfig,
+                        orientation: item.value,
+                      })
+                    }
                     className="sr-only"
                   />
                   {item.label}
