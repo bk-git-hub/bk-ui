@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Cherry, Dices } from "lucide-react";
+import { ArrowRight, Cherry, Dices, ScanLine } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -65,6 +65,13 @@ export default function HomePage() {
               description="Customizable reels with editable content and accessible controls."
               icon={<Cherry aria-hidden="true" className="h-10 w-10" />}
               href="/components/slot-machine"
+            />
+
+            <FeatureCard
+              title="Baccarat Squeeze"
+              description="Tactile corner reveal with pointer, touch, and keyboard controls."
+              icon={<ScanLine aria-hidden="true" className="h-10 w-10" />}
+              href="/components/baccarat-squeeze"
             />
           </div>
         </div>
