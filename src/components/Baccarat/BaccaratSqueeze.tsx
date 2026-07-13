@@ -270,17 +270,78 @@ export function BaccaratSqueezeBack({
   );
 }
 
-const CORNER_ORIGINS: Record<SqueezeCorner, string> = {
-  "top-left": "0% 0%",
-  "top-right": "100% 0%",
-  "bottom-left": "0% 100%",
-  "bottom-right": "100% 100%",
+const CORNER_FOLD_DIRECTIONS: Record<SqueezeCorner, string> = {
+  "top-left": "to bottom right",
+  "top-right": "to bottom left",
+  "bottom-left": "to top right",
+  "bottom-right": "to top left",
 };
 
-function getRevealOrigin(corner: SqueezeCorner, origin: SqueezeOrigin) {
-  if (origin === "left-edge") return "0% 50%";
-  if (origin === "right-edge") return "100% 50%";
-  return CORNER_ORIGINS[corner];
+const clampProgress = (progress: number) => Math.min(1, Math.max(0, progress));
+
+function toPercent(value: number) {
+  return `${Math.round(value * 10_000) / 100}%`;
+}
+
+function getLinearRevealClipPath(
+  progress: number,
+  corner: SqueezeCorner,
+  origin: SqueezeOrigin,
+) {
+  const amount = clampProgress(progress);
+  const concealed = toPercent(1 - amount);
+
+  if (origin === "left-edge") return `inset(0 ${concealed} 0 0)`;
+  if (origin === "right-edge") return `inset(0 0 0 ${concealed})`;
+
+  const sweep = amount * 2;
+  const basePoints =
+    sweep <= 1
+      ? [
+          [0, 0],
+          [sweep, 0],
+          [sweep, 0],
+          [0, sweep],
+          [0, sweep],
+        ]
+      : [
+          [0, 0],
+          [1, 0],
+          [1, sweep - 1],
+          [sweep - 1, 1],
+          [0, 1],
+        ];
+  const fromRight = corner.endsWith("right");
+  const fromBottom = corner.startsWith("bottom");
+  const points = basePoints.map(([x, y]) => [
+    fromRight ? 1 - x : x,
+    fromBottom ? 1 - y : y,
+  ]);
+
+  return `polygon(${points
+    .map(([x, y]) => `${toPercent(x)} ${toPercent(y)}`)
+    .join(", ")})`;
+}
+
+function getLinearFoldBackground(
+  progress: number,
+  corner: SqueezeCorner,
+  origin: SqueezeOrigin,
+) {
+  const amount = clampProgress(progress);
+  const position = amount * 100;
+  const direction =
+    origin === "corner"
+      ? CORNER_FOLD_DIRECTIONS[corner]
+      : origin === "right-edge"
+        ? "to left"
+        : "to right";
+  const shadowStart = Math.max(0, position - 2.2);
+  const highlightStart = Math.max(0, position - 0.65);
+  const highlightEnd = Math.min(100, position + 0.65);
+  const shadowEnd = Math.min(100, position + 2.2);
+
+  return `linear-gradient(${direction}, transparent ${toPercent(shadowStart / 100)}, rgba(0,0,0,.24) ${toPercent(shadowStart / 100)}, rgba(255,255,255,.82) ${toPercent(highlightStart / 100)}, rgba(255,235,189,.5) ${toPercent(highlightEnd / 100)}, transparent ${toPercent(shadowEnd / 100)})`;
 }
 
 export type BaccaratSqueezeFaceProps = ComponentPropsWithRef<"div">;
@@ -294,8 +355,6 @@ export function BaccaratSqueezeFace({
 }: BaccaratSqueezeFaceProps) {
   const { progress, state, corner, origin, isDragging } =
     useBaccaratSqueezeContext("BaccaratSqueezeFace");
-  const radius = progress * 142;
-
   return (
     <div
       {...props}
@@ -311,7 +370,7 @@ export function BaccaratSqueezeFace({
         className,
       )}
       style={{
-        clipPath: `circle(${radius}% at ${getRevealOrigin(corner, origin)})`,
+        clipPath: getLinearRevealClipPath(progress, corner, origin),
         ...style,
       }}
     >
@@ -330,11 +389,6 @@ export function BaccaratSqueezeFold({
   const { progress, corner, origin, isDragging } = useBaccaratSqueezeContext(
     "BaccaratSqueezeFold",
   );
-  const radius = progress * 142;
-  const innerShadow = Math.max(0, radius - 2.4);
-  const highlight = Math.max(0, radius - 0.7);
-  const outerEdge = Math.min(145, radius + 1.8);
-
   return (
     <div
       {...props}
@@ -347,7 +401,7 @@ export function BaccaratSqueezeFold({
       )}
       style={{
         opacity: progress > 0 && progress < 1 ? 1 : 0,
-        background: `radial-gradient(circle at ${getRevealOrigin(corner, origin)}, transparent ${innerShadow}%, rgba(0,0,0,.25) ${innerShadow}%, rgba(255,255,255,.82) ${highlight}%, rgba(255,235,189,.5) ${radius}%, transparent ${outerEdge}%)`,
+        background: getLinearFoldBackground(progress, corner, origin),
         transition: isDragging
           ? "none"
           : "opacity 160ms ease-out, background 240ms cubic-bezier(.2,.8,.2,1)",

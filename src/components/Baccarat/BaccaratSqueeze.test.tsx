@@ -26,7 +26,7 @@ function renderSqueeze(props: Partial<BaccaratSqueezeRootProps> = {}) {
         <BaccaratSqueezeFace data-testid="card-face">
           <BaccaratPlayingCard rank="8" suit="diamonds" />
         </BaccaratSqueezeFace>
-        <BaccaratSqueezeFold />
+        <BaccaratSqueezeFold data-testid="card-fold" />
         <BaccaratSqueezeHandle />
       </BaccaratSqueezeCard>
       <BaccaratSqueezeHint />
@@ -99,6 +99,7 @@ describe("BaccaratSqueeze", () => {
     const root = screen.getByTestId("squeeze-root");
     const card = screen.getByTestId("squeeze-card");
     const face = screen.getByTestId("card-face");
+    const fold = screen.getByTestId("card-fold");
     prepareCard(card);
 
     fireEvent.pointerDown(card, {
@@ -122,7 +123,11 @@ describe("BaccaratSqueeze", () => {
 
     expect(root).toHaveAttribute("data-origin", "corner");
     expect(card).toHaveAttribute("aria-valuenow", "100");
-    expect(face).toHaveStyle({ clipPath: "circle(142% at 100% 100%)" });
+    expect(face).toHaveStyle({
+      clipPath: "polygon(100% 100%, 0% 100%, 0% 0%, 0% 0%, 100% 0%)",
+    });
+    expect(fold.style.background).toContain("linear-gradient(");
+    expect(fold.style.background).not.toContain("radial-gradient(");
     expect(face).toHaveAttribute("aria-hidden", "false");
     expect(onReveal).toHaveBeenCalledOnce();
     expect(onReveal).toHaveBeenCalledWith({
@@ -140,6 +145,54 @@ describe("BaccaratSqueeze", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "다이아몬드 8 카드가 공개됐습니다.",
     );
+  });
+
+  it.each([
+    ["top-left", "polygon(0% 0%, 100% 0%, 100% 0%, 0% 100%, 0% 100%)"],
+    ["top-right", "polygon(100% 0%, 0% 0%, 0% 0%, 100% 100%, 100% 100%)"],
+    ["bottom-left", "polygon(0% 100%, 100% 100%, 100% 100%, 0% 0%, 0% 0%)"],
+    ["bottom-right", "polygon(100% 100%, 0% 100%, 0% 100%, 100% 0%, 100% 0%)"],
+  ] as const)(
+    "uses a straight diagonal boundary from %s",
+    (corner, clipPath) => {
+      renderSqueeze({ value: 0.5, corner });
+
+      expect(screen.getByTestId("card-face")).toHaveStyle({ clipPath });
+    },
+  );
+
+  it("keeps the side boundary linear at partial progress", () => {
+    renderSqueeze({ value: 0.5 });
+    const card = screen.getByTestId("squeeze-card");
+    const face = screen.getByTestId("card-face");
+    const fold = screen.getByTestId("card-fold");
+    prepareCard(card);
+
+    fireEvent.pointerDown(card, {
+      pointerId: 21,
+      pointerType: "touch",
+      clientX: 196,
+      clientY: 140,
+    });
+    expect(face).toHaveStyle({ clipPath: "inset(0 0 0 50%)" });
+    expect(fold.style.background).toContain("linear-gradient(to left");
+    fireEvent.pointerCancel(card, {
+      pointerId: 21,
+      pointerType: "touch",
+    });
+
+    fireEvent.pointerDown(card, {
+      pointerId: 22,
+      pointerType: "touch",
+      clientX: 4,
+      clientY: 140,
+    });
+    expect(face).toHaveStyle({ clipPath: "inset(0 50% 0 0)" });
+    expect(fold.style.background).toContain("linear-gradient(to right");
+    fireEvent.pointerCancel(card, {
+      pointerId: 22,
+      pointerType: "touch",
+    });
   });
 
   it("opens smoothly from either long side", () => {
@@ -170,9 +223,9 @@ describe("BaccaratSqueeze", () => {
       clientY: 140,
     });
 
-    expect(face).toHaveStyle({ clipPath: "circle(142% at 100% 50%)" });
+    expect(face).toHaveStyle({ clipPath: "inset(0 0 0 0%)" });
     fireEvent.click(screen.getByRole("button", { name: "다시 가리기" }));
-    expect(face).toHaveStyle({ clipPath: "circle(0% at 100% 50%)" });
+    expect(face).toHaveStyle({ clipPath: "inset(0 0 0 100%)" });
     expect(root).toHaveAttribute("data-origin", "right-edge");
 
     rerender(
@@ -208,7 +261,7 @@ describe("BaccaratSqueeze", () => {
       clientY: 140,
     });
     expect(screen.getByTestId("card-face")).toHaveStyle({
-      clipPath: "circle(142% at 0% 50%)",
+      clipPath: "inset(0 0% 0 0)",
     });
   });
 
