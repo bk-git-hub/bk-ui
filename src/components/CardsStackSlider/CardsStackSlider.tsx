@@ -37,6 +37,7 @@ type CardsStackContextValue = Pick<
   count: number;
   loop: boolean;
   orientation: CardsStackOrientation;
+  sideOffset: number;
   visibleCount: number;
   disabled: boolean;
 };
@@ -59,6 +60,8 @@ export interface CardsStackRootProps
   onValueChange?: CardsStackValueChangeHandler;
   loop?: boolean;
   orientation?: CardsStackOrientation;
+  /** Distance from the active card to the first side card, as a percentage of the card size. */
+  sideOffset?: number;
   visibleCount?: number;
   dragThreshold?: number;
   velocityThreshold?: number;
@@ -74,6 +77,7 @@ export function CardsStackRoot({
   onValueChange,
   loop = true,
   orientation = "horizontal",
+  sideOffset = 64,
   visibleCount = 4,
   dragThreshold,
   velocityThreshold,
@@ -101,6 +105,9 @@ export function CardsStackRoot({
     disabled,
   });
   const safeVisibleCount = Math.max(1, Math.trunc(visibleCount));
+  const safeSideOffset = Number.isFinite(sideOffset)
+    ? Math.max(0, sideOffset)
+    : 64;
   const contextValue = useMemo<CardsStackContextValue>(
     () => ({
       count: safeCount,
@@ -110,6 +117,7 @@ export function CardsStackRoot({
       isAnimating: slider.isAnimating,
       loop: effectiveLoop,
       orientation,
+      sideOffset: safeSideOffset,
       visibleCount: safeVisibleCount,
       disabled,
       transitionDuration: slider.transitionDuration,
@@ -121,7 +129,15 @@ export function CardsStackRoot({
       handleLostPointerCapture: slider.handleLostPointerCapture,
       handleTransitionEnd: slider.handleTransitionEnd,
     }),
-    [disabled, effectiveLoop, orientation, safeCount, safeVisibleCount, slider],
+    [
+      disabled,
+      effectiveLoop,
+      orientation,
+      safeCount,
+      safeSideOffset,
+      safeVisibleCount,
+      slider,
+    ],
   );
 
   return (
@@ -229,33 +245,41 @@ export function CardsStackViewport({
 function getSlideTransform(
   progress: number,
   orientation: CardsStackOrientation,
+  sideOffset: number,
   visibleCount: number,
   count: number,
   loop: boolean,
+  isCurrent: boolean,
 ) {
   const absoluteProgress = Math.abs(progress);
   const clampedProgress = Math.min(absoluteProgress, visibleCount + 1);
+  const firstStepProgress = Math.min(clampedProgress, 1);
+  const trailProgress = Math.max(clampedProgress - 1, 0);
+  const direction = progress < 0 ? -1 : 1;
+  const axisOffset =
+    direction *
+    (firstStepProgress * sideOffset + trailProgress * sideOffset * 0.16);
+  const depth = -(firstStepProgress * 72 + trailProgress * 42);
+  const scale = Math.max(
+    0.72,
+    1 - firstStepProgress * 0.12 - trailProgress * 0.045,
+  );
   let transform: string;
 
   if (progress >= 0) {
-    const angle = Math.min(clampedProgress, visibleCount) * 20;
-    const arc = Math.sin((angle * Math.PI) / 180) * 44;
-    const depth =
-      -(1 - Math.cos((angle * Math.PI) / 180)) * 180 - clampedProgress * 30;
+    const angle = firstStepProgress * 14 + trailProgress * 5;
+    const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
     transform =
       orientation === "horizontal"
-        ? `translate3d(${arc}px, ${clampedProgress * 5}px, ${depth}px) rotateY(${-angle}deg) rotateZ(${clampedProgress * 1.4}deg)`
-        : `translate3d(${clampedProgress * 5}px, ${arc}px, ${depth}px) rotateX(${angle}deg) rotateZ(${-clampedProgress * 1.4}deg)`;
+        ? `translate3d(${axisOffset}%, ${trailProgress * 5}px, ${depth}px) rotateY(${-angle}deg) rotateZ(${tilt}deg) scale(${scale})`
+        : `translate3d(${trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${angle}deg) rotateZ(${-tilt}deg) scale(${scale})`;
   } else {
-    const flipProgress = Math.min(clampedProgress, 1);
-    const trailProgress = Math.max(clampedProgress - 1, 0);
-    const axisOffset = -30 - trailProgress * 11;
-    const depth = -82 - trailProgress * 38;
-    const flip = flipProgress * 180;
+    const flip = firstStepProgress * 180 + trailProgress * 4;
+    const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
     transform =
       orientation === "horizontal"
-        ? `translate3d(${axisOffset * flipProgress}px, ${-trailProgress * 4}px, ${depth * flipProgress}px) rotateY(${flip}deg) rotateZ(${-4 - trailProgress * 1.5}deg)`
-        : `translate3d(${-trailProgress * 4}px, ${axisOffset * flipProgress}px, ${depth * flipProgress}px) rotateX(${-flip}deg) rotateZ(${4 + trailProgress * 1.5}deg)`;
+        ? `translate3d(${axisOffset}%, ${-trailProgress * 5}px, ${depth}px) rotateY(${flip}deg) rotateZ(${-tilt}deg) scale(${scale})`
+        : `translate3d(${-trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${-flip}deg) rotateZ(${tilt}deg) scale(${scale})`;
   }
 
   return {
@@ -266,7 +290,7 @@ function getSlideTransform(
         : loop
           ? Math.min(Math.max((count / 2 - absoluteProgress) / 0.35, 0), 1)
           : 1,
-    zIndex: 1000 - Math.round(absoluteProgress * 10) + (progress <= 0 ? 1 : 0),
+    zIndex: isCurrent ? 2000 : 1000 - Math.ceil(absoluteProgress * 10),
   };
 }
 
@@ -292,9 +316,11 @@ export function CardsStackItem({
   const slideStyle = getSlideTransform(
     progress,
     context.orientation,
+    context.sideOffset,
     context.visibleCount,
     context.count,
     context.loop,
+    isCurrent,
   );
   const state = isCurrent ? "active" : progress < 0 ? "previous" : "next";
 

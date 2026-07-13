@@ -21,13 +21,28 @@ const ORIENTATIONS: ReadonlyArray<{
   { value: "vertical", label: "세로" },
 ];
 
-function ArrowIcon({ direction }: { direction: "previous" | "next" }) {
+function ArrowIcon({
+  direction,
+  orientation,
+}: {
+  direction: "previous" | "next";
+  orientation: StackOrientation;
+}) {
+  const rotation =
+    orientation === "vertical"
+      ? direction === "next"
+        ? "rotate-[-90deg]"
+        : "rotate-90"
+      : direction === "next"
+        ? "rotate-180"
+        : "";
+
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
-      className={`size-4 ${direction === "next" ? "rotate-180" : ""}`}
+      className={`size-4 transition-transform ${rotation}`}
     >
       <path
         d="m14.5 5-7 7 7 7"
@@ -103,7 +118,11 @@ export default function CardsStackSliderDemoPreview() {
         </header>
 
         <div className="relative flex w-full flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8 sm:py-10">
-          <CardsStackViewport className="w-full max-w-[25rem]">
+          <CardsStackViewport
+            className={`w-full max-w-[25rem] ${
+              orientation === "vertical" ? "my-24 sm:my-28" : "my-5"
+            }`}
+          >
             {CARDS_STACK_SLIDER_DATA.map((card, index) => (
               <CardsStackItem key={card.id} index={index}>
                 <CardsStackFront
@@ -214,14 +233,14 @@ export default function CardsStackSliderDemoPreview() {
               aria-label="이전 여행 카드"
               className="grid size-10 place-items-center rounded-full border border-stone-200 bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ArrowIcon direction="previous" />
+              <ArrowIcon direction="previous" orientation={orientation} />
             </CardsStackPrevious>
             <CardsStackStatus className="min-w-20 text-center font-mono text-xs font-bold tracking-[0.16em] text-stone-500" />
             <CardsStackNext
               aria-label="다음 여행 카드"
               className="grid size-10 place-items-center rounded-full border border-stone-200 bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ArrowIcon direction="next" />
+              <ArrowIcon direction="next" orientation={orientation} />
             </CardsStackNext>
           </div>
 

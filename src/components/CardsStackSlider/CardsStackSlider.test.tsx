@@ -77,6 +77,12 @@ function getActivePositioner() {
   ) as HTMLElement;
 }
 
+function getPositioner(index: number) {
+  return document.querySelector(
+    `[data-slot="cards-stack-item-positioner"][data-index="${index}"]`,
+  ) as HTMLElement;
+}
+
 function finishTransition() {
   const event = new Event("transitionend", { bubbles: true });
   Object.defineProperty(event, "propertyName", { value: "transform" });
@@ -150,6 +156,22 @@ describe("CardsStackSlider", () => {
     expect(screen.getByRole("status")).toHaveTextContent("1 of 3");
   });
 
+  it("places adjacent cards on the left and right in horizontal mode", () => {
+    render(<TestSlider />);
+
+    expect(getPositioner(2).style.transform).toContain("translate3d(-64%");
+    expect(getPositioner(0).style.transform).toContain("translate3d(0%");
+    expect(getPositioner(1).style.transform).toContain("translate3d(64%");
+  });
+
+  it("places adjacent cards above and below in vertical mode", () => {
+    render(<TestSlider orientation="vertical" />);
+
+    expect(getPositioner(2).style.transform).toContain("translate3d(0px, -64%");
+    expect(getPositioner(0).style.transform).toContain("translate3d(0px, 0%");
+    expect(getPositioner(1).style.transform).toContain("translate3d(0px, 64%");
+  });
+
   it("moves one card, announces it, and reports the input source once", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
@@ -157,11 +179,30 @@ describe("CardsStackSlider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next card" }));
     expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
     expect(getActivePositioner().style.transform).toContain("rotateY(180deg)");
+    expect(Number(getPositioner(0).style.zIndex)).toBeGreaterThan(
+      Number(getPositioner(1).style.zIndex),
+    );
+    const outgoingTransform = getPositioner(0).style.transform;
+    const incomingTransform = getPositioner(1).style.transform;
+    const settledStyles = cards.map((_, index) => ({
+      transform: getPositioner(index).style.transform,
+      opacity: getPositioner(index).style.opacity,
+    }));
 
     finishTransition();
     act(() => vi.runAllTimers());
 
     expect(getActivePositioner()).toHaveAttribute("data-index", "1");
+    expect(getPositioner(0).style.transform).toBe(outgoingTransform);
+    expect(getPositioner(1).style.transform).toBe(incomingTransform);
+    cards.forEach((_, index) => {
+      expect(getPositioner(index).style.transform).toBe(
+        settledStyles[index].transform,
+      );
+      expect(getPositioner(index).style.opacity).toBe(
+        settledStyles[index].opacity,
+      );
+    });
     expect(screen.getByRole("status")).toHaveTextContent("2 of 3");
     expect(onValueChange).toHaveBeenCalledTimes(1);
     expect(onValueChange).toHaveBeenCalledWith(1, {
