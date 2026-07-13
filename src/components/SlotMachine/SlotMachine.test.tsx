@@ -6,9 +6,12 @@ import {
   screen,
   within,
 } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SlotMachine } from "./SlotMachine";
 import { createReelSpinSequence, selectSlotResults } from "./useSlotMachine";
+import * as clientEntry from "./client";
 
 function preparePointerCapture(element: HTMLButtonElement) {
   let capturedPointerId: number | null = null;
@@ -115,6 +118,71 @@ describe("SlotMachine", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+  });
+
+  it("provides a Next.js client entry and renders without browser globals", () => {
+    expect(clientEntry.SlotMachine).toBe(SlotMachine);
+
+    const element = (
+      <clientEntry.SlotMachine
+        reels={[
+          ["Cherry", "Lemon"],
+          ["Bell", "Diamond"],
+        ]}
+        aria-label="Server slot machine"
+      />
+    );
+
+    vi.stubGlobal("window", undefined);
+    vi.stubGlobal("document", undefined);
+
+    try {
+      const firstMarkup = renderToString(element);
+
+      expect(firstMarkup).toContain("Server slot machine");
+      expect(renderToString(element)).toBe(firstMarkup);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("hydrates deterministic markup before starting browser-only behavior", async () => {
+    const random = vi.fn(() => 0);
+    const props = {
+      reels: [
+        ["Cherry", "Lemon"],
+        ["Bell", "Diamond"],
+      ],
+      random,
+      spinDuration: 100,
+      "aria-label": "Hydrated slot machine",
+    } as const;
+    const serverMarkup = renderToString(<SlotMachine {...props} />);
+    const container = document.createElement("div");
+    const onRecoverableError = vi.fn();
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+
+    expect(random).not.toHaveBeenCalled();
+    container.innerHTML = serverMarkup;
+    document.body.append(container);
+
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, <SlotMachine {...props} />, {
+          onRecoverableError,
+        });
+      });
+
+      expect(onRecoverableError).not.toHaveBeenCalled();
+      expect(random).not.toHaveBeenCalled();
+
+      fireEvent.click(within(container).getByRole("button", { name: "Spin" }));
+
+      expect(random).toHaveBeenCalledTimes(props.reels.length);
+    } finally {
+      act(() => root?.unmount());
+      container.remove();
+    }
   });
 
   it("renders consumer items and reports a deterministic result after spinning", () => {
