@@ -34,19 +34,7 @@
       "id": "tailwind-3",
       "label": "Tailwind 3",
       "notes": [
-        "Include the installed directory in Tailwind content, for example './src/components/ShaderSlider/**/*.{js,ts,jsx,tsx}' or './components/ShaderSlider/**/*.{js,ts,jsx,tsx}'.",
-        "Do not require ssr: false; the mounted placeholder is deterministic and browser rendering begins after hydration.",
-        "Import the Next.js entrypoint from components/ShaderSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
-        "Keep onValueChange, children, refs, and DOM event handlers inside a Client Component; pass only the declared serializable data and primitive options from a Server Component.",
-        "The mounted Next.js wrapper server-renders a placeholder instead of slide content; provide a separate static image when no-JavaScript image content is required.",
-        "Use same-origin texture URLs or CORS headers compatible with each slide crossOrigin value; failed WebGL texture loading falls back to the accessible DOM images.",
-        "Use the included mount-gated Client Component wrapper so the server markup and first hydration markup match before the core reads matchMedia and initializes WebGL or ResizeObserver.",
-        "Do not remove the inactive slide inert and aria-hidden behavior, the aria-hidden canvas, or the polite ShaderSliderStatus live region.",
-        "Increase pagination button hit areas in product styling when the target-size policy exceeds the default 0.5rem visual dots.",
-        "Keep ShaderSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation and visible focus styles remain available.",
-        "Preserve prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
-        "Provide a meaningful non-empty alt string for every slide and an accessible name through aria-label or aria-labelledby on ShaderSliderRoot.",
-        "Use semantic interactive elements or data-shader-slider-no-drag for custom slide controls so pointer gestures do not intercept their interaction."
+        "Include the installed directory in Tailwind content, for example './src/components/ShaderSlider/**/*.{js,ts,jsx,tsx}' or './components/ShaderSlider/**/*.{js,ts,jsx,tsx}'."
       ],
       "range": ">=3.4 <4",
       "resources": [
@@ -124,19 +112,7 @@
       "id": "tailwind-4",
       "label": "Tailwind 4",
       "notes": [
-        "Keep components/ShaderSlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory.",
-        "Do not require ssr: false; the mounted placeholder is deterministic and browser rendering begins after hydration.",
-        "Import the Next.js entrypoint from components/ShaderSlider/client; it is the only Next-only file and re-exports the unchanged React core without next/* imports.",
-        "Keep onValueChange, children, refs, and DOM event handlers inside a Client Component; pass only the declared serializable data and primitive options from a Server Component.",
-        "The mounted Next.js wrapper server-renders a placeholder instead of slide content; provide a separate static image when no-JavaScript image content is required.",
-        "Use same-origin texture URLs or CORS headers compatible with each slide crossOrigin value; failed WebGL texture loading falls back to the accessible DOM images.",
-        "Use the included mount-gated Client Component wrapper so the server markup and first hydration markup match before the core reads matchMedia and initializes WebGL or ResizeObserver.",
-        "Do not remove the inactive slide inert and aria-hidden behavior, the aria-hidden canvas, or the polite ShaderSliderStatus live region.",
-        "Increase pagination button hit areas in product styling when the target-size policy exceeds the default 0.5rem visual dots.",
-        "Keep ShaderSliderViewport keyboard-focusable so ArrowLeft, ArrowRight, Home, and End navigation and visible focus styles remain available.",
-        "Preserve prefers-reduced-motion behavior and motion-reduce utilities when extending transition styles.",
-        "Provide a meaningful non-empty alt string for every slide and an accessible name through aria-label or aria-labelledby on ShaderSliderRoot.",
-        "Use semantic interactive elements or data-shader-slider-no-drag for custom slide controls so pointer gestures do not intercept their interaction."
+        "Keep components/ShaderSlider under a locally scanned source tree; otherwise add a stylesheet-relative @source directive for that directory."
       ],
       "range": ">=4 <5",
       "resources": [
