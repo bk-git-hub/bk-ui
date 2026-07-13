@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import { useTinderSwipe } from "./useTinderSwipe";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -18,9 +18,23 @@ const useTinderContext = () => {
   return context;
 };
 
-interface TinderRootProps<T> {
-  cards: T[];
-  children: React.ReactNode;
+const VISIBLE_CARD_COUNT = 3;
+
+export interface TinderVisibleCard<T> {
+  item: T;
+  index: number;
+}
+
+export interface TinderRootRenderProps<T> {
+  currentIndex: number;
+  visibleCards: readonly TinderVisibleCard<T>[];
+}
+
+export interface TinderRootProps<T> {
+  cards: readonly T[];
+  children:
+    | React.ReactNode
+    | ((state: TinderRootRenderProps<T>) => React.ReactNode);
   onSwipeLeft?: (item: T) => void;
   onSwipeRight?: (item: T) => void;
 }
@@ -41,9 +55,28 @@ export const TinderRoot = <T,>({
     },
   });
 
+  const visibleCards = useMemo(
+    () =>
+      cards
+        .slice(
+          swipeApi.currentIndex,
+          swipeApi.currentIndex + VISIBLE_CARD_COUNT,
+        )
+        .map((item, offset) => ({
+          item,
+          index: swipeApi.currentIndex + offset,
+        })),
+    [cards, swipeApi.currentIndex],
+  );
+
+  const content =
+    typeof children === "function"
+      ? children({ currentIndex: swipeApi.currentIndex, visibleCards })
+      : children;
+
   return (
     <TinderSwipeContext.Provider value={swipeApi}>
-      {children}
+      {content}
     </TinderSwipeContext.Provider>
   );
 };
