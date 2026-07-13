@@ -6,6 +6,7 @@ import {
   Columns3,
   Dices,
   GalleryVerticalEnd,
+  GalleryHorizontalEnd,
   Layers3,
   ScanLine,
   Waves,
@@ -119,6 +120,18 @@ export default function HomePage() {
                 <GalleryVerticalEnd aria-hidden="true" className="h-10 w-10" />
               }
               href="/components/story-slider"
+            />
+
+            <FeatureCard
+              title="Expo Slider"
+              description="A focused gallery with expanding edge frames, grayscale depth, and parallax."
+              icon={
+                <GalleryHorizontalEnd
+                  aria-hidden="true"
+                  className="h-10 w-10"
+                />
+              }
+              href="/components/expo-slider"
             />
           </div>
         </div>
