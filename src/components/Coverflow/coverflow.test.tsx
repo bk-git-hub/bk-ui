@@ -33,6 +33,15 @@ describe("Coverflow 통합 테스트", () => {
       </Coverflow>,
     );
 
+  const renderFlippableCoverflow = () =>
+    render(
+      <Coverflow>
+        <CoverflowItem backContent={<span>Back 1</span>}>Card 1</CoverflowItem>
+        <CoverflowItem backContent={<span>Back 2</span>}>Card 2</CoverflowItem>
+        <CoverflowItem backContent={<span>Back 3</span>}>Card 3</CoverflowItem>
+      </Coverflow>,
+    );
+
   const createItems = (count: number) =>
     Array.from({ length: count }, (_, itemIndex) => (
       <CoverflowItem key={itemIndex}>Item {itemIndex}</CoverflowItem>
@@ -44,6 +53,42 @@ describe("Coverflow 통합 테스트", () => {
     // .absolute 클래스를 가진 가장 가까운 조상 div를 찾습니다.
     // (Coverflow 컴포넌트에서 부여한 className="absolute top-0 left-0 ..." 요소)
     return textElement.closest(".absolute.top-0") as HTMLElement;
+  };
+
+  const getCoverflowCard = (cardText: string) => {
+    const card = screen
+      .getByText(cardText)
+      .closest<HTMLElement>('[data-slot="coverflow-card"]');
+
+    if (!card) throw new Error(`Coverflow card not found for ${cardText}`);
+    return card;
+  };
+
+  const getCoverflowItem = (cardText: string) => {
+    const item = screen
+      .getByText(cardText)
+      .closest<HTMLElement>('[data-slot="coverflow-item"]');
+
+    if (!item) throw new Error(`Coverflow item not found for ${cardText}`);
+    return item;
+  };
+
+  const getFlipTrigger = (cardText: string) => {
+    const trigger = getCoverflowItem(cardText).querySelector<HTMLButtonElement>(
+      '[data-slot="coverflow-flip-trigger"]',
+    );
+
+    if (!trigger)
+      throw new Error(`Coverflow flip trigger not found for ${cardText}`);
+    return trigger;
+  };
+  const getCardFace = (card: HTMLElement, face: "front" | "back") => {
+    const element = card.querySelector<HTMLElement>(
+      `[data-slot="coverflow-${face}"]`,
+    );
+
+    if (!element) throw new Error(`Coverflow ${face} face not found`);
+    return element;
   };
 
   const getMountedCards = (container: HTMLElement) =>
@@ -132,10 +177,13 @@ describe("Coverflow 통합 테스트", () => {
   });
 
   it("5. [키보드] 방향키로 이동이 가능해야 한다", () => {
-    renderCoverflow();
+    const { container } = renderCoverflow();
+    const viewport = container.querySelector(
+      '[data-slot="coverflow-viewport"]',
+    )!;
 
     // 오른쪽 화살표 키
-    fireEvent.keyDown(window, { key: "ArrowRight" });
+    fireEvent.keyDown(viewport, { key: "ArrowRight" });
 
     act(() => {
       vi.runAllTimers();
@@ -258,5 +306,327 @@ describe("Coverflow 통합 테스트", () => {
     expect(getCardWrapper("Item 3").style.transform).toBe(
       "translateX(0px) scale(1) rotateY(0deg)",
     );
+  });
+  it("11. toggles the active card between its front and back faces", () => {
+    renderFlippableCoverflow();
+
+    const card = getCoverflowCard("Card 1");
+    const item = getCoverflowItem("Card 1");
+    const trigger = getFlipTrigger("Card 1");
+    const front = getCardFace(item, "front");
+    const centeredTransform = card.style.transform;
+
+    expect(item).not.toHaveAttribute("role", "button");
+    expect(trigger).toHaveAttribute("type", "button");
+    expect(card).toHaveAttribute("data-active", "true");
+    expect(card).toHaveAttribute("data-flipped", "false");
+    expect(trigger).toHaveAttribute("aria-pressed", "false");
+    expect(front).toHaveAttribute("aria-hidden", "false");
+    expect(
+      item.querySelector('[data-slot="coverflow-back"]'),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(item);
+    const back = getCardFace(item, "back");
+
+    expect(card).toHaveAttribute("data-flipped", "true");
+    expect(trigger).toHaveAttribute("aria-pressed", "true");
+    expect(front).toHaveAttribute("aria-hidden", "true");
+    expect(back).toHaveAttribute("aria-hidden", "false");
+    expect(card.style.transform).toBe(centeredTransform);
+
+    fireEvent.click(item);
+
+    expect(card).toHaveAttribute("data-flipped", "false");
+    expect(trigger).toHaveAttribute("aria-pressed", "false");
+    expect(front).toHaveAttribute("aria-hidden", "false");
+    expect(back).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("12. centers a side card first, then flips it and resets the previous card", () => {
+    renderFlippableCoverflow();
+
+    const firstCard = getCoverflowCard("Card 1");
+    const firstItem = getCoverflowItem("Card 1");
+    const secondCard = getCoverflowCard("Card 2");
+    const secondItem = getCoverflowItem("Card 2");
+    const firstTrigger = getFlipTrigger("Card 1");
+    const secondTrigger = getFlipTrigger("Card 2");
+
+    fireEvent.click(firstItem);
+    expect(firstCard).toHaveAttribute("data-flipped", "true");
+
+    fireEvent.click(secondItem);
+
+    expect(firstCard).toHaveAttribute("data-active", "false");
+    expect(firstCard).toHaveAttribute("data-flipped", "false");
+    expect(firstTrigger).toHaveAttribute("aria-pressed", "false");
+    expect(secondCard).toHaveAttribute("data-active", "true");
+    expect(secondCard).toHaveAttribute("data-flipped", "false");
+    expect(secondTrigger).toHaveAttribute("aria-pressed", "false");
+    expect(secondCard.style.zIndex).toBe("3");
+    expect(secondCard.style.transform).toBe(
+      "translateX(0px) scale(1) rotateY(0deg)",
+    );
+
+    fireEvent.click(secondItem);
+
+    expect(secondCard).toHaveAttribute("data-flipped", "true");
+    expect(secondTrigger).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("13. flips the focused active card with Enter and Space", () => {
+    renderFlippableCoverflow();
+
+    const card = getCoverflowCard("Card 1");
+    const trigger = getFlipTrigger("Card 1");
+    trigger.focus();
+
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(card).toHaveAttribute("data-flipped", "true");
+    expect(trigger).toHaveAttribute("aria-pressed", "true");
+
+    const didNotPreventSpace = fireEvent.keyDown(trigger, { key: " " });
+    expect(didNotPreventSpace).toBe(false);
+    expect(card).toHaveAttribute("data-flipped", "false");
+    expect(trigger).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("14. suppresses the compatibility click after drag but accepts the next click", () => {
+    const { container } = renderFlippableCoverflow();
+    const touchArea = container.querySelector(".touch-none")!;
+    const card = getCoverflowCard("Card 1");
+    const item = getCoverflowItem("Card 1");
+
+    fireEvent.mouseDown(touchArea, { clientX: 500 });
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    fireEvent.mouseMove(window, { clientX: 496 });
+    fireEvent.mouseUp(window);
+    fireEvent.click(item);
+
+    expect(card).toHaveAttribute("data-active", "true");
+    expect(card).toHaveAttribute("data-flipped", "false");
+
+    fireEvent.click(item);
+
+    expect(card).toHaveAttribute("data-flipped", "true");
+  });
+
+  it("15. keeps a legacy item without backContent unflipped", () => {
+    renderCoverflow();
+
+    const card = getCoverflowCard("Card 1");
+    const item = getCoverflowItem("Card 1");
+
+    expect(card).toHaveAttribute("data-active", "true");
+    expect(card).toHaveAttribute("data-flipped", "false");
+    expect(item).not.toHaveAttribute("role", "button");
+    expect(item).not.toHaveAttribute("aria-pressed");
+
+    fireEvent.click(item);
+
+    expect(card).toHaveAttribute("data-flipped", "false");
+  });
+
+  it("16. lets a prevented item click cancel side-card navigation", () => {
+    render(
+      <Coverflow>
+        <CoverflowItem backContent={<span>Back 1</span>}>Card 1</CoverflowItem>
+        <CoverflowItem
+          backContent={<span>Back 2</span>}
+          onClick={(event) => event.preventDefault()}
+        >
+          Card 2
+        </CoverflowItem>
+      </Coverflow>,
+    );
+
+    const firstCard = getCoverflowCard("Card 1");
+    const secondCard = getCoverflowCard("Card 2");
+    fireEvent.click(getCoverflowItem("Card 2"));
+
+    expect(firstCard).toHaveAttribute("data-active", "true");
+    expect(secondCard).toHaveAttribute("data-active", "false");
+  });
+
+  it("17. consumes a drag click that lands on nested interactive content", () => {
+    const { container } = render(
+      <Coverflow>
+        <CoverflowItem backContent={<span>Back 1</span>}>
+          <span>Card 1</span>
+          <button type="button">Front action</button>
+        </CoverflowItem>
+      </Coverflow>,
+    );
+    const touchArea = container.querySelector(".touch-none")!;
+    const card = getCoverflowCard("Card 1");
+    const item = getCoverflowItem("Card 1");
+
+    fireEvent.mouseDown(touchArea, { clientX: 500 });
+    act(() => vi.advanceTimersByTime(50));
+    fireEvent.mouseMove(window, { clientX: 496 });
+    fireEvent.mouseUp(window);
+    fireEvent.click(screen.getByRole("button", { name: "Front action" }));
+
+    expect(card).toHaveAttribute("data-flipped", "false");
+    fireEvent.click(item);
+    expect(card).toHaveAttribute("data-flipped", "true");
+  });
+
+  it("18. clears a flipped key when the active child is removed", () => {
+    const renderKeyedFlippableItems = (keys: string[]) => (
+      <Coverflow>
+        {keys.map((key) => (
+          <CoverflowItem key={key} backContent={<span>Back {key}</span>}>
+            Key {key}
+          </CoverflowItem>
+        ))}
+      </Coverflow>
+    );
+    const { rerender } = render(renderKeyedFlippableItems(["alpha", "beta"]));
+
+    fireEvent.click(getCoverflowItem("Key alpha"));
+    expect(getCoverflowCard("Key alpha")).toHaveAttribute(
+      "data-flipped",
+      "true",
+    );
+
+    rerender(renderKeyedFlippableItems(["beta"]));
+    rerender(renderKeyedFlippableItems(["alpha", "beta"]));
+
+    expect(getCoverflowCard("Key alpha")).toHaveAttribute(
+      "data-flipped",
+      "false",
+    );
+  });
+
+  it("19. scopes arrow navigation to the carousel and moves trigger focus", () => {
+    renderFlippableCoverflow();
+    const firstTrigger = getFlipTrigger("Card 1");
+    const secondTrigger = getFlipTrigger("Card 2");
+    firstTrigger.focus();
+
+    fireEvent.keyDown(firstTrigger, { key: "ArrowRight" });
+    act(() => vi.runAllTimers());
+
+    expect(getCoverflowCard("Card 2")).toHaveAttribute("data-active", "true");
+    expect(secondTrigger).toHaveFocus();
+  });
+
+  it("20. synchronizes the active index before flipping during wheel settling", () => {
+    const { container } = renderFlippableCoverflow();
+    const viewport = container.querySelector(
+      '[data-slot="coverflow-viewport"]',
+    )!;
+    const secondCard = getCoverflowCard("Card 2");
+
+    fireEvent.wheel(viewport, { deltaY: 100 });
+    act(() => vi.advanceTimersByTime(16));
+    expect(secondCard).toHaveAttribute("data-active", "false");
+
+    fireEvent.click(getCoverflowItem("Card 2"));
+
+    expect(secondCard).toHaveAttribute("data-active", "true");
+    expect(secondCard).toHaveAttribute("data-flipped", "true");
+    expect(secondCard.style.transform).toBe(
+      "translateX(0px) scale(1) rotateY(0deg)",
+    );
+  });
+  it("21. returns focus to the trigger when the back face closes", () => {
+    render(
+      <Coverflow>
+        <CoverflowItem
+          backContent={
+            <div>
+              <span>Back details</span>
+              <button type="button">Back action</button>
+            </div>
+          }
+        >
+          Card 1
+        </CoverflowItem>
+      </Coverflow>,
+    );
+
+    const item = getCoverflowItem("Card 1");
+    const trigger = getFlipTrigger("Card 1");
+    fireEvent.click(item);
+
+    const backAction = screen.getByRole("button", { name: "Back action" });
+    backAction.focus();
+    expect(backAction).toHaveFocus();
+
+    fireEvent.click(item);
+
+    expect(trigger).toHaveFocus();
+    expect(getCardFace(item, "back")).toHaveAttribute("inert");
+  });
+  it("22. shows arbitrary front content without a LazyImage readiness signal", () => {
+    render(
+      <Coverflow>
+        <CoverflowItem backContent={<span>Custom back</span>}>
+          <section>Custom front</section>
+        </CoverflowItem>
+      </Coverflow>,
+    );
+
+    const item = getCoverflowItem("Custom front");
+    const surfaceContainer = item.querySelector(
+      '[data-slot="coverflow-flip-surface"]',
+    )?.parentElement;
+
+    expect(surfaceContainer).toHaveStyle({ visibility: "visible" });
+    expect(item.querySelector(".animate-pulse")).not.toBeInTheDocument();
+
+    fireEvent.click(item);
+
+    expect(getCardFace(item, "back")).toHaveAttribute("aria-hidden", "false");
+  });
+
+  it("23. removes controls on inactive faces from keyboard navigation", () => {
+    render(
+      <Coverflow>
+        <CoverflowItem backContent={<span>Back 1</span>}>
+          <span>Card 1</span>
+          <button type="button">First action</button>
+        </CoverflowItem>
+        <CoverflowItem backContent={<span>Back 2</span>}>
+          <span>Card 2</span>
+          <button type="button">Second action</button>
+        </CoverflowItem>
+        <CoverflowItem>
+          <span>Legacy 3</span>
+          <button type="button">Legacy action</button>
+        </CoverflowItem>
+      </Coverflow>,
+    );
+
+    const firstItem = getCoverflowItem("Card 1");
+    const secondItem = getCoverflowItem("Card 2");
+    const legacyItem = getCoverflowItem("Legacy 3");
+    const firstFront = getCardFace(firstItem, "front");
+    const secondFront = getCardFace(secondItem, "front");
+    const legacyFront = getCardFace(legacyItem, "front");
+
+    expect(firstFront).not.toHaveAttribute("inert");
+    expect(secondFront).toHaveAttribute("inert");
+    expect(legacyFront).toHaveAttribute("inert");
+
+    fireEvent.click(secondItem);
+
+    expect(firstFront).toHaveAttribute("inert");
+    expect(secondFront).not.toHaveAttribute("inert");
+
+    fireEvent.click(legacyItem);
+
+    expect(secondFront).toHaveAttribute("inert");
+    expect(legacyFront).not.toHaveAttribute("inert");
   });
 });

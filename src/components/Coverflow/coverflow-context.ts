@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 
 // Define the context shape
 interface CoverflowItemContextType {
+  signalLoading: () => void;
   signalReady: () => void;
 }
 export const CoverflowItemContext =
@@ -15,3 +16,16 @@ export const useCoverflowItem = () => {
   }
   return context;
 };
+
+interface CoverflowInteractionContextType {
+  isActive: boolean;
+  isFlipped: boolean;
+  activate: () => void;
+  consumePendingClick: () => boolean;
+}
+
+export const CoverflowInteractionContext =
+  createContext<CoverflowInteractionContextType | null>(null);
+
+export const useCoverflowInteraction = () =>
+  useContext(CoverflowInteractionContext);

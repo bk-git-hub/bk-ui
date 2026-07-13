@@ -6,10 +6,13 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type HTMLAttributes,
 } from "react";
-import { Util as CoverUtil } from "./coverflow.util.ts";
+import { twMerge } from "tailwind-merge";
+import { Util as CoverUtil } from "./coverflow.util";
+import { CoverflowInteractionContext } from "./coverflow-context";
 import { useWheelEvent } from "./use-wheel-event";
-import { useKeyNavigation } from "./use-key-navigation.ts";
+import { useKeyNavigation } from "./use-key-navigation";
 import { useDrag } from "./use-drag";
 
 const RENDER_RADIUS = 8;
@@ -27,25 +30,38 @@ const getChildKey = (child: React.ReactNode, index: number) =>
     ? child.key
     : `coverflow-${index}`;
 
-export const Coverflow = ({ children }: CoverflowProps) => {
+export const Coverflow = ({
+  children,
+  className,
+  ...props
+}: CoverflowProps) => {
   const [size, setSize] = useState(200);
   const [index, setIndex] = useState(0);
   const [windowStart, setWindowStart] = useState(0);
+  const [flippedKey, setFlippedKey] = useState<React.Key | null>(null);
   const positionRef = useRef(0);
   const windowStartRef = useRef(0);
   const pendingAnimationRef = useRef(false);
+  const reducedMotionRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef(new Map<number, HTMLDivElement>());
 
   const childrenArray = useMemo(() => Children.toArray(children), [children]);
   const itemCount = childrenArray.length;
   const maxIndex = Math.max(0, itemCount - 1);
+  const activeChild = childrenArray[index];
+  const activeKey =
+    activeChild === undefined ? null : getChildKey(activeChild, index);
+
   const coverUtil = useMemo(() => new CoverUtil(size), [size]);
 
   const updateTransforms = useCallback(
     (animate = false, duration = 0.3) => {
       const position = positionRef.current;
-      const transition = animate ? `transform ${duration}s ease-out` : "none";
+      const transition =
+        animate && !reducedMotionRef.current
+          ? `transform ${duration}s ease-out`
+          : "none";
 
       for (const [itemIndex, item] of itemRefs.current) {
         const display =
@@ -136,8 +152,20 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   );
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateReducedMotion = () => {
+      reducedMotionRef.current = mediaQuery.matches;
+    };
+    updateReducedMotion();
+    mediaQuery.addEventListener("change", updateReducedMotion);
+    return () => mediaQuery.removeEventListener("change", updateReducedMotion);
+  }, []);
+
+  useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver((entries) => {
       const nextSize = getSize(entries[0].contentRect.width);
@@ -149,6 +177,12 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    setFlippedKey((currentKey) =>
+      currentKey !== null && currentKey !== activeKey ? null : currentKey,
+    );
+  }, [activeKey]);
+
   useLayoutEffect(() => {
     updateTransforms(pendingAnimationRef.current);
     pendingAnimationRef.current = false;
@@ -157,6 +191,7 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   useLayoutEffect(() => {
     const nextIndex = Math.min(index, maxIndex);
     if (nextIndex !== index) {
+      setFlippedKey(null);
       navigateTo(nextIndex);
       return;
     }
@@ -173,29 +208,80 @@ export const Coverflow = ({ children }: CoverflowProps) => {
     positionRef,
     size,
     maxIndex,
-    onScroll: (position) => applyPosition(position),
+    onScroll: (position) => {
+      setFlippedKey(null);
+      applyPosition(position);
+    },
     onScrollEnd: navigateTo,
   });
 
   const { consumeDragClick, handleDragStart } = useDrag({
     size,
+    reducedMotionRef,
     maxIndex,
     onDragStart: cancelWheel,
-    onDrag: (position) => applyPosition(position),
+    onDrag: (position) => {
+      if (position !== positionRef.current) setFlippedKey(null);
+      applyPosition(position);
+    },
     onDragEnd: navigateTo,
   });
 
+  const activateItem = useCallback(
+    (itemIndex: number, itemKey: React.Key) => {
+      cancelWheel();
+      const currentIndex = Math.max(
+        0,
+        Math.min(Math.round(positionRef.current), maxIndex),
+      );
+      if (itemIndex !== currentIndex) {
+        setFlippedKey(null);
+        navigateTo(itemIndex);
+        return;
+      }
+
+      navigateTo(itemIndex);
+      setFlippedKey((currentKey) => (currentKey === itemKey ? null : itemKey));
+    },
+    [cancelWheel, maxIndex, navigateTo],
+  );
+
+  const centerItem = useCallback(
+    (itemIndex: number) => {
+      if (consumeDragClick()) return;
+
+      cancelWheel();
+      const currentIndex = Math.max(
+        0,
+        Math.min(Math.round(positionRef.current), maxIndex),
+      );
+      if (itemIndex !== currentIndex) setFlippedKey(null);
+      navigateTo(itemIndex);
+    },
+    [cancelWheel, consumeDragClick, maxIndex, navigateTo],
+  );
+
   const setKeyboardTarget = useCallback(
     (target: React.SetStateAction<number>) => {
+      const nextTarget =
+        typeof target === "function" ? target(positionRef.current) : target;
       cancelWheel();
-      navigateTo(
-        typeof target === "function" ? target(positionRef.current) : target,
-      );
+      setFlippedKey(null);
+      navigateTo(nextTarget);
+      requestAnimationFrame(() => {
+        itemRefs.current
+          .get(nextTarget)
+          ?.querySelector<HTMLButtonElement>(
+            '[data-slot="coverflow-flip-trigger"]',
+          )
+          ?.focus();
+      });
     },
     [cancelWheel, navigateTo],
   );
 
   useKeyNavigation({
+    containerRef,
     setTarget: setKeyboardTarget,
     target: index,
     maxIndex,
@@ -213,36 +299,63 @@ export const Coverflow = ({ children }: CoverflowProps) => {
   );
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div
+      {...props}
+      ref={containerRef}
+      data-slot="coverflow"
+      role={props.role ?? "region"}
+      aria-roledescription={props["aria-roledescription"] ?? "carousel"}
+      aria-label={props["aria-label"] ?? "Coverflow"}
+      className={twMerge("w-full", className)}
+    >
       <div
-        className="relative mx-auto touch-none"
+        data-slot="coverflow-viewport"
+        role="group"
+        aria-label="Coverflow navigation"
+        tabIndex={0}
+        className="relative mx-auto touch-none outline-none focus-visible:ring-4 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
         style={{ height: size, width: size, perspective: "600px" }}
         onMouseDown={(event) => handleDragStart(event, positionRef.current)}
         onTouchStart={(event) => handleDragStart(event, positionRef.current)}
       >
-        {visibleItems.map(({ child, itemIndex }) => (
-          <div
-            key={getChildKey(child, itemIndex)}
-            ref={(item) => registerItem(itemIndex, item)}
-            className="absolute top-0 left-0 cursor-pointer"
-            style={{
-              width: size,
-              height: size,
-            }}
-            onClick={() => {
-              if (consumeDragClick()) return;
-              cancelWheel();
-              navigateTo(itemIndex);
-            }}
-          >
-            {child}
-          </div>
-        ))}
+        {visibleItems.map(({ child, itemIndex }) => {
+          const itemKey = getChildKey(child, itemIndex);
+          const isActive = itemIndex === index;
+          const isFlipped = isActive && flippedKey === itemKey;
+
+          return (
+            <CoverflowInteractionContext.Provider
+              key={itemKey}
+              value={{
+                isActive,
+                isFlipped,
+                activate: () => activateItem(itemIndex, itemKey),
+                consumePendingClick: consumeDragClick,
+              }}
+            >
+              <div
+                data-slot="coverflow-card"
+                data-active={isActive}
+                data-flipped={isFlipped}
+                ref={(item) => registerItem(itemIndex, item)}
+                className="absolute top-0 left-0 cursor-pointer"
+                style={{
+                  width: size,
+                  height: size,
+                }}
+                onClick={() => centerItem(itemIndex)}
+              >
+                {child}
+              </div>
+            </CoverflowInteractionContext.Provider>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-interface CoverflowProps {
+export interface CoverflowProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
   children: React.ReactNode;
 }

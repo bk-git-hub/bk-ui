@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 interface KeyNavigationConfig {
+  containerRef: React.RefObject<HTMLDivElement | null>;
   setTarget: React.Dispatch<React.SetStateAction<number>>;
   target: number;
   maxIndex: number;
@@ -14,8 +15,19 @@ export const useKeyNavigation = (config: KeyNavigationConfig) => {
   });
 
   useEffect(() => {
+    const container = config.containerRef.current;
+    if (!container) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       const { target, maxIndex, setTarget } = configRef.current;
+      const eventTarget = event.target;
+      const isCarouselTarget =
+        eventTarget instanceof Element &&
+        eventTarget.closest(
+          '[data-slot="coverflow-flip-trigger"], [data-slot="coverflow-viewport"]',
+        ) !== null;
+      if (event.defaultPrevented || !isCarouselTarget) return;
+
       let nextTarget = Math.round(target);
 
       if (event.key === "ArrowRight") {
@@ -26,10 +38,11 @@ export const useKeyNavigation = (config: KeyNavigationConfig) => {
         return;
       }
 
+      event.preventDefault();
       if (nextTarget !== target) setTarget(nextTarget);
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    container.addEventListener("keydown", handleKeyDown);
+    return () => container.removeEventListener("keydown", handleKeyDown);
+  }, [config.containerRef]);
 };

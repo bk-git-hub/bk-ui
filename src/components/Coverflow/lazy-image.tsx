@@ -1,20 +1,34 @@
+import { useLayoutEffect, useRef } from "react";
 import { useCoverflowItem } from "./coverflow-context";
 
-interface LazyImageProps {
+export interface LazyImageProps {
   src: string;
   alt: string;
   isPriority?: boolean;
 }
 export const LazyImage = ({ src, alt, isPriority = false }: LazyImageProps) => {
-  const { signalReady } = useCoverflowItem();
+  const { signalLoading, signalReady } = useCoverflowItem();
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  useLayoutEffect(() => {
+    const image = imageRef.current;
+    if (!image || image.complete) {
+      signalReady();
+      return;
+    }
+
+    signalLoading();
+  }, [signalLoading, signalReady]);
 
   return (
-    <div className="aspect- relative w-full rounded-md select-none">
+    <div className="relative aspect-square w-full rounded-md select-none">
       {/* 원본 이미지 */}
       <img
+        ref={imageRef}
         src={src}
         alt={alt}
         onLoad={signalReady}
+        onError={signalReady}
         loading={isPriority ? "eager" : "lazy"}
         decoding="async"
         fetchPriority={isPriority ? "high" : undefined}

@@ -14,6 +14,7 @@ const cancelFrame = (frameRef: { current: number | null }) => {
 };
 
 interface DragConfig {
+  reducedMotionRef?: React.RefObject<boolean>;
   onDragStart?(): void;
   onDrag: React.Dispatch<number>;
   onDragEnd: React.Dispatch<number>;
@@ -171,7 +172,9 @@ export const useDrag = (config: DragConfig) => {
       const history = gestureRef.current.history;
       const last = history[history.length - 1];
       const previous = history[history.length - 2] ?? history[0];
-      if (last && previous && last.time > previous.time) {
+      if (configRef.current.reducedMotionRef?.current) {
+        velocityRef.current = 0;
+      } else if (last && previous && last.time > previous.time) {
         const speed =
           ((last.x - previous.x) / (last.time - previous.time)) *
           INERTIA_MULTIPLIER;
