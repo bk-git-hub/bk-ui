@@ -397,11 +397,7 @@ function installDescriptor(component, leafHashes, aiPath, aiHash) {
         range: variant.range,
         tested: variant.tested,
         dependencies: itemDependencies(component, major),
-        notes: [
-          variant.scan,
-          ...manifest.constraints.ssr,
-          ...manifest.constraints.accessibility,
-        ],
+        notes: [variant.scan],
         resources: [
           ...sourceResources,
           resource(

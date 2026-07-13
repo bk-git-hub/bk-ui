@@ -61,6 +61,9 @@ test("renderer produces source Registry, flat items, framework ZIPs, AI, and des
     descriptor.variants.some((variant) => "commands" in variant),
     false,
   );
+  assert.deepEqual(descriptor.variants[1].notes, [
+    "Keep components/Demo under a scanned source or add @source.",
+  ]);
   for (const variant of descriptor.variants) {
     for (const resource of variant.resources) {
       assert.match(resource.sha256, /^[0-9a-f]{64}$/);
