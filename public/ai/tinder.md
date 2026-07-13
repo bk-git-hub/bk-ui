@@ -49,8 +49,8 @@ Next.js tested: `16.2.10`
 
 ### @components/Tinder/client.ts
 
-Source: `src/components/Tinder/client.ts`  
-SHA-256: `2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61`
+- Source: `src/components/Tinder/client.ts`
+- SHA-256: `2a179d7a0c52410c0c53e9e162e3ae3aeb084e38cb981117f78427294f757b61`
 
 ```ts
 "use client";
@@ -60,8 +60,8 @@ export * from "./index";
 
 ### @components/Tinder/index.tsx
 
-Source: `src/components/Tinder/index.tsx`  
-SHA-256: `736e6e3cd8a21a2e18e8ebd17b1035d6b8223fe55f4681be7340bc1af2638676`
+- Source: `src/components/Tinder/index.tsx`
+- SHA-256: `736e6e3cd8a21a2e18e8ebd17b1035d6b8223fe55f4681be7340bc1af2638676`
 
 ```tsx
 import React, { createContext, useContext, useMemo } from "react";
@@ -283,8 +283,8 @@ export const TinderResetButton = ({
 
 ### @components/Tinder/useTinderSwipe.ts
 
-Source: `src/components/Tinder/useTinderSwipe.ts`  
-SHA-256: `accf1da12dd897db49efe4e2455e9f2a4534eef919d0c0ba31775550b19f4cc4`
+- Source: `src/components/Tinder/useTinderSwipe.ts`
+- SHA-256: `accf1da12dd897db49efe4e2455e9f2a4534eef919d0c0ba31775550b19f4cc4`
 
 ```ts
 import { useCallback, useRef, useState, useEffect } from "react";

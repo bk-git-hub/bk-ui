@@ -86,7 +86,7 @@
           "kind": "copy-for-ai",
           "label": "Copy for AI",
           "repositoryPath": "public/ai/tinder.md",
-          "sha256": "57151eaa977fdfd6c61be06e82df949b40ba3369ee115bf5f2d27765238235df"
+          "sha256": "c584c7b0bdb5d8dd8b95e4f64f1dfac0832ce4f49e2d39743ba0da710f7e6350"
         }
       ],
       "tailwindMajor": 3,
@@ -155,7 +155,7 @@
           "kind": "copy-for-ai",
           "label": "Copy for AI",
           "repositoryPath": "public/ai/tinder.md",
-          "sha256": "57151eaa977fdfd6c61be06e82df949b40ba3369ee115bf5f2d27765238235df"
+          "sha256": "c584c7b0bdb5d8dd8b95e4f64f1dfac0832ce4f49e2d39743ba0da710f7e6350"
         }
       ],
       "tailwindMajor": 4,
