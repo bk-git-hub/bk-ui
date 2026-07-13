@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Dices } from "lucide-react";
+import { ArrowRight, Cherry, Dices } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -31,7 +31,7 @@ export default function HomePage() {
           <h2 className="mb-10 text-center text-xl leading-8 font-semibold text-slate-900">
             Explore Featured Components
           </h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <FeatureCard
               title="Tinder Swiper"
               description="Interactive card stack with gesture-based swipe controls."
@@ -58,6 +58,13 @@ export default function HomePage() {
               description="Configurable draw with custom ball content and count."
               icon={<Dices aria-hidden="true" className="h-10 w-10" />}
               href="/components/lotto"
+            />
+
+            <FeatureCard
+              title="Slot Machine"
+              description="Customizable reels with editable content and accessible controls."
+              icon={<Cherry aria-hidden="true" className="h-10 w-10" />}
+              href="/components/slot-machine"
             />
           </div>
         </div>

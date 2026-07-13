@@ -4,3 +4,37 @@
   --font-praise: "Praise", "cursive";
   --font-sans: "Inter", "sans-serif";
 }
+
+@keyframes slot-reel-spin {
+  0% {
+    transform: translateY(-115%) scale(0.88);
+    filter: blur(6px);
+    opacity: 0.2;
+  }
+  55% {
+    transform: translateY(18%) scale(1.04);
+    filter: blur(3px);
+    opacity: 0.8;
+  }
+  78% {
+    transform: translateY(-8%) scale(0.98);
+    filter: blur(1px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+[data-slot="slot-reel"][data-spinning="true"] > [data-slot="slot-symbol"] {
+  animation: slot-reel-spin var(--slot-reel-duration, 900ms)
+    cubic-bezier(0.22, 0.8, 0.3, 1) var(--slot-reel-delay, 0ms) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="slot-reel"][data-spinning="true"] > [data-slot="slot-symbol"] {
+    animation: none;
+  }
+}

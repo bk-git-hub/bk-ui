@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import SlotMachineDemoPreview from "./SlotMachineDemoPreview";
 
 describe("SlotMachineDemoPreview", () => {
+  afterEach(() => vi.useRealTimers());
+
   it("lets the user control slot content and reel count", () => {
     render(<SlotMachineDemoPreview />);
 
@@ -38,5 +40,24 @@ describe("SlotMachineDemoPreview", () => {
       "슬롯 내용을 한 개 이상 입력해 주세요.",
     );
     expect(screen.getByRole("button", { name: "돌리기" })).toBeDisabled();
+  });
+
+  it("returns to the idle state when the configuration changes", () => {
+    vi.useFakeTimers();
+    render(<SlotMachineDemoPreview />);
+
+    fireEvent.click(screen.getByRole("button", { name: "돌리기" }));
+    act(() => vi.advanceTimersByTime(900));
+
+    expect(screen.getByRole("button", { name: "한 번 더" })).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText("슬롯 내용"), {
+      target: { value: "Clover\nMoon\nDiamond" },
+    });
+
+    expect(screen.getByRole("button", { name: "돌리기" })).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "처음으로" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -11,17 +11,20 @@ const loadTinderDemoPage = () => import("./pages/TinderDemoPage.tsx");
 const loadCoverflowPage = () => import("./pages/CoverflowPage.tsx");
 const loadReactPodPage = () => import("./pages/ReactPodPage.tsx");
 const loadLottoDemoPage = () => import("./pages/LottoDemoPage.tsx");
+const loadSlotMachineDemoPage = () => import("./pages/SlotMachineDemoPage.tsx");
 
 const TinderDemoPage = lazy(loadTinderDemoPage);
 const CoverflowPage = lazy(loadCoverflowPage);
 const ReactPodPage = lazy(loadReactPodPage);
 const LottoDemoPage = lazy(loadLottoDemoPage);
+const SlotMachineDemoPage = lazy(loadSlotMachineDemoPage);
 
 const routePageLoaders = new Map<string, () => Promise<unknown>>([
   ["/components/tinder-swiper", loadTinderDemoPage],
   ["/components/coverflow", loadCoverflowPage],
   ["/components/react-pod", loadReactPodPage],
   ["/components/lotto", loadLottoDemoPage],
+  ["/components/slot-machine", loadSlotMachineDemoPage],
 ]);
 const preloadedRoutes = new Set<string>();
 
@@ -81,6 +84,14 @@ const router = createBrowserRouter([
         element: (
           <LazyPage>
             <LottoDemoPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: "components/slot-machine",
+        element: (
+          <LazyPage>
+            <SlotMachineDemoPage />
           </LazyPage>
         ),
       },
