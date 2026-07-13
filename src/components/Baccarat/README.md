@@ -35,7 +35,9 @@ import {
 </BaccaratSqueezeRoot>;
 ```
 
-`value`와 `onValueChange`로 진행률을 제어할 수 있고, 비제어 방식에서는 `defaultValue`를 사용합니다. 진행률은 `0`부터 `1` 사이이며 루트의 `data-state`, `data-corner`, `--squeeze-progress`에도 노출됩니다.
+카드 모서리에서 시작하면 기존처럼 선택한 코너를 중심으로 대각선 스퀴즈가 이어집니다. 카드 높이의 중앙 영역에 있는 왼쪽 또는 오른쪽 긴 변에서 시작하면 해당 옆면을 중심으로 원형 마스크가 부드럽게 열립니다. `edgeHitArea`로 양쪽 옆면의 포인터 감지 폭을 조절할 수 있으며 기본값은 카드 너비의 `20%`입니다.
+
+`value`와 `onValueChange`로 진행률을 제어할 수 있고, 비제어 방식에서는 `defaultValue`를 사용합니다. 진행률은 `0`부터 `1` 사이이며 루트의 `data-state`, `data-origin`, `data-corner`, `--squeeze-progress`에도 노출됩니다. 변경·커밋·공개 콜백의 detail에도 실제 입력 원점인 `origin`이 전달됩니다.
 
 키보드에서는 방향키로 진행률을 조절하고, `Home`/`Escape`로 다시 가리며, `End`/`Enter`/`Space`로 완전히 공개합니다. 드래그를 대신할 수 있도록 `BaccaratSqueezeAction`도 함께 제공하는 것을 권장합니다.
 

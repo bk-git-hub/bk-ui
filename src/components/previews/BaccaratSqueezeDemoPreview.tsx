@@ -109,7 +109,7 @@ export default function BaccaratSqueezeDemoPreview() {
               >
                 <BaccaratSqueezeCard
                   className="w-[13.5rem] sm:w-60"
-                  concealedLabel="숨겨진 플레이어 카드. 오른쪽 아래 모서리를 안쪽으로 드래그하거나 화살표 키를 사용하세요."
+                  concealedLabel="숨겨진 플레이어 카드. 오른쪽 아래 모서리를 대각선으로 밀거나 좌우 옆면을 안쪽으로 당겨보세요."
                 >
                   <BaccaratSqueezeBack />
                   <BaccaratSqueezeFace>
@@ -201,7 +201,7 @@ export default function BaccaratSqueezeDemoPreview() {
               </fieldset>
 
               <div className="mt-5 rounded-2xl border border-white/8 bg-white/5 p-3 text-xs leading-5 text-emerald-100/65">
-                <p>드래그가 어렵다면 “바로 공개” 버튼을 사용하세요.</p>
+                <p>오른쪽 아래 코너 또는 좌우 옆면에서 드래그하세요.</p>
                 <p className="mt-1">키보드: 화살표 · Home · End</p>
               </div>
             </aside>

@@ -12,6 +12,7 @@ import { twMerge } from "tailwind-merge";
 import {
   useCardSqueeze,
   type SqueezeCorner,
+  type SqueezeOrigin,
   type SqueezeState,
   type UseCardSqueezeOptions,
 } from "./useCardSqueeze";
@@ -40,6 +41,7 @@ interface BaccaratSqueezeContextValue {
   progress: number;
   state: SqueezeState;
   corner: SqueezeCorner;
+  origin: SqueezeOrigin;
   isDragging: boolean;
   disabled: boolean;
   readOnly: boolean;
@@ -84,6 +86,7 @@ export function BaccaratSqueezeRoot({
   corner,
   revealThreshold,
   keyboardStep,
+  edgeHitArea,
   disabled,
   readOnly,
   getValueText = defaultValueText,
@@ -104,6 +107,7 @@ export function BaccaratSqueezeRoot({
     corner,
     revealThreshold,
     keyboardStep,
+    edgeHitArea,
     disabled,
     readOnly,
   });
@@ -121,6 +125,7 @@ export function BaccaratSqueezeRoot({
         data-slot="baccarat-squeeze"
         data-state={squeeze.state}
         data-corner={squeeze.corner}
+        data-origin={squeeze.origin}
         data-disabled={squeeze.disabled ? "" : undefined}
         data-readonly={squeeze.readOnly ? "" : undefined}
         className={twMerge(
@@ -148,7 +153,7 @@ export interface BaccaratSqueezeCardProps extends ComponentPropsWithRef<"div"> {
 }
 
 export function BaccaratSqueezeCard({
-  concealedLabel = "Squeeze card. Drag the marked corner inward or use the arrow keys.",
+  concealedLabel = "Squeeze card. Drag the marked corner diagonally, pull either long edge inward, or use the arrow keys.",
   className,
   style,
   tabIndex,
@@ -182,6 +187,7 @@ export function BaccaratSqueezeCard({
       data-slot="baccarat-squeeze-card"
       data-state={context.state}
       data-corner={context.corner}
+      data-origin={context.origin}
       data-dragging={context.isDragging ? "" : undefined}
       data-disabled={context.disabled ? "" : undefined}
       data-readonly={context.readOnly ? "" : undefined}
@@ -271,6 +277,12 @@ const CORNER_ORIGINS: Record<SqueezeCorner, string> = {
   "bottom-right": "100% 100%",
 };
 
+function getRevealOrigin(corner: SqueezeCorner, origin: SqueezeOrigin) {
+  if (origin === "left-edge") return "0% 50%";
+  if (origin === "right-edge") return "100% 50%";
+  return CORNER_ORIGINS[corner];
+}
+
 export type BaccaratSqueezeFaceProps = ComponentPropsWithRef<"div">;
 
 export function BaccaratSqueezeFace({
@@ -280,9 +292,8 @@ export function BaccaratSqueezeFace({
   "aria-hidden": ariaHidden,
   ...props
 }: BaccaratSqueezeFaceProps) {
-  const { progress, state, corner, isDragging } = useBaccaratSqueezeContext(
-    "BaccaratSqueezeFace",
-  );
+  const { progress, state, corner, origin, isDragging } =
+    useBaccaratSqueezeContext("BaccaratSqueezeFace");
   const radius = progress * 142;
 
   return (
@@ -291,6 +302,7 @@ export function BaccaratSqueezeFace({
       aria-hidden={ariaHidden ?? state !== "revealed"}
       data-slot="baccarat-squeeze-face"
       data-state={state}
+      data-origin={origin}
       className={twMerge(
         "pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-[inherit] bg-white",
         isDragging
@@ -299,7 +311,7 @@ export function BaccaratSqueezeFace({
         className,
       )}
       style={{
-        clipPath: `circle(${radius}% at ${CORNER_ORIGINS[corner]})`,
+        clipPath: `circle(${radius}% at ${getRevealOrigin(corner, origin)})`,
         ...style,
       }}
     >
@@ -315,7 +327,7 @@ export function BaccaratSqueezeFold({
   style,
   ...props
 }: BaccaratSqueezeFoldProps) {
-  const { progress, corner, isDragging } = useBaccaratSqueezeContext(
+  const { progress, corner, origin, isDragging } = useBaccaratSqueezeContext(
     "BaccaratSqueezeFold",
   );
   const radius = progress * 142;
@@ -328,13 +340,14 @@ export function BaccaratSqueezeFold({
       {...props}
       aria-hidden="true"
       data-slot="baccarat-squeeze-fold"
+      data-origin={origin}
       className={twMerge(
         "pointer-events-none absolute inset-0 z-30 rounded-[inherit] motion-reduce:hidden",
         className,
       )}
       style={{
         opacity: progress > 0 && progress < 1 ? 1 : 0,
-        background: `radial-gradient(circle at ${CORNER_ORIGINS[corner]}, transparent ${innerShadow}%, rgba(0,0,0,.25) ${innerShadow}%, rgba(255,255,255,.82) ${highlight}%, rgba(255,235,189,.5) ${radius}%, transparent ${outerEdge}%)`,
+        background: `radial-gradient(circle at ${getRevealOrigin(corner, origin)}, transparent ${innerShadow}%, rgba(0,0,0,.25) ${innerShadow}%, rgba(255,255,255,.82) ${highlight}%, rgba(255,235,189,.5) ${radius}%, transparent ${outerEdge}%)`,
         transition: isDragging
           ? "none"
           : "opacity 160ms ease-out, background 240ms cubic-bezier(.2,.8,.2,1)",
@@ -358,28 +371,47 @@ export function BaccaratSqueezeHandle({
   children,
   ...props
 }: BaccaratSqueezeHandleProps) {
-  const { state, corner } = useBaccaratSqueezeContext("BaccaratSqueezeHandle");
+  const { state, corner, origin, isDragging } = useBaccaratSqueezeContext(
+    "BaccaratSqueezeHandle",
+  );
 
   return (
-    <div
-      {...props}
-      aria-hidden="true"
-      data-slot="baccarat-squeeze-handle"
-      className={twMerge(
-        "pointer-events-none absolute z-40 flex size-12 items-center justify-center rounded-full border border-white/45 bg-black/35 text-white shadow-lg backdrop-blur-sm transition-opacity duration-200",
-        HANDLE_POSITIONS[corner],
-        state === "revealed" && "opacity-0",
-        className,
-      )}
-    >
-      {children ?? (
-        <div className="relative size-6">
-          <span className="absolute top-1 left-0 h-px w-6 rotate-45 bg-current" />
-          <span className="absolute top-2.5 left-0 h-px w-4 rotate-45 bg-current/80" />
-          <span className="absolute top-4 left-0 h-px w-2 rotate-45 bg-current/60" />
-        </div>
-      )}
-    </div>
+    <>
+      {(["left-edge", "right-edge"] as const).map((edge) => (
+        <span
+          key={edge}
+          aria-hidden="true"
+          data-slot="baccarat-squeeze-edge-handle"
+          data-edge={edge}
+          data-active={origin === edge && isDragging ? "" : undefined}
+          className={twMerge(
+            "pointer-events-none absolute top-1/2 z-40 h-14 w-2 -translate-y-1/2 rounded-full border border-white/25 bg-black/20 shadow-sm backdrop-blur-sm transition duration-200 data-[active]:border-amber-200/80 data-[active]:bg-amber-200/25",
+            edge === "left-edge" ? "left-1.5" : "right-1.5",
+            state === "revealed" && "opacity-0",
+          )}
+        />
+      ))}
+      <div
+        {...props}
+        aria-hidden="true"
+        data-slot="baccarat-squeeze-handle"
+        data-origin={origin}
+        className={twMerge(
+          "pointer-events-none absolute z-40 flex size-12 items-center justify-center rounded-full border border-white/45 bg-black/35 text-white shadow-lg backdrop-blur-sm transition-opacity duration-200",
+          HANDLE_POSITIONS[corner],
+          state === "revealed" && "opacity-0",
+          className,
+        )}
+      >
+        {children ?? (
+          <div className="relative size-6">
+            <span className="absolute top-1 left-0 h-px w-6 rotate-45 bg-current" />
+            <span className="absolute top-2.5 left-0 h-px w-4 rotate-45 bg-current/80" />
+            <span className="absolute top-4 left-0 h-px w-2 rotate-45 bg-current/60" />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -390,20 +422,23 @@ export interface BaccaratSqueezeHintProps extends ComponentPropsWithRef<"p"> {
 }
 
 export function BaccaratSqueezeHint({
-  concealedText = "모서리를 잡고 안쪽으로 천천히 밀어보세요",
+  concealedText = "모서리를 대각선으로 밀거나 좌우 옆면을 안쪽으로 당겨보세요",
   squeezingText,
   revealedText = "카드가 공개되었습니다",
   className,
   children,
   ...props
 }: BaccaratSqueezeHintProps) {
-  const { state, progress } = useBaccaratSqueezeContext("BaccaratSqueezeHint");
+  const { state, origin, progress } = useBaccaratSqueezeContext(
+    "BaccaratSqueezeHint",
+  );
   const content =
     children ??
     (state === "revealed"
       ? revealedText
       : state === "squeezing"
-        ? (squeezingText ?? `${Math.round(progress * 100)}% 공개`)
+        ? (squeezingText ??
+          `${origin === "corner" ? "대각선" : "옆면"}에서 ${Math.round(progress * 100)}% 공개`)
         : concealedText);
 
   return (
@@ -411,6 +446,7 @@ export function BaccaratSqueezeHint({
       {...props}
       data-slot="baccarat-squeeze-hint"
       data-state={state}
+      data-origin={origin}
       className={twMerge("text-center text-sm font-medium", className)}
     >
       {content}
@@ -444,6 +480,7 @@ export function BaccaratSqueezeAction({
       disabled={disabled || context.disabled || context.readOnly}
       data-slot="baccarat-squeeze-action"
       data-state={context.state}
+      data-origin={context.origin}
       className={twMerge(
         "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         className,

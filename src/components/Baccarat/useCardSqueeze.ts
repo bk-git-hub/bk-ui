@@ -12,12 +12,14 @@ export type SqueezeCorner =
   | "top-right"
   | "bottom-left"
   | "bottom-right";
+export type SqueezeOrigin = "corner" | "left-edge" | "right-edge";
 export type SqueezeInput = "pointer" | "keyboard" | "action";
 export type SqueezeState = "concealed" | "squeezing" | "revealed";
 
 export interface SqueezeChangeDetail {
   input: SqueezeInput;
   corner: SqueezeCorner;
+  origin: SqueezeOrigin;
 }
 
 export type SqueezeValueChangeHandler = (
@@ -41,6 +43,7 @@ export interface UseCardSqueezeOptions {
   corner?: SqueezeCorner;
   revealThreshold?: number;
   keyboardStep?: number;
+  edgeHitArea?: number;
   disabled?: boolean;
   readOnly?: boolean;
 }
@@ -48,12 +51,32 @@ export interface UseCardSqueezeOptions {
 const clamp = (value: number, min = 0, max = 1) =>
   Math.min(max, Math.max(min, value));
 
-function getInwardVector(corner: SqueezeCorner) {
+function getInwardVector(corner: SqueezeCorner, origin: SqueezeOrigin) {
+  if (origin === "left-edge") return { x: 1, y: 0 };
+  if (origin === "right-edge") return { x: -1, y: 0 };
+
   const x = corner.endsWith("left") ? 1 : -1;
   const y = corner.startsWith("top") ? 1 : -1;
   const length = Math.hypot(x, y);
 
   return { x: x / length, y: y / length };
+}
+
+function getPointerOrigin(
+  event: PointerEvent<HTMLDivElement>,
+  edgeHitArea: number,
+) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = clamp((event.clientX - rect.left) / Math.max(1, rect.width));
+  const y = clamp((event.clientY - rect.top) / Math.max(1, rect.height));
+  const inSideBody = y >= 0.2 && y <= 0.8;
+
+  if (inSideBody && x <= edgeHitArea)
+    return "left-edge" satisfies SqueezeOrigin;
+  if (inSideBody && x >= 1 - edgeHitArea) {
+    return "right-edge" satisfies SqueezeOrigin;
+  }
+  return "corner" satisfies SqueezeOrigin;
 }
 
 export function useCardSqueeze({
@@ -65,6 +88,7 @@ export function useCardSqueeze({
   corner = "bottom-right",
   revealThreshold = 0.68,
   keyboardStep = 0.05,
+  edgeHitArea = 0.2,
   disabled = false,
   readOnly = false,
 }: UseCardSqueezeOptions = {}) {
@@ -73,9 +97,11 @@ export function useCardSqueeze({
     clamp(defaultValue),
   );
   const [isDragging, setIsDragging] = useState(false);
+  const [origin, setOrigin] = useState<SqueezeOrigin>("corner");
   const progress = clamp(isControlled ? value : uncontrolledValue);
   const progressRef = useRef(progress);
   const didRevealRef = useRef(progress === 1);
+  const originRef = useRef<SqueezeOrigin>(origin);
   const activePointerIdRef = useRef<number | null>(null);
   const activeElementRef = useRef<HTMLDivElement | null>(null);
   const startPointRef = useRef({ x: 0, y: 0 });
@@ -97,7 +123,11 @@ export function useCardSqueeze({
       progressRef.current = nextProgress;
       if (!isControlled) setUncontrolledValue(nextProgress);
 
-      const detail = { input, corner } satisfies SqueezeChangeDetail;
+      const detail = {
+        input,
+        corner,
+        origin: originRef.current,
+      } satisfies SqueezeChangeDetail;
       onValueChange?.(nextProgress, detail);
 
       if (nextProgress < 1) {
@@ -115,7 +145,11 @@ export function useCardSqueeze({
   const commitProgress = useCallback(
     (nextValue: 0 | 1, input: SqueezeInput) => {
       updateProgress(nextValue, input);
-      onValueCommit?.(nextValue, { input, corner });
+      onValueCommit?.(nextValue, {
+        input,
+        corner,
+        origin: originRef.current,
+      });
     },
     [corner, onValueCommit, updateProgress],
   );
@@ -125,7 +159,7 @@ export function useCardSqueeze({
 
     const deltaX = latestPointRef.current.x - startPointRef.current.x;
     const deltaY = latestPointRef.current.y - startPointRef.current.y;
-    const inward = getInwardVector(corner);
+    const inward = getInwardVector(corner, originRef.current);
     const projectedDistance = deltaX * inward.x + deltaY * inward.y;
     updateProgress(
       startProgressRef.current + projectedDistance / revealDistanceRef.current,
@@ -157,6 +191,12 @@ export function useCardSqueeze({
       }
 
       const rect = event.currentTarget.getBoundingClientRect();
+      const nextOrigin = getPointerOrigin(
+        event,
+        clamp(edgeHitArea, 0.08, 0.35),
+      );
+      originRef.current = nextOrigin;
+      setOrigin(nextOrigin);
       activePointerIdRef.current = event.pointerId;
       activeElementRef.current = event.currentTarget;
       startPointRef.current = { x: event.clientX, y: event.clientY };
@@ -164,12 +204,14 @@ export function useCardSqueeze({
       startProgressRef.current = progressRef.current;
       revealDistanceRef.current = Math.max(
         1,
-        Math.hypot(rect.width, rect.height) * 0.58,
+        nextOrigin === "corner"
+          ? Math.hypot(rect.width, rect.height) * 0.58
+          : rect.width * 0.72,
       );
       setIsDragging(true);
       event.currentTarget.setPointerCapture?.(event.pointerId);
     },
-    [disabled, readOnly],
+    [disabled, edgeHitArea, readOnly],
   );
 
   const onPointerMove = useCallback(
@@ -322,6 +364,7 @@ export function useCardSqueeze({
     progress,
     state,
     corner,
+    origin,
     isDragging,
     disabled,
     readOnly,

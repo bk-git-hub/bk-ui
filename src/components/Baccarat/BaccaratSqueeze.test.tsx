@@ -17,6 +17,7 @@ import {
 function renderSqueeze(props: Partial<BaccaratSqueezeRootProps> = {}) {
   return render(
     <BaccaratSqueezeRoot
+      data-testid="squeeze-root"
       revealAnnouncement="다이아몬드 8 카드가 공개됐습니다."
       {...props}
     >
@@ -91,16 +92,14 @@ describe("BaccaratSqueeze", () => {
     });
   }
 
-  it("reveals from the corner drag and announces the result once", () => {
+  it("keeps the free diagonal reveal from the selected corner", () => {
     const onReveal = vi.fn();
     const onValueCommit = vi.fn();
     renderSqueeze({ onReveal, onValueCommit });
+    const root = screen.getByTestId("squeeze-root");
     const card = screen.getByTestId("squeeze-card");
     const face = screen.getByTestId("card-face");
     prepareCard(card);
-
-    expect(card).toHaveAttribute("aria-valuenow", "0");
-    expect(face).toHaveAttribute("aria-hidden", "true");
 
     fireEvent.pointerDown(card, {
       pointerId: 7,
@@ -111,18 +110,9 @@ describe("BaccaratSqueeze", () => {
     fireEvent.pointerMove(card, {
       pointerId: 7,
       pointerType: "touch",
-      clientX: 120,
-      clientY: 200,
-    });
-    fireEvent.pointerMove(card, {
-      pointerId: 7,
-      pointerType: "touch",
       clientX: 32,
       clientY: 112,
     });
-
-    expect(requestAnimationFrameMock).toHaveBeenCalledTimes(1);
-
     fireEvent.pointerUp(card, {
       pointerId: 7,
       pointerType: "touch",
@@ -130,18 +120,96 @@ describe("BaccaratSqueeze", () => {
       clientY: 112,
     });
 
-    expect(cancelAnimationFrameMock).toHaveBeenCalledTimes(1);
-    expect(animationFrames).toHaveLength(0);
+    expect(root).toHaveAttribute("data-origin", "corner");
     expect(card).toHaveAttribute("aria-valuenow", "100");
+    expect(face).toHaveStyle({ clipPath: "circle(142% at 100% 100%)" });
     expect(face).toHaveAttribute("aria-hidden", "false");
     expect(onReveal).toHaveBeenCalledOnce();
+    expect(onReveal).toHaveBeenCalledWith({
+      corner: "bottom-right",
+      input: "pointer",
+      origin: "corner",
+    });
     expect(onValueCommit).toHaveBeenCalledWith(1, {
       corner: "bottom-right",
       input: "pointer",
+      origin: "corner",
     });
+    expect(cancelAnimationFrameMock).toHaveBeenCalledOnce();
+    expect(animationFrames).toHaveLength(0);
     expect(screen.getByRole("status")).toHaveTextContent(
       "다이아몬드 8 카드가 공개됐습니다.",
     );
+  });
+
+  it("opens smoothly from either long side", () => {
+    const { rerender } = renderSqueeze();
+    const root = screen.getByTestId("squeeze-root");
+    const card = screen.getByTestId("squeeze-card");
+    const face = screen.getByTestId("card-face");
+    prepareCard(card);
+
+    fireEvent.pointerDown(card, {
+      pointerId: 11,
+      pointerType: "touch",
+      clientX: 196,
+      clientY: 140,
+    });
+    expect(root).toHaveAttribute("data-origin", "right-edge");
+
+    fireEvent.pointerMove(card, {
+      pointerId: 11,
+      pointerType: "touch",
+      clientX: 24,
+      clientY: 140,
+    });
+    fireEvent.pointerUp(card, {
+      pointerId: 11,
+      pointerType: "touch",
+      clientX: 24,
+      clientY: 140,
+    });
+
+    expect(face).toHaveStyle({ clipPath: "circle(142% at 100% 50%)" });
+    fireEvent.click(screen.getByRole("button", { name: "다시 가리기" }));
+    expect(face).toHaveStyle({ clipPath: "circle(0% at 100% 50%)" });
+    expect(root).toHaveAttribute("data-origin", "right-edge");
+
+    rerender(
+      <BaccaratSqueezeRoot data-testid="squeeze-root">
+        <BaccaratSqueezeCard data-testid="squeeze-card">
+          <BaccaratSqueezeFace data-testid="card-face" />
+        </BaccaratSqueezeCard>
+      </BaccaratSqueezeRoot>,
+    );
+    const leftCard = screen.getByTestId("squeeze-card");
+    prepareCard(leftCard);
+    fireEvent.pointerDown(leftCard, {
+      pointerId: 12,
+      pointerType: "touch",
+      clientX: 4,
+      clientY: 140,
+    });
+
+    expect(screen.getByTestId("squeeze-root")).toHaveAttribute(
+      "data-origin",
+      "left-edge",
+    );
+    fireEvent.pointerMove(leftCard, {
+      pointerId: 12,
+      pointerType: "touch",
+      clientX: 176,
+      clientY: 140,
+    });
+    fireEvent.pointerUp(leftCard, {
+      pointerId: 12,
+      pointerType: "touch",
+      clientX: 176,
+      clientY: 140,
+    });
+    expect(screen.getByTestId("card-face")).toHaveStyle({
+      clipPath: "circle(142% at 0% 50%)",
+    });
   });
 
   it("returns a short or cancelled squeeze to the concealed state", () => {
@@ -154,21 +222,29 @@ describe("BaccaratSqueeze", () => {
       pointerId: 2,
       pointerType: "mouse",
       button: 0,
-      clientX: 190,
-      clientY: 270,
+      clientX: 196,
+      clientY: 140,
     });
     fireEvent.pointerUp(card, {
       pointerId: 2,
       pointerType: "mouse",
-      clientX: 176,
-      clientY: 256,
+      clientX: 180,
+      clientY: 140,
     });
 
     expect(card).toHaveAttribute("aria-valuenow", "0");
     expect(onValueCommit).toHaveBeenLastCalledWith(0, {
       corner: "bottom-right",
       input: "pointer",
+      origin: "right-edge",
     });
+    expect(screen.getByTestId("squeeze-root")).toHaveAttribute(
+      "data-origin",
+      "right-edge",
+    );
+    expect(
+      document.querySelector('[data-edge="right-edge"]'),
+    ).not.toHaveAttribute("data-active");
 
     fireEvent.pointerDown(card, {
       pointerId: 3,
@@ -212,6 +288,24 @@ describe("BaccaratSqueeze", () => {
     expect(
       screen.getByRole("button", { name: "다시 가리기" }),
     ).toBeInTheDocument();
+  });
+
+  it("does not announce an externally controlled reveal again", () => {
+    const onReveal = vi.fn();
+    const { rerender } = render(
+      <BaccaratSqueezeRoot value={0} onReveal={onReveal}>
+        <BaccaratSqueezeCard />
+      </BaccaratSqueezeRoot>,
+    );
+
+    rerender(
+      <BaccaratSqueezeRoot value={1} onReveal={onReveal}>
+        <BaccaratSqueezeCard />
+      </BaccaratSqueezeRoot>,
+    );
+    fireEvent.keyDown(screen.getByRole("slider"), { key: "End" });
+
+    expect(onReveal).not.toHaveBeenCalled();
   });
 
   it("lets consumers extend native props and cancel internal handlers", () => {

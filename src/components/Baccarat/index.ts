@@ -28,6 +28,7 @@ export {
   type SqueezeCommitHandler,
   type SqueezeCorner,
   type SqueezeInput,
+  type SqueezeOrigin,
   type SqueezeRevealHandler,
   type SqueezeState,
   type SqueezeValueChangeHandler,
