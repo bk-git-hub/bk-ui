@@ -1,8 +1,73 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { reactPodNextJsExport } from "@/snippets/reactPodNextExportCode";
+import { reactPodReactExport } from "@/snippets/reactPodReactExportCode";
 import ReactPodPage from "./ReactPodPage";
 
 describe("ReactPodPage", () => {
+  it("renders the complete viewer tabs in framework order", () => {
+    render(<ReactPodPage />);
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Preview",
+      "Code",
+      "Usage",
+      "React Export",
+      "Next.js Export",
+    ]);
+  });
+
+  it("shows copyable usage and framework-specific public entries", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<ReactPodPage />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Usage" }));
+    expect(
+      await screen.findByRole("region", { name: "TSX source code" }),
+    ).toHaveTextContent('from "@/components/ReactPod"');
+    expect(screen.getByRole("tabpanel", { name: "Usage" })).toHaveTextContent(
+      "wheelSensitivity={1.25}",
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
+    const reactExportPanel = screen.getByRole("tabpanel", {
+      name: "React Export",
+    });
+    expect(
+      await within(reactExportPanel).findByRole("region", {
+        name: "React TSX source code",
+      }),
+    ).toHaveTextContent('from "@/components/ReactPod"');
+    expect(reactExportPanel).toHaveTextContent(
+      "src/components/ClickWheel/ClickWheel.tsx",
+    );
+    expect(reactExportPanel).toHaveTextContent("Tailwind CSS v4");
+    fireEvent.click(
+      within(reactExportPanel).getByRole("button", { name: "Copy" }),
+    );
+    expect(writeText).toHaveBeenLastCalledWith(reactPodReactExport.code.trim());
+
+    fireEvent.click(screen.getByRole("tab", { name: "Next.js Export" }));
+    const nextExportPanel = screen.getByRole("tabpanel", {
+      name: "Next.js Export",
+    });
+    expect(
+      await within(nextExportPanel).findByRole("region", {
+        name: "Next.js TSX source code",
+      }),
+    ).toHaveTextContent('from "@/components/ReactPod/client"');
+    expect(nextExportPanel).toHaveTextContent('"use client"');
+    expect(nextExportPanel).toHaveTextContent("SSR / hydration");
+    expect(nextExportPanel).toHaveTextContent("@source");
+    fireEvent.click(
+      within(nextExportPanel).getByRole("button", { name: "Copy" }),
+    );
+    expect(writeText).toHaveBeenLastCalledWith(
+      reactPodNextJsExport.code.trim(),
+    );
+  });
+
   it("updates the preview from the editable configuration", () => {
     render(<ReactPodPage />);
 

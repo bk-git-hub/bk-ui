@@ -12,7 +12,9 @@ import {
   parseReactPodDemoCode,
   type ReactPodDemoConfig,
 } from "@/components/previews/react-pod-demo.util";
-import { clickWheelUsageCode } from "@/snippets/clickWheelUsageCode";
+import { reactPodNextJsExport } from "@/snippets/reactPodNextExportCode";
+import { reactPodReactExport } from "@/snippets/reactPodReactExportCode";
+import { reactPodUsageCode } from "@/snippets/reactPodUsageCode";
 
 export default function ReactPodPage() {
   const sensitivityId = useId();
@@ -45,7 +47,7 @@ export default function ReactPodPage() {
   return (
     <ComponentViewer
       title="ReactPod"
-      description="Tune the wheel sensitivity in Preview, edit the full player JSON, or copy the standalone wheel."
+      description="Tune the interactive preview, edit its live JSON, or copy a complete React or Next.js setup."
       component={
         <div className="flex min-h-full w-full flex-col items-center justify-center gap-4 overflow-auto bg-gradient-to-br from-slate-100 via-sky-100 to-indigo-200 p-4 lg:flex-row lg:gap-6 lg:p-6">
           <section className="w-full max-w-[300px] rounded-xl border border-white/70 bg-white/85 p-4 text-slate-700 shadow-lg backdrop-blur-sm lg:w-52">
@@ -96,7 +98,9 @@ export default function ReactPodPage() {
         </div>
       }
       usageCode={code}
-      referenceCode={clickWheelUsageCode}
+      referenceCode={reactPodUsageCode}
+      reactExport={reactPodReactExport}
+      nextJsExport={reactPodNextJsExport}
       codeLanguage="LIVE JSON"
       codeError={codeError}
       onUsageCodeChange={handleCodeChange}
