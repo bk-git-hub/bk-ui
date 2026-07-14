@@ -2,6 +2,7 @@ import { covers } from "@/data/covers";
 
 const MAX_SOURCE_LENGTH = 50_000;
 const MAX_ALBUM_COUNT = 20;
+const DEFAULT_ALBUM_COUNT = 12;
 const MAX_TRACK_COUNT = 5;
 const MAX_ID_LENGTH = 60;
 const MAX_TITLE_LENGTH = 80;
@@ -44,7 +45,7 @@ export const DEFAULT_COVERFLOW_DEMO_CONFIG: CoverflowDemoConfig = {
   ariaLabel: "Album covers",
   itemSize: 280,
   showIndexes: true,
-  albums: demoCovers.slice(0, 8).map((cover, index) => ({
+  albums: demoCovers.slice(0, DEFAULT_ALBUM_COUNT).map((cover, index) => ({
     id: "album-" + (index + 1),
     title: cover.title,
     imageKey: cover.imageKey,

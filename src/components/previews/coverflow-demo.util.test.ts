@@ -24,7 +24,7 @@ describe("parseCoverflowDemoCode", () => {
 
     expect(result.error).toBeNull();
     expect(result.config?.itemSize).toBe(280);
-    expect(result.config?.albums).toHaveLength(8);
+    expect(result.config?.albums).toHaveLength(12);
     expect(result.config?.albums[0]).toMatchObject({
       title: "Hollow Nomad",
       imageKey: "hollow-nomad",
