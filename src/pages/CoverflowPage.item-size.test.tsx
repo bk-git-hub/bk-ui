@@ -1,6 +1,23 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CoverflowPage from "./CoverflowPage";
+
+const resizeCoverflow = (
+  coverflow: HTMLElement,
+  width: number,
+  height: number,
+) => {
+  act(() => {
+    (
+      coverflow as HTMLElement & {
+        __resizeCallback?: ResizeObserverCallback;
+      }
+    ).__resizeCallback?.(
+      [{ contentRect: { width, height } } as ResizeObserverEntry],
+      {} as ResizeObserver,
+    );
+  });
+};
 
 describe("CoverflowPage item sizing", () => {
   it("fills the preview surface with black in Preview and Code", () => {
@@ -31,18 +48,24 @@ describe("CoverflowPage item sizing", () => {
     const cards = document.querySelectorAll<HTMLElement>(
       '[data-slot="coverflow-card"]',
     );
+    expect(coverflow).toHaveClass("px-5", "sm:px-0");
     expect(slider).toHaveValue("280");
+
+    resizeCoverflow(coverflow!, 238, 500);
+    expect(cards[0]).toHaveStyle({ width: "238px", height: "238px" });
 
     fireEvent.click(cards[1]!);
     expect(cards[1]).toHaveAttribute("data-active", "true");
+
+    fireEvent.change(slider, { target: { value: "200" } });
+    expect(screen.getByText("200px")).toBeInTheDocument();
+    expect(cards[0]).toHaveStyle({ width: "200px", height: "200px" });
 
     fireEvent.change(slider, { target: { value: "360" } });
     expect(screen.getByText("360px")).toBeInTheDocument();
     expect(document.querySelector('[data-slot="coverflow"]')).toBe(coverflow);
     expect(cards[1]).toHaveAttribute("data-active", "true");
-    expect(
-      document.querySelector<HTMLElement>('[data-slot="coverflow-card"]'),
-    ).toHaveStyle({ width: "360px", height: "360px" });
+    expect(cards[0]).toHaveStyle({ width: "238px", height: "238px" });
 
     fireEvent.click(screen.getByRole("tab", { name: "Code" }));
     const editor = screen.getByRole("textbox", {

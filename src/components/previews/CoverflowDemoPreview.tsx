@@ -63,6 +63,7 @@ function CoverflowDemoPreview({
           key={previewKey}
           aria-label={activeConfig.ariaLabel}
           itemSize={activeConfig.itemSize}
+          className="px-5 sm:px-0"
         >
           {albums.map((album, index) => (
             <CoverflowItem
