@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Header from "./components/layout/header";
+import PageMetadata from "./components/layout/page-metadata";
 import { Outlet } from "react-router-dom";
 
 // 1. Navigation links are now in a constant array for easier management
@@ -9,6 +10,7 @@ function App() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white font-sans text-slate-800 md:flex-row">
+      <PageMetadata />
       <Header
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
