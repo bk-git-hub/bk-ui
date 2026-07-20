@@ -12,6 +12,91 @@ import {
   Waves,
 } from "lucide-react";
 
+const componentCards = [
+  {
+    title: "Tinder Swiper",
+    description: "Interactive card stack with gesture-based swipe controls.",
+    icon: <img src="/icons/tinder.svg" className="h-10 w-10" />,
+    href: "/components/tinder-swiper",
+  },
+  {
+    title: "Coverflow",
+    description: "3D carousel effect for browsing media items smoothly.",
+    icon: <img src="/icons/coverflow.svg" className="h-10 w-10" />,
+    href: "/components/coverflow",
+  },
+  {
+    title: "ReactPod",
+    description: "Retro click-wheel interface with haptic feedback simulation.",
+    icon: <img src="/icons/ipod.svg" className="h-10 w-10" />,
+    href: "/components/react-pod",
+  },
+  {
+    title: "Cards Stack Slider",
+    description: "Looping 3D cards with drag, flip, and orientation controls.",
+    icon: <Layers3 aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/cards-stack-slider",
+  },
+  {
+    title: "Shader Slider",
+    description:
+      "WebGL image transitions with accessible controls and graceful fallback.",
+    icon: <Waves aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/shader-slider",
+  },
+  {
+    title: "Slicer Slider",
+    description:
+      "Editorial image reveals built from staggered vertical ribbons.",
+    icon: <Columns3 aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/slicer-slider",
+  },
+  {
+    title: "Shutter Slider",
+    description:
+      "Cinematic image reveals composed from accessible shutter panels.",
+    icon: <Blinds aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/shutter-slider",
+  },
+  {
+    title: "Story Slider",
+    description:
+      "Grouped stories with autoplay, hold-to-pause, tap, swipe, and keyboard controls.",
+    icon: <GalleryVerticalEnd aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/story-slider",
+  },
+  {
+    title: "Expo Slider",
+    description:
+      "A focused gallery with expanding edge frames, grayscale depth, and parallax.",
+    icon: <GalleryHorizontalEnd aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/expo-slider",
+  },
+] satisfies FeatureCardProps[];
+
+const forFunCards = [
+  {
+    title: "Lotto Draw",
+    description: "Configurable draw with custom ball content and count.",
+    icon: <Dices aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/lotto",
+  },
+  {
+    title: "Slot Machine",
+    description:
+      "Customizable reels with editable content and accessible controls.",
+    icon: <Cherry aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/slot-machine",
+  },
+  {
+    title: "Baccarat Squeeze",
+    description:
+      "Tactile corner reveal with pointer, touch, and keyboard controls.",
+    icon: <ScanLine aria-hidden="true" className="h-10 w-10" />,
+    href: "/components/baccarat-squeeze",
+  },
+] satisfies FeatureCardProps[];
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
@@ -37,121 +122,47 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* FEATURED COMPONENTS GRID */}
-        <div className="mx-auto mt-24 max-w-4xl">
-          <h2 className="mb-10 text-center text-xl leading-8 font-semibold text-slate-900">
-            Explore Featured Components
-          </h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              title="Tinder Swiper"
-              description="Interactive card stack with gesture-based swipe controls."
-              icon={<img src="/icons/tinder.svg" className="h-10 w-10" />}
-              href="/components/tinder-swiper"
-            />
-
-            <FeatureCard
-              title="Coverflow"
-              description="3D carousel effect for browsing media items smoothly."
-              icon={<img src="/icons/coverflow.svg" className="h-10 w-10" />}
-              href="/components/coverflow"
-            />
-
-            <FeatureCard
-              title="react Pod Controller"
-              description="Retro click-wheel interface with haptic feedback simulation."
-              icon={<img src="/icons/ipod.svg" className="h-10 w-10" />}
-              href="/components/ipod"
-            />
-
-            <FeatureCard
-              title="Lotto Draw"
-              description="Configurable draw with custom ball content and count."
-              icon={<Dices aria-hidden="true" className="h-10 w-10" />}
-              href="/components/lotto"
-            />
-
-            <FeatureCard
-              title="Slot Machine"
-              description="Customizable reels with editable content and accessible controls."
-              icon={<Cherry aria-hidden="true" className="h-10 w-10" />}
-              href="/components/slot-machine"
-            />
-
-            <FeatureCard
-              title="Baccarat Squeeze"
-              description="Tactile corner reveal with pointer, touch, and keyboard controls."
-              icon={<ScanLine aria-hidden="true" className="h-10 w-10" />}
-              href="/components/baccarat-squeeze"
-            />
-
-            <FeatureCard
-              title="Cards Stack Slider"
-              description="Looping 3D cards with drag, flip, and orientation controls."
-              icon={<Layers3 aria-hidden="true" className="h-10 w-10" />}
-              href="/components/cards-stack-slider"
-            />
-
-            <FeatureCard
-              title="Shader Slider"
-              description="WebGL image transitions with accessible controls and graceful fallback."
-              icon={<Waves aria-hidden="true" className="h-10 w-10" />}
-              href="/components/shader-slider"
-            />
-
-            <FeatureCard
-              title="Slicer Slider"
-              description="Editorial image reveals built from staggered vertical ribbons."
-              icon={<Columns3 aria-hidden="true" className="h-10 w-10" />}
-              href="/components/slicer-slider"
-            />
-
-            <FeatureCard
-              title="Shutter Slider"
-              description="Cinematic image reveals composed from accessible shutter panels."
-              icon={<Blinds aria-hidden="true" className="h-10 w-10" />}
-              href="/components/shutter-slider"
-            />
-
-            <FeatureCard
-              title="Story Slider"
-              description="Grouped stories with autoplay, hold-to-pause, tap, swipe, and keyboard controls."
-              icon={
-                <GalleryVerticalEnd aria-hidden="true" className="h-10 w-10" />
-              }
-              href="/components/story-slider"
-            />
-
-            <FeatureCard
-              title="Expo Slider"
-              description="A focused gallery with expanding edge frames, grayscale depth, and parallax."
-              icon={
-                <GalleryHorizontalEnd
-                  aria-hidden="true"
-                  className="h-10 w-10"
-                />
-              }
-              href="/components/expo-slider"
-            />
-          </div>
-        </div>
+        <FeatureSection title="Components" cards={componentCards} />
+        <FeatureSection title="For Fun" cards={forFunCards} />
       </main>
     </div>
   );
 }
 
-// Sub-component for cleaner code organization
-function FeatureCard({
-  title,
-  description,
-  icon,
-  href,
-}: {
+type FeatureCardProps = {
   title: string;
   description: string;
   icon: React.ReactNode;
   href: string;
+};
+
+function FeatureSection({
+  title,
+  cards,
+}: {
+  title: string;
+  cards: FeatureCardProps[];
 }) {
+  const headingId = `${title.toLowerCase().replace(/\s+/g, "-")}-section`;
+
+  return (
+    <section className="mx-auto mt-24 max-w-4xl" aria-labelledby={headingId}>
+      <h2
+        id={headingId}
+        className="mb-10 text-center text-xl leading-8 font-semibold text-slate-900"
+      >
+        {title}
+      </h2>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((card) => (
+          <FeatureCard key={card.href} {...card} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FeatureCard({ title, description, icon, href }: FeatureCardProps) {
   return (
     <a
       href={href}
