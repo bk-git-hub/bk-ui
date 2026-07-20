@@ -2,6 +2,7 @@ export const reactPodUsageCode = `import {
   ReactPod,
   type ReactPodCoverflowAlbum,
   type ReactPodMenuItem,
+  type ReactPodTrack,
 } from "@/components/ReactPod";
 
 const menuItems = [
@@ -10,6 +11,19 @@ const menuItems = [
   { id: "coverflow", label: "Coverflow" },
   { id: "about", label: "About This Pod" },
 ] satisfies readonly ReactPodMenuItem[];
+
+const tracks = [
+  {
+    id: "streetlights",
+    title: "Streetlights",
+    artist: "Night Drive",
+    album: "Night Drive",
+    duration: 214,
+    src: "/audio/streetlights.mp3",
+    artworkSrc: "/albums/night-drive.webp",
+    artworkAlt: "Blue city lights on the Night Drive album cover",
+  },
+] satisfies readonly ReactPodTrack[];
 
 const coverflowAlbums = [
   {
@@ -30,6 +44,7 @@ export default function MusicPlayer() {
       <ReactPod
         deviceName="My Pod"
         menuItems={menuItems}
+        tracks={tracks}
         coverflowAlbums={coverflowAlbums}
         wheelSensitivity={1.25}
       />

@@ -3,7 +3,7 @@ import type { ComponentViewerCodeTab } from "@/components/layout/component-viewe
 export const reactPodNextJsExport: ComponentViewerCodeTab = {
   language: "Next.js TSX",
   description:
-    "App Router can render ReactPod and its composed Coverflow through the existing client entry while page.tsx remains a Server Component. Pass serializable album data across that boundary and add a consumer 'use client' wrapper only when supplying function-valued props.",
+    "App Router can render ReactPod and its native MP3 player through the existing client entry while page.tsx remains a Server Component. Pass serializable track and album data across that boundary; browser audio starts only after hydration and user input.",
   code: `// Next.js App Router export
 //
 // Required runtime files (the same React + Tailwind core used by React/Vite):
@@ -59,6 +59,7 @@ import {
   ReactPod,
   type ReactPodCoverflowAlbum,
   type ReactPodMenuItem,
+  type ReactPodTrack,
 } from "@/components/ReactPod/client";
 
 const menuItems = [
@@ -68,7 +69,21 @@ const menuItems = [
   { id: "about", label: "About This Pod" },
 ] satisfies readonly ReactPodMenuItem[];
 
-// Put the referenced cover image in public/albums/night-drive.webp.
+// Put the MP3 in public/audio/streetlights.mp3 and its cover in
+// public/albums/night-drive.webp.
+const tracks = [
+  {
+    id: "streetlights",
+    title: "Streetlights",
+    artist: "Night Drive",
+    album: "Night Drive",
+    duration: 214,
+    src: "/audio/streetlights.mp3",
+    artworkSrc: "/albums/night-drive.webp",
+    artworkAlt: "Blue city lights on the Night Drive album cover",
+  },
+] satisfies readonly ReactPodTrack[];
+
 const coverflowAlbums = [
   {
     id: "night-drive",
@@ -88,6 +103,7 @@ export default function ReactPodPage() {
       <ReactPod
         deviceName="My Pod"
         menuItems={menuItems}
+        tracks={tracks}
         coverflowAlbums={coverflowAlbums}
         wheelSensitivity={1.25}
       />
@@ -97,14 +113,15 @@ export default function ReactPodPage() {
 
 // SSR / hydration
 // - ReactPod does not read window or document during render. Pointer geometry,
-//   ResizeObserver, and playback timers run only after hydration in effects or
-//   user event handlers, so dynamic(..., { ssr: false }) is unnecessary.
-// - Keep menuItems, photoAlbums, coverflowAlbums, and initial props
+//   ResizeObserver, native audio playback, and fallback playback timers run
+//   only after hydration in effects or user event handlers, so
+//   dynamic(..., { ssr: false }) is unnecessary.
+// - Keep menuItems, tracks, photoAlbums, coverflowAlbums, and initial props
 //   deterministic between the server render and hydration. Shuffle randomness
 //   runs only after selection.
-// - Server Components may pass serializable menu, photo, and Coverflow album
-//   data. Put native event handlers or other function-valued props in your own
-//   "use client" wrapper instead of crossing the server/client boundary.
+// - Server Components may pass serializable track, menu, photo, and Coverflow
+//   album data. Put native event handlers or other function-valued props in
+//   your own "use client" wrapper instead of crossing the boundary.
 
 // Tailwind CSS v4
 // Local files below app or src are detected automatically. For an external

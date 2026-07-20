@@ -5,7 +5,24 @@
 ## 일반 React / Vite
 
 ```tsx
-import { ReactPod, type ReactPodCoverflowAlbum } from "@/components/ReactPod";
+import {
+  ReactPod,
+  type ReactPodCoverflowAlbum,
+  type ReactPodTrack,
+} from "@/components/ReactPod";
+
+const tracks = [
+  {
+    id: "streetlights",
+    title: "Streetlights",
+    artist: "Night Drive",
+    album: "Night Drive",
+    duration: 214,
+    src: "/audio/streetlights.mp3",
+    artworkSrc: "/albums/night-drive.webp",
+    artworkAlt: "Blue city lights on the Night Drive album cover",
+  },
+] satisfies readonly ReactPodTrack[];
 
 const coverflowAlbums = [
   {
@@ -21,12 +38,21 @@ export function PlayerPreview() {
   return (
     <ReactPod
       deviceName="My Pod"
+      tracks={tracks}
       coverflowAlbums={coverflowAlbums}
       wheelSensitivity={1.25}
     />
   );
 }
 ```
+
+`tracks`에는 소비자가 소유한 음원 URL과 메타데이터를 주입합니다. `src`가
+있으면 ReactPod은 브라우저의 네이티브 `<audio>` 한 개로 실제 음원을
+재생하고, 재생/일시정지·이전/다음·진행률·종료 후 다음 곡·Now Playing
+화면의 휠 볼륨을 동기화합니다. 활성 곡만 `preload="metadata"`로 로드하며
+추가 미디어 라이브러리는 필요하지 않습니다. `artworkSrc`는 Now Playing과
+메뉴 미리보기에 표시되고, `artwork`에는 이미지가 없을 때 사용할 CSS
+배경을 전달할 수 있습니다.
 
 기본 메인 메뉴에는 `Coverflow` 항목이 포함됩니다. `coverflowAlbums`는 빈 배열이 기본값이며, 앨범과 트랙은 소비자가 직렬화 가능한 데이터로 주입합니다. Coverflow 화면에서는 ReactPod 클릭휠의 원형 회전·마우스 휠·방향키가 활성 앨범 인덱스를 이동하며, Coverflow 자체의 좌우 방향키·마우스 휠·드래그와 같은 상태를 공유합니다. 활성 커버의 Enter/Space 또는 클릭으로 상세 면을 뒤집고, X와 바깥 클릭은 앞면으로 돌아가며 ReactPod의 MENU는 이전 메뉴로 복귀합니다.
 
@@ -43,7 +69,21 @@ export function PlayerPreview() {
 import {
   ReactPod,
   type ReactPodCoverflowAlbum,
+  type ReactPodTrack,
 } from "@/components/ReactPod/client";
+
+const tracks = [
+  {
+    id: "streetlights",
+    title: "Streetlights",
+    artist: "Night Drive",
+    album: "Night Drive",
+    duration: 214,
+    src: "/audio/streetlights.mp3",
+    artworkSrc: "/albums/night-drive.webp",
+    artworkAlt: "Blue city lights on the Night Drive album cover",
+  },
+] satisfies readonly ReactPodTrack[];
 
 const coverflowAlbums = [
   {
@@ -59,6 +99,7 @@ export default function PlayerPage() {
   return (
     <ReactPod
       deviceName="My Pod"
+      tracks={tracks}
       coverflowAlbums={coverflowAlbums}
       wheelSensitivity={1.25}
     />
@@ -66,7 +107,7 @@ export default function PlayerPage() {
 }
 ```
 
-예시 이미지는 `public/albums/night-drive.webp`에 둡니다. 복사한 소스의 `@/*` import는 `src/*` alias를 전제로 하므로, 프로젝트에 alias가 없다면 `tsconfig.json`에 추가하거나 상대 경로로 바꿉니다. 앨범 데이터는 직렬화 가능하므로 Server Component에서 전달할 수 있습니다. 렌더 중 `window`나 `document`에 접근하지 않고 Coverflow의 측정·입력 listener도 effect 이후에 연결되므로 SSR에 안전합니다. Next.js 전용 소스 복제나 런타임 의존성은 필요하지 않습니다.
+예시 MP3는 `public/audio/streetlights.mp3`, 이미지는 `public/albums/night-drive.webp`에 둡니다. 복사한 소스의 `@/*` import는 `src/*` alias를 전제로 하므로, 프로젝트에 alias가 없다면 `tsconfig.json`에 추가하거나 상대 경로로 바꿉니다. 트랙과 앨범 데이터는 직렬화 가능하므로 Server Component에서 전달할 수 있습니다. 렌더 중 `window`, `document`, `new Audio()`에 접근하지 않고 실제 재생과 Coverflow의 측정·입력 listener는 hydration 이후 effect 또는 사용자 입력에서만 실행되므로 SSR에 안전합니다. Next.js 전용 소스 복제나 런타임 의존성은 필요하지 않습니다.
 
 ## Tailwind CSS
 

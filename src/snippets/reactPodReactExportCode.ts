@@ -3,7 +3,7 @@ import type { ComponentViewerCodeTab } from "@/components/layout/component-viewe
 export const reactPodReactExport: ComponentViewerCodeTab = {
   language: "React TSX",
   description:
-    "Copy the ReactPod, ClickWheel, and Coverflow runtime files into your React/Vite source tree. The shared core uses only React, Tailwind CSS, clsx, and tailwind-merge; no Next.js runtime or animation library is required.",
+    "Copy the ReactPod, ClickWheel, and Coverflow runtime files into your React/Vite source tree. Native MP3 playback uses the browser audio element; the shared core needs no media, Next.js, or animation library.",
   code: `// React / Vite export
 //
 // Required runtime files:
@@ -70,6 +70,7 @@ import {
   ReactPod,
   type ReactPodCoverflowAlbum,
   type ReactPodMenuItem,
+  type ReactPodTrack,
 } from "@/components/ReactPod";
 
 const menuItems = [
@@ -79,7 +80,21 @@ const menuItems = [
   { id: "about", label: "About This Pod" },
 ] satisfies readonly ReactPodMenuItem[];
 
-// Put the referenced cover image in public/albums/night-drive.webp.
+// Put the referenced MP3 in public/audio/streetlights.mp3 and its cover in
+// public/albums/night-drive.webp. Only the active track is loaded.
+const tracks = [
+  {
+    id: "streetlights",
+    title: "Streetlights",
+    artist: "Night Drive",
+    album: "Night Drive",
+    duration: 214,
+    src: "/audio/streetlights.mp3",
+    artworkSrc: "/albums/night-drive.webp",
+    artworkAlt: "Blue city lights on the Night Drive album cover",
+  },
+] satisfies readonly ReactPodTrack[];
+
 const coverflowAlbums = [
   {
     id: "night-drive",
@@ -99,6 +114,7 @@ export default function App() {
       <ReactPod
         deviceName="My Pod"
         menuItems={menuItems}
+        tracks={tracks}
         coverflowAlbums={coverflowAlbums}
         wheelSensitivity={1.25}
       />

@@ -6,12 +6,14 @@ import {
   PlayIcon,
   ShuffleIcon,
 } from "./ReactPodIcons";
-import { TRACKS } from "./reactPodState";
 import ReactPodCoverflow from "./ReactPodCoverflow";
 
 function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+  const wholeSeconds = Number.isFinite(seconds)
+    ? Math.max(0, Math.floor(seconds))
+    : 0;
+  const minutes = Math.floor(wholeSeconds / 60);
+  return `${minutes}:${String(wholeSeconds % 60).padStart(2, "0")}`;
 }
 
 function StatusBar() {
@@ -47,7 +49,8 @@ function StatusBar() {
 }
 
 function MainMenu() {
-  const { coverflowAlbums, menuItems, photoAlbums, state } = useReactPod();
+  const { coverflowAlbums, menuItems, photoAlbums, state, tracks } =
+    useReactPod();
   const isPhotosSelected = menuItems[state.menuIndex]?.id === "photos";
   const isCoverflowSelected = menuItems[state.menuIndex]?.id === "coverflow";
   const photoCovers = photoAlbums
@@ -60,6 +63,11 @@ function MainMenu() {
     id: album.id,
     src: album.coverSrc,
   }));
+  const musicCovers = tracks
+    .flatMap((track) =>
+      track.artworkSrc ? [{ id: String(track.id), src: track.artworkSrc }] : [],
+    )
+    .slice(0, 2);
   const previewCovers = isPhotosSelected
     ? photoCovers.map(({ albumId, photo }) => ({
         id: albumId,
@@ -67,7 +75,7 @@ function MainMenu() {
       }))
     : isCoverflowSelected
       ? coverflowCovers
-      : [];
+      : musicCovers;
   const previewLabel = isPhotosSelected
     ? "PHOTOS"
     : isCoverflowSelected
@@ -98,7 +106,7 @@ function MainMenu() {
       </div>
       <div
         className={`relative overflow-hidden ${
-          isPhotosSelected || isCoverflowSelected
+          previewCovers.length > 0
             ? "bg-slate-900"
             : "bg-gradient-to-br from-sky-100 via-blue-300 to-indigo-700"
         }`}
@@ -335,7 +343,18 @@ function PhotoViewer() {
 }
 
 function Songs() {
-  const { state } = useReactPod();
+  const { state, tracks } = useReactPod();
+
+  if (tracks.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-200 px-5 text-center text-slate-700">
+        <p className="text-sm font-bold">No Songs</p>
+        <p className="mt-1 text-[10px] text-slate-500">
+          Add songs with the tracks prop.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -343,7 +362,7 @@ function Songs() {
       role="listbox"
       aria-label="Songs"
     >
-      {TRACKS.map((track, index) => {
+      {tracks.map((track, index) => {
         const isSelected = index === state.songIndex;
         return (
           <div
@@ -375,20 +394,45 @@ function Songs() {
 }
 
 function NowPlaying() {
-  const { state } = useReactPod();
-  const track = TRACKS[state.currentTrackIndex];
-  const progress = (state.progress / track.duration) * 100;
+  const { state, tracks } = useReactPod();
+  const track = tracks[state.currentTrackIndex];
+
+  if (!track) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-200 px-5 text-center text-slate-700">
+        <p className="text-sm font-bold">Nothing Playing</p>
+        <p className="mt-1 text-[10px] text-slate-500">
+          Add songs with the tracks prop.
+        </p>
+      </div>
+    );
+  }
+
+  const duration = Math.max(0, track.duration);
+  const progress =
+    duration === 0 ? 0 : Math.min(100, (state.progress / duration) * 100);
 
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-white to-slate-200 px-3 py-2 text-slate-900">
       <div className="flex min-h-0 flex-1 items-center gap-3">
         <div
-          className="h-[76px] w-[76px] shrink-0 rounded-sm border border-black/20 shadow-md"
-          style={{ background: track.artwork }}
-          aria-label={`${track.album} artwork`}
+          className="relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-sm border border-black/20 shadow-md"
+          style={{
+            background:
+              track.artwork ??
+              "linear-gradient(145deg, #172554 5%, #7c3aed 55%, #f472b6)",
+          }}
+          aria-label={track.artworkAlt ?? `${track.album} artwork`}
           role="img"
         >
-          <div className="flex h-full items-end p-1.5 text-[8px] font-bold tracking-wider text-white/90">
+          {track.artworkSrc && (
+            <img
+              src={track.artworkSrc}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          <div className="absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-black/80 to-transparent p-1.5 pt-5 text-[8px] font-bold tracking-wider text-white/90">
             {track.album.toUpperCase()}
           </div>
         </div>
@@ -413,7 +457,7 @@ function NowPlaying() {
           </div>
           <div className="mt-0.5 flex justify-between text-[9px] font-medium tabular-nums">
             <span>{formatTime(state.progress)}</span>
-            <span>-{formatTime(track.duration - state.progress)}</span>
+            <span>-{formatTime(duration - state.progress)}</span>
           </div>
         </div>
 
@@ -433,8 +477,11 @@ function NowPlaying() {
 }
 
 function About() {
-  const { deviceName } = useReactPod();
+  const { deviceName, tracks } = useReactPod();
   const monogram = deviceName.trim().charAt(0).toUpperCase() || "R";
+  const totalMinutes = Math.round(
+    tracks.reduce((total, track) => total + track.duration, 0) / 60,
+  );
 
   return (
     <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-white to-slate-200 px-5 text-center text-slate-800">
@@ -447,7 +494,8 @@ function About() {
         and keyboard controls.
       </p>
       <p className="mt-2 text-[9px] font-semibold text-slate-400">
-        5 songs · 16 min
+        {tracks.length} {tracks.length === 1 ? "song" : "songs"} ·{" "}
+        {totalMinutes} min
       </p>
     </div>
   );

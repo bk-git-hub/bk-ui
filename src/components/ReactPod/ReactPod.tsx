@@ -6,11 +6,12 @@ import type { ComponentPropsWithoutRef } from "react";
 import ClickWheel from "./ClickWheel";
 import Display from "./Display";
 import { ReactPodProvider } from "./ReactPodProvider";
-import { MAIN_MENU_ITEMS } from "./reactPodState";
+import { MAIN_MENU_ITEMS, TRACKS } from "./reactPodState";
 import type {
   ReactPodCoverflowAlbum,
   ReactPodMenuItem,
   ReactPodPhotoAlbum,
+  ReactPodTrack,
 } from "./reactPodState";
 
 export type {
@@ -20,6 +21,7 @@ export type {
   ReactPodCoverflowTrack,
   ReactPodPhoto,
   ReactPodPhotoAlbum,
+  ReactPodTrack,
 } from "./reactPodState";
 
 const EMPTY_PHOTO_ALBUMS: readonly ReactPodPhotoAlbum[] = [];
@@ -31,6 +33,7 @@ export interface ReactPodProps
   menuItems?: readonly ReactPodMenuItem[];
   photoAlbums?: readonly ReactPodPhotoAlbum[];
   coverflowAlbums?: readonly ReactPodCoverflowAlbum[];
+  tracks?: readonly ReactPodTrack[];
   coverflowAriaLabel?: string;
   wheelSensitivity?: number;
 }
@@ -40,6 +43,7 @@ export function ReactPod({
   menuItems = MAIN_MENU_ITEMS,
   photoAlbums = EMPTY_PHOTO_ALBUMS,
   coverflowAlbums = EMPTY_COVERFLOW_ALBUMS,
+  tracks = TRACKS,
   coverflowAriaLabel = "Album coverflow",
   wheelSensitivity,
   className,
@@ -51,6 +55,7 @@ export function ReactPod({
       menuItems={menuItems}
       photoAlbums={photoAlbums}
       coverflowAlbums={coverflowAlbums}
+      tracks={tracks}
       coverflowAriaLabel={coverflowAriaLabel}
     >
       <div

@@ -21,14 +21,19 @@ export interface ReactPodMenuItem {
   label: string;
 }
 
-export interface Track {
-  id: number;
+export interface ReactPodTrack {
+  id: string | number;
   title: string;
   artist: string;
   album: string;
   duration: number;
-  artwork: string;
+  src?: string;
+  artwork?: string;
+  artworkSrc?: string;
+  artworkAlt?: string;
 }
+
+export type Track = ReactPodTrack;
 
 export interface ReactPodPhoto {
   id: string;
@@ -151,9 +156,13 @@ export type ReactPodAction =
   | { type: "SYNC_MENU_ITEMS"; menuLength: number }
   | { type: "SYNC_PHOTO_ALBUMS" }
   | { type: "SET_COVERFLOW_INDEX"; index: number }
-  | { type: "SYNC_COVERFLOW_ALBUMS" };
+  | { type: "SYNC_COVERFLOW_ALBUMS" }
+  | { type: "SET_PLAYING"; isPlaying: boolean }
+  | { type: "SET_PROGRESS"; progress: number }
+  | { type: "SYNC_TRACKS" };
 
 function wrap(value: number, length: number) {
+  if (length <= 0) return 0;
   return (value + length) % length;
 }
 
@@ -240,15 +249,18 @@ function advanceTrack(state: ReactPodState, trackIndex: number) {
 export function getNextTrackIndex(
   state: ReactPodState,
   randomValue = Math.random(),
+  trackCount = TRACKS.length,
 ) {
+  if (trackCount === 0) return 0;
+
   if (!state.isShuffling) {
-    return wrap(state.currentTrackIndex + 1, TRACKS.length);
+    return wrap(state.currentTrackIndex + 1, trackCount);
   }
 
-  if (TRACKS.length < 2) return 0;
+  if (trackCount < 2) return 0;
 
-  const offset = Math.floor(randomValue * (TRACKS.length - 1)) + 1;
-  return wrap(state.currentTrackIndex + offset, TRACKS.length);
+  const offset = Math.floor(randomValue * (trackCount - 1)) + 1;
+  return wrap(state.currentTrackIndex + offset, trackCount);
 }
 
 export function reactPodReducer(
@@ -257,6 +269,7 @@ export function reactPodReducer(
   menuItems: readonly ReactPodMenuItem[] = MAIN_MENU_ITEMS,
   photoAlbums: readonly ReactPodPhotoAlbum[] = [],
   coverflowAlbums: readonly ReactPodCoverflowAlbum[] = [],
+  tracks: readonly ReactPodTrack[] = TRACKS,
 ): ReactPodState {
   switch (action.type) {
     case "ROTATE":
@@ -270,9 +283,11 @@ export function reactPodReducer(
       }
 
       if (state.screen === "songs") {
+        if (tracks.length === 0) return state;
+
         return {
           ...state,
-          songIndex: wrap(state.songIndex + action.direction, TRACKS.length),
+          songIndex: wrap(state.songIndex + action.direction, tracks.length),
         };
       }
 
@@ -328,6 +343,8 @@ export function reactPodReducer(
 
     case "SELECT": {
       if (state.screen === "songs") {
+        if (tracks.length === 0) return state;
+
         return navigateTo(state, "now-playing", {
           currentTrackIndex: state.songIndex,
           progress: 0,
@@ -337,6 +354,7 @@ export function reactPodReducer(
       }
 
       if (state.screen === "now-playing") {
+        if (tracks.length === 0) return state;
         return { ...state, isPlaying: !state.isPlaying };
       }
 
@@ -382,6 +400,7 @@ export function reactPodReducer(
         });
       }
       if (selectedItem.id === "shuffle") {
+        if (tracks.length === 0) return state;
         return navigateTo(state, "now-playing", {
           currentTrackIndex: action.shuffledTrackIndex ?? 0,
           progress: 0,
@@ -413,7 +432,9 @@ export function reactPodReducer(
       return { ...state, screen: "menu", navigationHistory: [] };
 
     case "TOGGLE_PLAY":
-      return { ...state, isPlaying: !state.isPlaying };
+      return tracks.length === 0
+        ? state
+        : { ...state, isPlaying: !state.isPlaying };
 
     case "NEXT":
       if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
@@ -426,10 +447,14 @@ export function reactPodReducer(
         };
       }
 
-      return advanceTrack(state, action.trackIndex);
+      return tracks.length === 0
+        ? state
+        : advanceTrack(state, clampIndex(action.trackIndex, tracks.length));
 
     case "ADVANCE_TRACK":
-      return advanceTrack(state, action.trackIndex);
+      return tracks.length === 0
+        ? state
+        : advanceTrack(state, clampIndex(action.trackIndex, tracks.length));
 
     case "PREVIOUS":
       if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
@@ -442,23 +467,25 @@ export function reactPodReducer(
         };
       }
 
+      if (tracks.length === 0) return state;
       if (state.progress > 3) return { ...state, progress: 0 };
       return {
         ...state,
-        currentTrackIndex: wrap(state.currentTrackIndex - 1, TRACKS.length),
-        songIndex: wrap(state.currentTrackIndex - 1, TRACKS.length),
+        currentTrackIndex: wrap(state.currentTrackIndex - 1, tracks.length),
+        songIndex: wrap(state.currentTrackIndex - 1, tracks.length),
         progress: 0,
         isPlaying: true,
       };
 
-    case "TICK":
+    case "TICK": {
+      const currentTrack = tracks[state.currentTrackIndex];
+      if (!currentTrack) return state;
+
       return {
         ...state,
-        progress: Math.min(
-          state.progress + 1,
-          TRACKS[state.currentTrackIndex].duration,
-        ),
+        progress: Math.min(state.progress + 1, currentTrack.duration),
       };
+    }
 
     case "SYNC_MENU_ITEMS": {
       const menuIndex = clampMenuIndex(state.menuIndex, action.menuLength);
@@ -483,6 +510,46 @@ export function reactPodReducer(
       return coverflowIndex === state.coverflowIndex
         ? state
         : { ...state, coverflowIndex };
+    }
+
+    case "SET_PLAYING": {
+      const isPlaying = tracks.length > 0 && action.isPlaying;
+      return state.isPlaying === isPlaying ? state : { ...state, isPlaying };
+    }
+
+    case "SET_PROGRESS": {
+      const duration = tracks[state.currentTrackIndex]?.duration ?? 0;
+      const progress = Number.isFinite(action.progress)
+        ? Math.max(0, Math.min(action.progress, duration))
+        : state.progress;
+      return progress === state.progress ? state : { ...state, progress };
+    }
+
+    case "SYNC_TRACKS": {
+      const currentTrackIndex = clampIndex(
+        state.currentTrackIndex,
+        tracks.length,
+      );
+      const songIndex = clampIndex(state.songIndex, tracks.length);
+      const duration = tracks[currentTrackIndex]?.duration ?? 0;
+      const progress =
+        currentTrackIndex === state.currentTrackIndex
+          ? Math.max(0, Math.min(state.progress, duration))
+          : 0;
+      const isPlaying = tracks.length === 0 ? false : state.isPlaying;
+
+      return currentTrackIndex === state.currentTrackIndex &&
+        songIndex === state.songIndex &&
+        progress === state.progress &&
+        isPlaying === state.isPlaying
+        ? state
+        : {
+            ...state,
+            currentTrackIndex,
+            songIndex,
+            progress,
+            isPlaying,
+          };
     }
   }
 }

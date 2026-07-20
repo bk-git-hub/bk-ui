@@ -10,6 +10,7 @@ import type {
   ReactPodCoverflowAlbum,
   ReactPodPhotoAlbum,
   ReactPodState,
+  ReactPodTrack,
 } from "./reactPodState";
 
 const PHOTO_ALBUMS = [
@@ -52,6 +53,25 @@ const COVERFLOW_ALBUMS = [
     tracks: [],
   },
 ] satisfies readonly ReactPodCoverflowAlbum[];
+
+const AUDIO_TRACKS = [
+  {
+    id: "short",
+    title: "Short Song",
+    artist: "Test Artist",
+    album: "Test Album",
+    duration: 10,
+    src: "/short.mp3",
+  },
+  {
+    id: "long",
+    title: "Long Song",
+    artist: "Test Artist",
+    album: "Test Album",
+    duration: 20,
+    src: "/long.mp3",
+  },
+] satisfies readonly ReactPodTrack[];
 
 describe("reactPodReducer", () => {
   it("wraps menu and song navigation", () => {
@@ -215,6 +235,75 @@ describe("reactPodReducer", () => {
       [],
     );
     expect(emptyState).toBe(state);
+  });
+
+  it("navigates and synchronizes an injected track library", () => {
+    const songsState: ReactPodState = {
+      ...initialReactPodState,
+      screen: "songs",
+    };
+    const selectedLast = reactPodReducer(
+      reactPodReducer(
+        songsState,
+        { type: "ROTATE", direction: -1 },
+        MAIN_MENU_ITEMS,
+        PHOTO_ALBUMS,
+        COVERFLOW_ALBUMS,
+        AUDIO_TRACKS,
+      ),
+      { type: "SELECT" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+      AUDIO_TRACKS,
+    );
+
+    expect(selectedLast).toMatchObject({
+      currentTrackIndex: 1,
+      songIndex: 1,
+      isPlaying: true,
+      screen: "now-playing",
+    });
+
+    const withProgress = reactPodReducer(
+      selectedLast,
+      { type: "SET_PROGRESS", progress: 99 },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+      AUDIO_TRACKS,
+    );
+    expect(withProgress.progress).toBe(20);
+
+    const clamped = reactPodReducer(
+      withProgress,
+      { type: "SYNC_TRACKS" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+      AUDIO_TRACKS.slice(0, 1),
+    );
+    expect(clamped).toMatchObject({
+      currentTrackIndex: 0,
+      songIndex: 0,
+      progress: 0,
+      isPlaying: true,
+    });
+
+    const emptied = reactPodReducer(
+      clamped,
+      { type: "SYNC_TRACKS" },
+      MAIN_MENU_ITEMS,
+      PHOTO_ALBUMS,
+      COVERFLOW_ALBUMS,
+      [],
+    );
+    expect(emptied).toMatchObject({
+      currentTrackIndex: 0,
+      songIndex: 0,
+      progress: 0,
+      isPlaying: false,
+    });
   });
 
   it("clamps volume and restarts or changes the previous track", () => {

@@ -4,6 +4,7 @@ import type {
   ReactPodMenuItem,
   ReactPodPhotoAlbum,
   ReactPodState,
+  ReactPodTrack,
 } from "./reactPodState";
 
 // The base ESLint rule cannot distinguish type-only function parameters.
@@ -16,6 +17,7 @@ export interface ReactPodContextValue {
   menuItems: readonly ReactPodMenuItem[];
   photoAlbums: readonly ReactPodPhotoAlbum[];
   coverflowAlbums: readonly ReactPodCoverflowAlbum[];
+  tracks: readonly ReactPodTrack[];
   coverflowAriaLabel: string;
   rotate: RotateHandler;
   // The base ESLint rule cannot distinguish type-only function parameters.

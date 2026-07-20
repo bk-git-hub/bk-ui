@@ -10,5 +10,6 @@ export type {
   ReactPodPhotoAlbum,
   ReactPodScreen,
   ReactPodState,
+  ReactPodTrack,
   Track,
 } from "./reactPodState";

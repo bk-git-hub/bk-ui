@@ -8,8 +8,11 @@ describe("ReactPod usage and export snippets", () => {
     expect(reactPodUsageCode).toContain('from "@/components/ReactPod"');
     expect(reactPodUsageCode).toContain("type ReactPodMenuItem");
     expect(reactPodUsageCode).toContain("type ReactPodCoverflowAlbum");
+    expect(reactPodUsageCode).toContain("type ReactPodTrack");
     expect(reactPodUsageCode).toContain('id: "coverflow"');
     expect(reactPodUsageCode).toContain("menuItems={menuItems}");
+    expect(reactPodUsageCode).toContain("tracks={tracks}");
+    expect(reactPodUsageCode).toContain('src: "/audio/streetlights.mp3"');
     expect(reactPodUsageCode).toContain("coverflowAlbums={coverflowAlbums}");
     expect(reactPodUsageCode).toContain("wheelSensitivity={1.25}");
   });
@@ -33,6 +36,8 @@ describe("ReactPod usage and export snippets", () => {
     );
     expect(reactPodReactExport.code).toContain('from "@/components/ReactPod"');
     expect(reactPodReactExport.code).toContain("type ReactPodCoverflowAlbum");
+    expect(reactPodReactExport.code).toContain("type ReactPodTrack");
+    expect(reactPodReactExport.code).toContain("tracks={tracks}");
     expect(reactPodReactExport.code).toContain(
       "coverflowAlbums={coverflowAlbums}",
     );
@@ -79,6 +84,11 @@ describe("ReactPod usage and export snippets", () => {
       'from "@/components/ReactPod/client"',
     );
     expect(reactPodNextJsExport.code).toContain("type ReactPodCoverflowAlbum");
+    expect(reactPodNextJsExport.code).toContain("type ReactPodTrack");
+    expect(reactPodNextJsExport.code).toContain("tracks={tracks}");
+    expect(reactPodNextJsExport.code).toContain(
+      'src: "/audio/streetlights.mp3"',
+    );
     expect(reactPodNextJsExport.code).toContain(
       "coverflowAlbums={coverflowAlbums}",
     );
