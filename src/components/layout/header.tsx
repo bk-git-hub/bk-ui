@@ -1,3 +1,5 @@
+import type { Dispatch, SetStateAction } from "react";
+import { Link } from "react-router-dom";
 import NavigationLink from "./navigation-link";
 
 const Header = ({
@@ -5,7 +7,7 @@ const Header = ({
   setIsMobileMenuOpen,
 }: {
   isMobileMenuOpen: boolean;
-  setIsMobileMenuOpen: (isOpen: boolean) => void;
+  setIsMobileMenuOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
   return (
     <>
@@ -24,7 +26,14 @@ const Header = ({
         } `}
       >
         <div className="flex items-center justify-between">
-          <h1 className="font-praise mb-6 text-4xl text-black">Bk ui</h1>
+          <Link
+            to="/"
+            aria-label="Go to BK UI home"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="font-praise mb-6 inline-flex text-4xl text-black transition-colors hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
+          >
+            Bk ui
+          </Link>
           {/* Close button for mobile */}
           <button
             onClick={() => setIsMobileMenuOpen(false)}
@@ -67,7 +76,13 @@ const Header = ({
             />
           </svg>
         </button>
-        <span className="font-praise text-2xl">Bk ui</span>
+        <Link
+          to="/"
+          aria-label="Go to BK UI home"
+          className="font-praise text-2xl text-black transition-colors hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
+        >
+          Bk ui
+        </Link>
       </header>
     </>
   );
