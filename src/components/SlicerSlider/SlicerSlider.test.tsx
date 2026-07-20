@@ -88,9 +88,17 @@ function getActiveSlide() {
   ) as HTMLElement;
 }
 
-function getSlices() {
+function getSliceLayers() {
   return Array.from(
-    document.querySelectorAll<HTMLElement>('[data-slot="slicer-slider-slice"]'),
+    document.querySelectorAll<HTMLElement>(
+      '[data-slot="slicer-slider-slices"]',
+    ),
+  );
+}
+
+function getSlices(root: ParentNode = document) {
+  return Array.from(
+    root.querySelectorAll<HTMLElement>('[data-slot="slicer-slider-slice"]'),
   );
 }
 
@@ -106,6 +114,15 @@ function dispatchTransformTransitionEnd(slice: HTMLElement) {
 
 function finishLatestSliceTransition() {
   const slices = getSlices();
+  expect(slices.length).toBeGreaterThan(0);
+  const latestSlice = slices.reduce((latest, slice) =>
+    getTransitionDelay(slice) > getTransitionDelay(latest) ? slice : latest,
+  );
+  dispatchTransformTransitionEnd(latestSlice);
+}
+
+function finishSliceLayerTransition(layer: HTMLElement) {
+  const slices = getSlices(layer);
   expect(slices.length).toBeGreaterThan(0);
   const latestSlice = slices.reduce((latest, slice) =>
     getTransitionDelay(slice) > getTransitionDelay(latest) ? slice : latest,
@@ -220,69 +237,91 @@ describe("SlicerSlider", () => {
     });
   });
 
-  it("coalesces repeated relative controls against the queued target", () => {
+  it("starts an independent overlapping wave for every rapid next input", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
 
     const next = screen.getByRole("button", { name: "Next slide" });
     fireEvent.click(next);
     fireEvent.click(next);
-    fireEvent.click(next);
 
-    expect(getSlides()[0]).toHaveAttribute("data-state", "outgoing");
-    expect(getSlides()[1]).toHaveAttribute("data-state", "incoming");
+    const [firstWave, secondWave] = getSliceLayers();
+    expect(getSliceLayers()).toHaveLength(2);
+    expect(firstWave).toHaveAttribute("data-transition-id");
+    expect(secondWave).toHaveAttribute("data-transition-id");
+    expect(firstWave.dataset.transitionId).not.toBe(
+      secondWave.dataset.transitionId,
+    );
+    expect(Number(firstWave.style.zIndex)).toBeGreaterThan(
+      Number(secondWave.style.zIndex),
+    );
+    const firstWaveSlice = getSlices(firstWave)[0];
+    const secondWaveSlice = getSlices(secondWave)[0];
+    expect(firstWaveSlice.style.opacity).toBe("1");
+    expect(secondWaveSlice.style.opacity).toBe("1");
+    act(() => vi.advanceTimersByTime(50));
+    expect(firstWaveSlice.style.opacity).toBe("0");
+    expect(secondWaveSlice.style.opacity).toBe("1");
+    expect(getSlices(firstWave)).toHaveLength(5);
+    expect(getSlices(secondWave)).toHaveLength(5);
+    expect(firstWave.querySelector("img")).toHaveAttribute("src", "/one.svg");
+    expect(secondWave.querySelector("img")).toHaveAttribute("src", "/two.svg");
     expect(screen.getByRole("status")).toHaveTextContent("1 of 3");
+    expect(onValueChange).not.toHaveBeenCalled();
 
-    finishLatestSliceTransition();
+    finishSliceLayerTransition(firstWave);
 
+    expect(getSliceLayers()).toEqual([secondWave]);
     expect(onValueChange).toHaveBeenCalledTimes(1);
     expect(onValueChange).toHaveBeenLastCalledWith(1, {
       previousValue: 0,
       direction: 1,
       source: "next",
     });
-    expect(getSlides()[1]).toHaveAttribute("data-state", "outgoing");
-    expect(getSlides()[0]).toHaveAttribute("data-state", "incoming");
 
-    finishLatestSliceTransition();
+    finishSliceLayerTransition(secondWave);
 
-    expect(getActiveSlide()).toHaveAttribute("data-index", "0");
+    expect(getSliceLayers()).toHaveLength(0);
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
     expect(onValueChange).toHaveBeenCalledTimes(2);
-    expect(onValueChange).toHaveBeenLastCalledWith(0, {
+    expect(onValueChange).toHaveBeenLastCalledWith(2, {
       previousValue: 1,
       direction: 1,
       source: "next",
     });
   });
 
-  it("lets an opposite relative control cancel the queued movement", () => {
+  it("starts a reversing wave immediately for rapid opposite input", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
-    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
-    finishLatestSliceTransition();
-
-    expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
     fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
-    finishLatestSliceTransition();
 
-    expect(getSlides()[1]).toHaveAttribute("data-state", "incoming");
-    finishLatestSliceTransition();
+    const [forwardWave, reverseWave] = getSliceLayers();
+    expect(getSliceLayers()).toHaveLength(2);
+    expect(forwardWave).toHaveAttribute("data-direction", "next");
+    expect(reverseWave).toHaveAttribute("data-direction", "previous");
+    expect(forwardWave.querySelector("img")).toHaveAttribute("src", "/one.svg");
+    expect(reverseWave.querySelector("img")).toHaveAttribute("src", "/two.svg");
+
+    finishSliceLayerTransition(forwardWave);
+    expect(getSliceLayers()).toEqual([reverseWave]);
+    finishSliceLayerTransition(reverseWave);
 
     expect(getSlices()).toHaveLength(0);
-    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "0");
     expect(onValueChange.mock.calls.map(([nextValue]) => nextValue)).toEqual([
-      1, 2, 1,
+      1, 0,
     ]);
-    expect(onValueChange).toHaveBeenLastCalledWith(1, {
-      previousValue: 2,
+    expect(onValueChange).toHaveBeenLastCalledWith(0, {
+      previousValue: 1,
       direction: -1,
       source: "previous",
     });
   });
 
-  it("derives bounded control availability from the queued target", () => {
+  it("derives bounded control availability from the latest planned target", () => {
     render(<TestSlider loop={false} />);
 
     const previous = screen.getByRole("button", { name: "Previous slide" });
@@ -297,22 +336,28 @@ describe("SlicerSlider", () => {
     expect(next).toBeDisabled();
   });
 
-  it("lets an absolute pagination target replace queued relative input", () => {
+  it("starts an absolute pagination wave from the latest planned target", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
-    fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
     const thirdPaginationItem = screen.getByRole("button", {
       name: "Go to slide 3: Third abstract scene",
     });
     expect(thirdPaginationItem).toBeEnabled();
     fireEvent.click(thirdPaginationItem);
 
-    expect(getSlides()[1]).toHaveAttribute("data-state", "incoming");
-    finishLatestSliceTransition();
-    expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
-    finishLatestSliceTransition();
+    const [nextWave, paginationWave] = getSliceLayers();
+    expect(getSliceLayers()).toHaveLength(2);
+    expect(nextWave.querySelector("img")).toHaveAttribute("src", "/one.svg");
+    expect(paginationWave.querySelector("img")).toHaveAttribute(
+      "src",
+      "/two.svg",
+    );
+
+    finishSliceLayerTransition(nextWave);
+    expect(getSliceLayers()).toEqual([paginationWave]);
+    finishSliceLayerTransition(paginationWave);
 
     expect(getActiveSlide()).toHaveAttribute("data-index", "2");
     expect(onValueChange).toHaveBeenCalledTimes(2);
@@ -353,18 +398,26 @@ describe("SlicerSlider", () => {
       },
     ],
   ] as const)(
-    "accepts %s input while a transition is active",
-    (source, queue) => {
+    "starts an overlapping wave for %s input while another wave is active",
+    (source, startWave) => {
       const onValueChange = vi.fn();
       render(<TestSlider onValueChange={onValueChange} />);
       const viewport = screen.getByTestId("viewport");
 
       fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
-      queue(viewport);
-      finishLatestSliceTransition();
+      startWave(viewport);
 
-      expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
-      finishLatestSliceTransition();
+      const [firstWave, sourceWave] = getSliceLayers();
+      expect(getSliceLayers()).toHaveLength(2);
+      expect(firstWave.querySelector("img")).toHaveAttribute("src", "/one.svg");
+      expect(sourceWave.querySelector("img")).toHaveAttribute(
+        "src",
+        "/two.svg",
+      );
+
+      finishSliceLayerTransition(firstWave);
+      expect(getSliceLayers()).toEqual([sourceWave]);
+      finishSliceLayerTransition(sourceWave);
       expect(onValueChange).toHaveBeenLastCalledWith(2, {
         previousValue: 1,
         direction: 1,
@@ -373,7 +426,7 @@ describe("SlicerSlider", () => {
     },
   );
 
-  it("ignores a stale completion after starting the queued transition", () => {
+  it("drains out-of-order wave completions in sequence and ignores stale IDs", () => {
     const onValueChange = vi.fn();
     const { result } = renderHook(() =>
       useSlicerSlider({ count: 3, onValueChange }),
@@ -383,27 +436,114 @@ describe("SlicerSlider", () => {
       result.current.navigate(1, "next");
       result.current.navigate(1, "next");
     });
-    const firstTransitionId = result.current.transition?.id;
-    expect(firstTransitionId).toBeTypeOf("number");
+    const [firstTransition, secondTransition] = result.current.transitions;
+    expect(result.current.transitions).toHaveLength(2);
+    expect(firstTransition).toMatchObject({ from: 0, to: 1 });
+    expect(secondTransition).toMatchObject({ from: 1, to: 2 });
+    expect(result.current.transition).toEqual(firstTransition);
 
+    let secondCompletion = false;
     act(() => {
-      result.current.completeTransition(firstTransitionId!);
+      secondCompletion = result.current.completeTransition(secondTransition.id);
     });
-    const queuedTransitionId = result.current.transition?.id;
-    expect(queuedTransitionId).toBeTypeOf("number");
-    expect(queuedTransitionId).not.toBe(firstTransitionId);
+    expect(secondCompletion).toBe(true);
+    expect(result.current.currentValue).toBe(0);
+    expect(result.current.transition).toEqual(firstTransition);
+    expect(onValueChange).not.toHaveBeenCalled();
+
+    let firstCompletion = false;
+    act(() => {
+      firstCompletion = result.current.completeTransition(firstTransition.id);
+    });
+    expect(firstCompletion).toBe(true);
+    expect(result.current.transitions).toHaveLength(0);
+    expect(result.current.transition).toBeNull();
+    expect(result.current.currentValue).toBe(2);
+    expect(onValueChange.mock.calls.map(([nextValue]) => nextValue)).toEqual([
+      1, 2,
+    ]);
 
     let staleCompletion = true;
     act(() => {
-      staleCompletion = result.current.completeTransition(firstTransitionId!);
+      staleCompletion = result.current.completeTransition(firstTransition.id);
     });
 
     expect(staleCompletion).toBe(false);
-    expect(result.current.transition?.id).toBe(queuedTransitionId);
-    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(result.current.transitions).toHaveLength(0);
+    expect(result.current.currentValue).toBe(2);
+    expect(onValueChange).toHaveBeenCalledTimes(2);
   });
 
-  it("waits for controlled value approval before running queued input", () => {
+  it("caps visible waves and fast-forwards the oldest transition in order", () => {
+    const onValueChange = vi.fn();
+    const { result } = renderHook(() =>
+      useSlicerSlider({ count: 12, loop: false, onValueChange }),
+    );
+
+    act(() => {
+      for (let input = 0; input < 9; input += 1) {
+        result.current.navigate(1, "next");
+      }
+    });
+
+    expect(result.current.transitions).toHaveLength(8);
+    expect(
+      result.current.transitions.map(({ from, to }) => [from, to]),
+    ).toEqual([
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 8],
+      [8, 9],
+    ]);
+    expect(result.current.currentValue).toBe(1);
+    expect(result.current.plannedValue).toBe(9);
+    expect(onValueChange.mock.calls.map(([nextValue]) => nextValue)).toEqual([
+      1,
+    ]);
+
+    act(() => {
+      result.current.completeTransition(result.current.transitions[0].id);
+    });
+
+    expect(result.current.currentValue).toBe(2);
+    expect(onValueChange.mock.calls.map(([nextValue]) => nextValue)).toEqual([
+      1, 2,
+    ]);
+  });
+
+  it("flushes active waves in input order when reduced motion turns on", () => {
+    const onValueChange = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ reducedMotion }: { reducedMotion: boolean }) =>
+        useSlicerSlider({ count: 3, onValueChange, reducedMotion }),
+      { initialProps: { reducedMotion: false } },
+    );
+
+    act(() => {
+      result.current.navigate(1, "next");
+      result.current.navigate(1, "next");
+    });
+
+    expect(result.current.transitions).toHaveLength(2);
+    expect(result.current.currentValue).toBe(0);
+    expect(onValueChange).not.toHaveBeenCalled();
+
+    rerender({ reducedMotion: true });
+
+    expect(result.current.transitions).toHaveLength(0);
+    expect(result.current.transition).toBeNull();
+    expect(result.current.currentValue).toBe(2);
+    expect(result.current.plannedValue).toBe(2);
+    expect(onValueChange.mock.calls.map(([nextValue]) => nextValue)).toEqual([
+      1, 2,
+    ]);
+  });
+
+  it("starts controlled waves immediately but waits for approved rendered values", () => {
     const onValueChange = vi.fn();
     const { rerender } = render(
       <TestSlider value={0} onValueChange={onValueChange} />,
@@ -411,22 +551,55 @@ describe("SlicerSlider", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
     fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
-    finishLatestSliceTransition();
 
-    expect(getSlices()).toHaveLength(0);
+    const [firstWave, secondWave] = getSliceLayers();
+    expect(getSliceLayers()).toHaveLength(2);
+    expect(secondWave.querySelector("img")).toHaveAttribute("src", "/two.svg");
+
+    finishSliceLayerTransition(firstWave);
+
+    expect(getSliceLayers()).toEqual([secondWave]);
     expect(getActiveSlide()).toHaveAttribute("data-index", "0");
     expect(onValueChange).toHaveBeenCalledTimes(1);
 
     rerender(<TestSlider value={1} onValueChange={onValueChange} />);
 
-    expect(getSlides()[1]).toHaveAttribute("data-state", "outgoing");
-    expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
-    finishLatestSliceTransition();
+    expect(getSliceLayers()).toEqual([secondWave]);
+    finishSliceLayerTransition(secondWave);
     expect(onValueChange).toHaveBeenLastCalledWith(2, {
       previousValue: 1,
       direction: 1,
       source: "next",
     });
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+
+    rerender(<TestSlider value={2} onValueChange={onValueChange} />);
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+  });
+
+  it("returns an unapproved controlled plan to the authoritative value", () => {
+    const onValueChange = vi.fn();
+    const { result } = renderHook(() =>
+      useSlicerSlider({ count: 3, value: 0, onValueChange }),
+    );
+
+    act(() => {
+      result.current.navigate(1, "next");
+    });
+    const firstTransition = result.current.transitions[0];
+
+    act(() => {
+      result.current.completeTransition(firstTransition.id);
+    });
+
+    expect(result.current.currentValue).toBe(0);
+    expect(result.current.plannedValue).toBe(0);
+    expect(onValueChange).toHaveBeenLastCalledWith(1, expect.any(Object));
+
+    act(() => {
+      result.current.navigate(1, "next");
+    });
+    expect(result.current.transitions[0]).toMatchObject({ from: 0, to: 1 });
   });
 
   it("wraps when looping and disables bounded controls at either edge", () => {

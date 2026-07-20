@@ -37,7 +37,7 @@ interface SlicerSliderContextValue {
   currentValue: number;
   plannedValue: number;
   transition: SlicerSliderTransition | null;
-  slicesActive: boolean;
+  transitions: readonly SlicerSliderTransition[];
   sliceCount: number;
   sliceDuration: number;
   staggerDelay: number;
@@ -48,6 +48,7 @@ interface SlicerSliderContextValue {
   isDragging: boolean;
   isPointerActive: boolean;
   prefersReducedMotion: boolean;
+  reserveWaveStart: () => number;
   canNavigate: (direction: SlicerSliderDirection) => boolean;
   navigate: (
     direction: SlicerSliderDirection,
@@ -73,6 +74,7 @@ interface SlicerSliderContextValue {
 const SlicerSliderContext = createContext<SlicerSliderContextValue | null>(
   null,
 );
+const MINIMUM_WAVE_PHASE_MS = 90;
 
 function useSlicerSliderContext(componentName: string) {
   const context = useContext(SlicerSliderContext);
@@ -169,13 +171,18 @@ export function SlicerSliderRoot({
   const safeExitDistance = clampFinite(exitDistance, 70, 180, 112);
   const [prefersReducedMotion, getPrefersReducedMotion] =
     usePrefersReducedMotion();
-  const [activeTransitionId, setActiveTransitionId] = useState<number | null>(
-    null,
-  );
+  const nextWaveStartAtRef = useRef(0);
+  const reserveWaveStart = useCallback(() => {
+    const now = window.performance?.now?.() ?? Date.now();
+    const startAt = Math.max(now, nextWaveStartAtRef.current);
+    nextWaveStartAtRef.current = startAt + MINIMUM_WAVE_PHASE_MS;
+    return Math.max(0, startAt - now);
+  }, []);
   const {
     currentValue,
     plannedValue,
     transition,
+    transitions,
     isDragging,
     isPointerActive,
     canNavigate,
@@ -198,41 +205,10 @@ export function SlicerSliderRoot({
     reducedMotion: prefersReducedMotion,
     getReducedMotion: getPrefersReducedMotion,
   });
-  const slicesActive = transition?.id === activeTransitionId;
 
   useEffect(() => {
-    if (!transition) return;
-
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() =>
-        setActiveTransitionId(transition.id),
-      );
-    });
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-    };
-  }, [transition]);
-
-  useEffect(() => {
-    if (!transition) return;
-
-    const totalDuration =
-      safeSliceDuration + safeStaggerDelay * (safeSliceCount - 1) + 160;
-    const timeout = window.setTimeout(
-      () => completeTransition(transition.id),
-      totalDuration,
-    );
-    return () => window.clearTimeout(timeout);
-  }, [
-    safeSliceCount,
-    safeSliceDuration,
-    safeStaggerDelay,
-    completeTransition,
-    transition,
-  ]);
+    if (transitions.length === 0) nextWaveStartAtRef.current = 0;
+  }, [transitions.length]);
 
   const contextValue = useMemo<SlicerSliderContextValue>(
     () => ({
@@ -241,7 +217,7 @@ export function SlicerSliderRoot({
       currentValue,
       plannedValue,
       transition,
-      slicesActive,
+      transitions,
       sliceCount: safeSliceCount,
       sliceDuration: safeSliceDuration,
       staggerDelay: safeStaggerDelay,
@@ -252,6 +228,7 @@ export function SlicerSliderRoot({
       isDragging,
       isPointerActive,
       prefersReducedMotion,
+      reserveWaveStart,
       canNavigate,
       navigate,
       goTo,
@@ -280,13 +257,14 @@ export function SlicerSliderRoot({
       navigate,
       plannedValue,
       prefersReducedMotion,
+      reserveWaveStart,
       safeExitDistance,
       safeSliceCount,
       safeSliceDuration,
       safeStaggerDelay,
-      slicesActive,
       slides,
       transition,
+      transitions,
     ],
   );
 
@@ -299,7 +277,7 @@ export function SlicerSliderRoot({
         aria-label={ariaLabelledby ? undefined : (ariaLabel ?? "Slicer slider")}
         aria-labelledby={ariaLabelledby}
         data-slot="slicer-slider-root"
-        data-state={transition ? "animating" : "idle"}
+        data-state={transitions.length > 0 ? "animating" : "idle"}
         data-dragging={isDragging || undefined}
         data-disabled={disabled || undefined}
         data-reduced-motion={prefersReducedMotion || undefined}
@@ -375,7 +353,7 @@ export function SlicerSliderViewport({
         onLostPointerCapture?.(event);
       }}
       data-slot="slicer-slider-viewport"
-      data-state={context.transition ? "animating" : "idle"}
+      data-state={context.transitions.length > 0 ? "animating" : "idle"}
       data-dragging={context.isDragging || undefined}
       className={twMerge(
         clsx(
@@ -407,16 +385,21 @@ export function SlicerSliderSlide({
 }: SlicerSliderSlideProps) {
   const context = useSlicerSliderContext("SlicerSliderSlide");
   const image = context.slides[index];
-  const state = context.transition
-    ? context.transition.to === index
+  const visualValue =
+    context.transitions.length > 0
+      ? context.plannedValue
+      : context.currentValue;
+  const isVisible = visualValue === index;
+  const isOutgoing = context.transitions.some(
+    (transition) => transition.from === index,
+  );
+  const state = isVisible
+    ? context.transitions.length > 0
       ? "incoming"
-      : context.transition.from === index
-        ? "outgoing"
-        : "inactive"
-    : context.currentValue === index
-      ? "active"
+      : "active"
+    : isOutgoing
+      ? "outgoing"
       : "inactive";
-  const isVisible = state === "active" || state === "incoming";
   const isCurrent = context.currentValue === index;
 
   return (
@@ -452,7 +435,7 @@ export function SlicerSliderSlide({
           alt={image.alt}
           loading={
             index === context.currentValue ||
-            index === context.transition?.to ||
+            index === context.plannedValue ||
             index === (context.currentValue + 1) % Math.max(1, context.count)
               ? "eager"
               : "lazy"
@@ -475,32 +458,138 @@ export function SlicerSliderSlide({
 
 function SlicerSliderSliceLayer() {
   const context = useSlicerSliderContext("SlicerSliderSliceLayer");
-  const transition = context.transition;
-  const image = transition ? context.slides[transition.from] : undefined;
+  if (context.prefersReducedMotion) return null;
 
-  if (!transition || !image || context.prefersReducedMotion) return null;
+  return (
+    <>
+      {context.transitions.map((transition, index) => {
+        const image = context.slides[transition.from];
+        if (!image) return null;
+
+        return (
+          <SlicerSliderWave
+            key={transition.id}
+            transition={transition}
+            image={image}
+            sliceCount={context.sliceCount}
+            sliceDuration={context.sliceDuration}
+            staggerDelay={context.staggerDelay}
+            easing={context.easing}
+            exitDistance={context.exitDistance}
+            zIndex={20 + context.transitions.length - index}
+            reserveStart={context.reserveWaveStart}
+            onComplete={context.completeTransition}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+interface SlicerSliderWaveProps {
+  transition: SlicerSliderTransition;
+  image: SlicerSliderImage;
+  sliceCount: number;
+  sliceDuration: number;
+  staggerDelay: number;
+  easing: string;
+  exitDistance: number;
+  zIndex: number;
+  reserveStart: () => number;
+  onComplete: (transitionId: number) => boolean;
+}
+
+function SlicerSliderWave({
+  transition,
+  image,
+  sliceCount,
+  sliceDuration,
+  staggerDelay,
+  easing,
+  exitDistance,
+  zIndex,
+  reserveStart,
+  onComplete,
+}: SlicerSliderWaveProps) {
+  const [snapshot] = useState(() => ({
+    transition,
+    image,
+    sliceCount,
+    sliceDuration,
+    staggerDelay,
+    easing,
+    exitDistance,
+  }));
+  const [isActive, setIsActive] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+  const startDelayRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    const startDelay = startDelayRef.current ?? reserveStart();
+    startDelayRef.current = startDelay;
+    let startTimeout = 0;
+    let firstFrame = 0;
+    let secondFrame = 0;
+    const startAnimation = () => {
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => setIsActive(true));
+      });
+    };
+    if (startDelay > 0) {
+      startTimeout = window.setTimeout(startAnimation, startDelay);
+    } else {
+      startAnimation();
+    }
+
+    const totalDuration =
+      snapshot.sliceDuration +
+      snapshot.staggerDelay * (snapshot.sliceCount - 1) +
+      160;
+    const timeout = window.setTimeout(
+      () => onCompleteRef.current(snapshot.transition.id),
+      startDelay + totalDuration,
+    );
+    return () => {
+      if (startTimeout) window.clearTimeout(startTimeout);
+      if (firstFrame) window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(timeout);
+    };
+  }, [reserveStart, snapshot]);
 
   return (
     <div
       aria-hidden="true"
       data-slot="slicer-slider-slices"
-      data-direction={transition.direction === 1 ? "next" : "previous"}
-      className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
+      data-transition-id={snapshot.transition.id}
+      data-from={snapshot.transition.from}
+      data-to={snapshot.transition.to}
+      data-direction={snapshot.transition.direction === 1 ? "next" : "previous"}
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ zIndex }}
     >
-      {Array.from({ length: context.sliceCount }, (_, index) => {
+      {Array.from({ length: snapshot.sliceCount }, (_, index) => {
         const delayOrder =
-          transition.direction === 1 ? index : context.sliceCount - index - 1;
-        const isLast = delayOrder === context.sliceCount - 1;
+          snapshot.transition.direction === 1
+            ? index
+            : snapshot.sliceCount - index - 1;
+        const isLast = delayOrder === snapshot.sliceCount - 1;
         const verticalDirection = index % 2 === 0 ? -1 : 1;
-        const horizontalDistance = transition.direction * (5 + (index % 3) * 2);
-        const rotation = transition.direction * (index % 2 === 0 ? 3.5 : -3.5);
-        const sliceStart = (index / context.sliceCount) * 100;
-        const sliceEnd = ((index + 1) / context.sliceCount) * 100;
-        const exitTransform = `translate3d(${horizontalDistance}%, ${verticalDirection * context.exitDistance}%, 0) rotate(${rotation}deg) scale(0.96)`;
+        const horizontalDistance =
+          snapshot.transition.direction * (5 + (index % 3) * 2);
+        const rotation =
+          snapshot.transition.direction * (index % 2 === 0 ? 3.5 : -3.5);
+        const sliceStart = (index / snapshot.sliceCount) * 100;
+        const sliceEnd = ((index + 1) / snapshot.sliceCount) * 100;
+        const exitTransform = `translate3d(${horizontalDistance}%, ${verticalDirection * snapshot.exitDistance}%, 0) rotate(${rotation}deg) scale(0.96)`;
 
         return (
           <div
-            key={`${transition.id}-${index}`}
+            key={`${snapshot.transition.id}-${index}`}
             aria-hidden="true"
             data-slot="slicer-slider-slice"
             data-index={index}
@@ -511,32 +600,32 @@ function SlicerSliderSliceLayer() {
                 event.target === event.currentTarget &&
                 event.propertyName === "transform"
               ) {
-                context.completeTransition(transition.id);
+                onCompleteRef.current(snapshot.transition.id);
               }
             }}
             className="absolute inset-0 [backface-visibility:hidden]"
             style={{
               clipPath: `inset(0 ${100 - sliceEnd}% 0 ${sliceStart}%)`,
-              opacity: context.slicesActive ? 0 : 1,
-              transform: context.slicesActive
+              opacity: isActive ? 0 : 1,
+              transform: isActive
                 ? exitTransform
                 : "translate3d(0, 0, 0) rotate(0deg) scale(1)",
               transformOrigin: `${(sliceStart + sliceEnd) / 2}% 50%`,
               transitionProperty: "transform, opacity",
-              transitionDuration: `${context.sliceDuration}ms`,
-              transitionDelay: `${delayOrder * context.staggerDelay}ms`,
-              transitionTimingFunction: context.easing,
+              transitionDuration: `${snapshot.sliceDuration}ms`,
+              transitionDelay: `${delayOrder * snapshot.staggerDelay}ms`,
+              transitionTimingFunction: snapshot.easing,
               willChange: "transform, opacity",
             }}
           >
             <img
-              src={image.src}
-              srcSet={image.srcSet}
-              sizes={image.sizes}
+              src={snapshot.image.src}
+              srcSet={snapshot.image.srcSet}
+              sizes={snapshot.image.sizes}
               alt=""
               draggable={false}
               className="absolute inset-0 h-full w-full object-cover select-none"
-              style={{ objectPosition: image.objectPosition }}
+              style={{ objectPosition: snapshot.image.objectPosition }}
             />
           </div>
         );
