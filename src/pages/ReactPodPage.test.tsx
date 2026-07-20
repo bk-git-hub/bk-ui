@@ -160,6 +160,25 @@ describe("ReactPodPage", () => {
     });
   });
 
+  it("uses the supplied MP3 library and extracted album artwork by default", () => {
+    const { container } = render(<ReactPodPage />);
+
+    expect(
+      container.querySelector('[data-slot="react-pod-audio"] source'),
+    ).toHaveAttribute("src", "/reactpod/audio/itzy/icy.mp3");
+
+    const wheel = screen.getByLabelText(/Click wheel/);
+    fireEvent.keyDown(wheel, { key: "ArrowDown" });
+    fireEvent.keyDown(wheel, { key: "Enter" });
+
+    const songs = screen.getByRole("listbox", { name: "Songs" });
+    expect(within(songs).getAllByRole("option")).toHaveLength(6);
+    expect(within(songs).getByRole("option", { name: /ICY/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   it("shows an error and keeps the last valid preview for invalid JSON", () => {
     render(<ReactPodPage />);
 
@@ -238,7 +257,7 @@ describe("ReactPodPage", () => {
     });
     expect(
       within(coverflow).getByRole("button", {
-        name: "Show details for Blue Hour",
+        name: "Show details for IT'z ICY",
       }),
     ).toBeInTheDocument();
   });

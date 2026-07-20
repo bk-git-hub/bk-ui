@@ -5,6 +5,7 @@ import {
 } from "@/components/ClickWheel";
 import { ReactPod } from "@/components/ReactPod";
 import ComponentViewer from "@/components/layout/component-viewer";
+import { REACT_POD_DEMO_TRACKS } from "@/components/previews/react-pod-audio-tracks";
 import { REACT_POD_DEMO_COVERFLOW_ALBUMS } from "@/components/previews/react-pod-coverflow-albums";
 import { REACT_POD_DEMO_PHOTO_ALBUMS } from "@/components/previews/react-pod-photo-albums";
 import {
@@ -95,6 +96,7 @@ export default function ReactPodPage() {
             menuItems={config.menuItems}
             photoAlbums={REACT_POD_DEMO_PHOTO_ALBUMS}
             coverflowAlbums={REACT_POD_DEMO_COVERFLOW_ALBUMS}
+            tracks={REACT_POD_DEMO_TRACKS}
             coverflowAriaLabel="ReactPod album coverflow"
             wheelSensitivity={config.wheelSensitivity}
           />
