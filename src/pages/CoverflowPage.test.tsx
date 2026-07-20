@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import CoverflowPage from "./CoverflowPage";
 
 const openEditor = () => {
-  fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
   return screen.getByRole("textbox", {
     name: "LIVE JSON source code editor",
   }) as HTMLTextAreaElement;

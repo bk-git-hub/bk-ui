@@ -110,7 +110,7 @@ export default function ComponentViewer({
     { id: "preview", label: "Preview" },
     {
       id: "code",
-      label: "Code",
+      label: "Customize",
       content: { code: usageCode, language: codeLanguage },
     },
   ];

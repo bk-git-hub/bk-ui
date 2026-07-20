@@ -67,7 +67,7 @@ describe("SlotMachineDemoPage", () => {
       within(tabList)
         .getAllByRole("tab")
         .map((tab) => tab.textContent),
-    ).toEqual(["Preview", "Code", "Usage", "React Export", "Next.js Export"]);
+    ).toEqual(["Preview", "Customize", "Usage", "React Export", "Next.js Export"]);
   });
 
   it("keeps the interactive slot controls in Preview", () => {
@@ -91,11 +91,11 @@ describe("SlotMachineDemoPage", () => {
     expect(screen.getByText("5 reels · 2 items")).toBeInTheDocument();
   });
 
-  it("renders and copies the configured Code and public Usage sources", async () => {
+  it("renders and copies the configured Customize and public Usage sources", async () => {
     render(<SlotMachineDemoPage />);
 
     const demo = await openSourceTab(
-      "Code",
+      "Customize",
       "TSX source code",
       slotMachineDemoCode,
     );

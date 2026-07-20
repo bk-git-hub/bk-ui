@@ -23,7 +23,7 @@ describe("ExpoSliderDemoPage", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -42,10 +42,10 @@ describe("ExpoSliderDemoPage", () => {
     );
   });
 
-  it("keeps the core demo Code separate from the complete Usage example", async () => {
+  it("keeps the core demo Customize separate from the complete Usage example", async () => {
     render(<ExpoSliderDemoPage />);
 
-    const code = await openSourceTab("Code");
+    const code = await openSourceTab("Customize");
     expect(code).toHaveTextContent("export default function ExpoSliderDemo()");
     expect(code).toHaveTextContent("rotation={tilted ? 8 : 0}");
 

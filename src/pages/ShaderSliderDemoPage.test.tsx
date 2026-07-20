@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ShaderSliderDemoPage from "./ShaderSliderDemoPage";
 
 const openEditor = () => {
-  fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
   return screen.getByRole("textbox", {
     name: "LIVE JSON source code editor",
   }) as HTMLTextAreaElement;
@@ -48,7 +48,7 @@ describe("ShaderSliderDemoPage", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",

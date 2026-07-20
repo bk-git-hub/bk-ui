@@ -15,7 +15,7 @@ vi.mock("@/components/layout/tsx-syntax-highlighter", () => ({
 }));
 
 const openCodeEditor = () => {
-  fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
   return screen.getByRole("textbox", {
     name: "LIVE JSON source code editor",
   }) as HTMLTextAreaElement;
@@ -35,7 +35,7 @@ describe("CardsStackSliderDemoPage", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -78,7 +78,7 @@ describe("CardsStackSliderDemoPage", () => {
     expect(editor.value).toContain('"orientation": "horizontal"');
   });
 
-  it("keeps the Preview orientation control synchronized with Code", () => {
+  it("keeps the Preview orientation control synchronized with Customize", () => {
     render(<CardsStackSliderDemoPage />);
 
     fireEvent.click(screen.getByRole("radio", { name: "세로" }));

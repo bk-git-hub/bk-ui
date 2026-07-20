@@ -49,7 +49,7 @@ pnpm dev
 
 ## Export 탭 공개 전환
 
-컴포넌트 페이지는 기본적으로 `Preview`, `Code`, `Usage`와 컴포넌트별
+컴포넌트 페이지는 기본적으로 `Preview`, `Customize`, `Usage`와 컴포넌트별
 GitHub 소스 링크만 노출합니다. React/Next.js export 구현은 코드에 보존되며,
 배포 준비가 끝난 뒤 아래 환경 변수 하나로 두 탭을 다시 공개할 수 있습니다.
 

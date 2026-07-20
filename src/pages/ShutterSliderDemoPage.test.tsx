@@ -11,7 +11,7 @@ import { shutterSliderReactExportCode } from "@/snippets/shutterSliderReactExpor
 import ShutterSliderDemoPage from "./ShutterSliderDemoPage";
 
 const openEditor = () => {
-  fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
   return screen.getByRole("textbox", {
     name: "LIVE JSON source code editor",
   }) as HTMLTextAreaElement;
@@ -29,12 +29,12 @@ describe("ShutterSliderDemoPage", () => {
     Object.assign(navigator, { clipboard: { writeText } });
   });
 
-  it("provides Preview, Code, Usage, React, and Next.js export tabs", () => {
+  it("provides Preview, Customize, Usage, React, and Next.js export tabs", () => {
     render(<ShutterSliderDemoPage />);
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",

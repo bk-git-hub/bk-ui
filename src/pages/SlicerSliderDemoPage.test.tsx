@@ -18,7 +18,7 @@ describe("SlicerSliderDemoPage", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -37,7 +37,7 @@ describe("SlicerSliderDemoPage", () => {
   it("keeps demo source and the complete public API usage in separate tabs", async () => {
     render(<SlicerSliderDemoPage />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const demoCode = await screen.findByRole("region", {
       name: "TSX source code",
     });

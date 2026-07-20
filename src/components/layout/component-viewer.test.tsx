@@ -112,13 +112,13 @@ describe("ComponentViewer", () => {
       "true",
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
 
     expect(await screen.findByTestId("syntax-highlighter")).toHaveTextContent(
       "const answer = 42;",
     );
 
-    expect(screen.getByRole("tab", { name: "Code" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Customize" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -137,7 +137,7 @@ describe("ComponentViewer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -159,7 +159,7 @@ describe("ComponentViewer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
 
     const editor = screen.getByRole("textbox", {
       name: "TSX source code editor",
@@ -191,7 +191,7 @@ describe("ComponentViewer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
 
     const editor = screen.getByRole("textbox", {
       name: "JavaScript source code editor",
@@ -221,7 +221,7 @@ describe("ComponentViewer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
 
     expect(
       screen.getByRole("textbox", { name: "LIVE JSON source code editor" }),
@@ -261,7 +261,7 @@ describe("ComponentViewer", () => {
     }
 
     render(<LiveExample />);
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
 
     const livePreview = screen.getByRole("region", {
       name: "Tinder example live preview",
@@ -297,7 +297,7 @@ describe("ComponentViewer", () => {
     expect(previewPanel).toHaveClass("overflow-hidden", "bg-black", "p-0");
     expect(previewPanel).not.toHaveClass("overflow-auto", "p-2");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const livePreview = screen.getByRole("region", {
       name: "Dark preview live preview",
     });
@@ -321,7 +321,7 @@ describe("ComponentViewer", () => {
     const tabs = screen.getAllByRole("tab");
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -364,7 +364,7 @@ describe("ComponentViewer", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
     ]);
     expect(
@@ -457,7 +457,7 @@ describe("ComponentViewer", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "React Export",
     ]);
     expect(
@@ -523,7 +523,7 @@ describe("ComponentViewer", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -532,7 +532,7 @@ describe("ComponentViewer", () => {
       screen.queryByRole("tab", { name: /install/i }),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     expect(
       screen.queryByRole("heading", { name: "Install Example" }),
     ).not.toBeInTheDocument();

@@ -20,7 +20,7 @@ const resizeCoverflow = (
 };
 
 describe("CoverflowPage item sizing", () => {
-  it("fills the preview surface with black in Preview and Code", () => {
+  it("fills the preview surface with black in Preview and Customize", () => {
     render(<CoverflowPage />);
 
     const previewTab = screen.getByRole("tab", { name: "Preview" });
@@ -30,7 +30,7 @@ describe("CoverflowPage item sizing", () => {
     expect(previewPanel).toHaveClass("overflow-hidden", "bg-black", "p-0");
     expect(previewPanel).not.toHaveClass("p-2");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const livePreview = screen.getByRole("region", {
       name: "Coverflow live preview",
     });
@@ -67,7 +67,7 @@ describe("CoverflowPage item sizing", () => {
     expect(cards[1]).toHaveAttribute("data-active", "true");
     expect(cards[0]).toHaveStyle({ width: "238px", height: "238px" });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const editor = screen.getByRole("textbox", {
       name: "LIVE JSON source code editor",
     }) as HTMLTextAreaElement;

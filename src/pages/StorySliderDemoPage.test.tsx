@@ -21,7 +21,7 @@ describe("StorySliderDemoPage", () => {
     expect(screen.getByText("Interactive Story Slider preview")).toBeVisible();
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -29,10 +29,10 @@ describe("StorySliderDemoPage", () => {
     expect(screen.getAllByRole("tabpanel", { hidden: true })).toHaveLength(5);
   });
 
-  it("connects Code and Usage to their Story Slider sources", async () => {
+  it("connects Customize and Usage to their Story Slider sources", async () => {
     render(<StorySliderDemoPage />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     expect(await screen.findByTestId("story-source")).toHaveTextContent(
       "useState<StorySliderValue>",
     );

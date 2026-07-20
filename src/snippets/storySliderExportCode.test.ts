@@ -19,7 +19,7 @@ const publicPrimitives = [
 ];
 
 describe("Story Slider viewer snippets", () => {
-  it("keeps Code and Usage complete and on the public entrypoint", () => {
+  it("keeps Customize and Usage complete and on the public entrypoint", () => {
     expect(storySliderDemoCode).toContain("useState<StorySliderValue>");
     expect(storySliderDemoCode).toContain(publicImport);
     expect(storySliderUsageCode).toContain(publicImport);

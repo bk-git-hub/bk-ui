@@ -18,7 +18,7 @@ describe("LottoDemoPage", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -34,7 +34,7 @@ describe("LottoDemoPage", () => {
   it("separates the machine demo code from the minimal public usage", async () => {
     render(<LottoDemoPage />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const demoCode = await screen.findByRole("region", {
       name: "TSX source code",
     });

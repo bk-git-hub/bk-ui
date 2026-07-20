@@ -10,7 +10,7 @@ describe("ReactPodPage", () => {
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Preview",
-      "Code",
+      "Customize",
       "Usage",
       "React Export",
       "Next.js Export",
@@ -82,7 +82,7 @@ describe("ReactPodPage", () => {
 
     expect(screen.getByRole("tab", { name: "Usage" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const editor = screen.getByRole("textbox", {
       name: "LIVE JSON source code editor",
     });
@@ -151,7 +151,7 @@ describe("ReactPodPage", () => {
     expect(slider).toHaveValue("1.7");
     expect(screen.getByText("1.7×")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     const editor = screen.getByRole("textbox", {
       name: "LIVE JSON source code editor",
     });
@@ -182,7 +182,7 @@ describe("ReactPodPage", () => {
   it("shows an error and keeps the last valid preview for invalid JSON", () => {
     render(<ReactPodPage />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Code" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Customize" }));
     fireEvent.change(
       screen.getByRole("textbox", {
         name: "LIVE JSON source code editor",

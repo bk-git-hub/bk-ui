@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import BaccaratSqueezeDemoPage from "./BaccaratSqueezeDemoPage";
 
 const openEditor = () => {
-  fireEvent.click(getTab("Code"));
+  fireEvent.click(getTab("Customize"));
   return screen.getByRole("textbox", {
     name: "LIVE JSON source code editor",
   }) as HTMLTextAreaElement;
@@ -42,7 +42,7 @@ describe("BaccaratSqueezeDemoPage", () => {
       within(getTablist())
         .getAllByRole("tab")
         .map((tab) => tab.textContent),
-    ).toEqual(["Preview", "Code", "Usage", "React Export", "Next.js Export"]);
+    ).toEqual(["Preview", "Customize", "Usage", "React Export", "Next.js Export"]);
   });
 
   it("updates the live card from valid JSON configuration", () => {
