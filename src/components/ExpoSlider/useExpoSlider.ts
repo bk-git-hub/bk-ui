@@ -40,6 +40,7 @@ export interface UseExpoSliderOptions {
   loop?: boolean;
   orientation?: ExpoSliderOrientation;
   disabled?: boolean;
+  /** @deprecated Expo Slider now uses threshold-free, distance-based dragging. */
   dragThreshold?: number;
   velocityThreshold?: number;
   transitionDuration?: number;
@@ -60,16 +61,19 @@ interface PointerSession {
   latestAxis: number;
   latestCrossAxis: number;
   extent: number;
+  baseProgress: number;
+  baseIntentProgress: number;
   axis: PointerAxis;
   captured: boolean;
+  interruptedAnimation: boolean;
   samples: PointerSample[];
-  expectedValueAfterInterrupt?: number;
 }
 
 interface PendingNavigation {
   kind: "navigation";
   from: number;
   to: number;
+  distance: number;
   direction: ExpoSliderDirection;
   source: ExpoSliderChangeSource;
   count: number;
@@ -80,11 +84,16 @@ interface PendingNavigation {
 
 interface PendingSnapBack {
   kind: "snap-back";
-  startedAt: number;
+  startedAt: number | null;
   duration: number;
 }
 
 type PendingAnimation = PendingNavigation | PendingSnapBack;
+
+interface ExpectedCommittedValue {
+  value: number;
+  wrapDirection: ExpoSliderDirection;
+}
 
 interface MotionState {
   progress: number;
@@ -116,11 +125,41 @@ const AXIS_LOCK_DISTANCE = 7;
 const VELOCITY_SAMPLE_WINDOW_MS = 120;
 const PROJECTED_MOTION_MS = 180;
 const ANIMATION_FALLBACK_BUFFER_MS = 100;
-const DEFAULT_DRAG_THRESHOLD = 0.16;
 const DEFAULT_VELOCITY_THRESHOLD = 0.45;
 const DEFAULT_TRANSITION_DURATION = 650;
 const EDGE_RESISTANCE = 0.28;
+const MAX_EDGE_OVERSHOOT = 0.35;
 const MAX_TRANSITION_END_TOLERANCE_MS = 16;
+const LOOP_TIE_EPSILON = 0.0001;
+
+function getCubicBezierCoordinate(
+  progress: number,
+  controlPoint1: number,
+  controlPoint2: number,
+) {
+  const inverseProgress = 1 - progress;
+  return (
+    3 * inverseProgress * inverseProgress * progress * controlPoint1 +
+    3 * inverseProgress * progress * progress * controlPoint2 +
+    progress * progress * progress
+  );
+}
+
+function getExpoAnimationProgress(progress: number) {
+  const safeProgress = clamp(progress, 0, 1);
+  if (safeProgress === 0 || safeProgress === 1) return safeProgress;
+  let lowerBound = 0;
+  let upperBound = 1;
+
+  for (let iteration = 0; iteration < 8; iteration += 1) {
+    const parameter = (lowerBound + upperBound) / 2;
+    const x = getCubicBezierCoordinate(parameter, 0.22, 0.18);
+    if (x < safeProgress) lowerBound = parameter;
+    else upperBound = parameter;
+  }
+
+  return getCubicBezierCoordinate((lowerBound + upperBound) / 2, 0.75, 1);
+}
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
@@ -162,6 +201,18 @@ function getWrappedDistance(
   }
 
   return wrappedDistance;
+}
+
+function getLoopDistanceNearProgress(
+  distance: number,
+  count: number,
+  progress: number,
+  preferredDirection = progress,
+) {
+  return (
+    progress +
+    getWrappedDistance(distance - progress, count, preferredDirection)
+  );
 }
 
 function getEventTime(event: ReactPointerEvent<HTMLDivElement>) {
@@ -279,11 +330,14 @@ export function getExpoSliderRelativeProgress(
     ? preferredDirection
     : safeMotionProgress;
   const distance = safeIndex - safeCurrentIndex;
-  const relativeDistance = loop
-    ? getWrappedDistance(distance, safeCount, safePreferredDirection)
-    : distance;
-
-  return relativeDistance - safeMotionProgress;
+  const relativeDistance = distance - safeMotionProgress;
+  const tieDirection =
+    Math.abs(safeMotionProgress) > LOOP_TIE_EPSILON
+      ? relativeDistance
+      : safePreferredDirection || relativeDistance;
+  return loop
+    ? getWrappedDistance(relativeDistance, safeCount, tieDirection)
+    : relativeDistance;
 }
 
 export function useExpoSlider({
@@ -294,17 +348,11 @@ export function useExpoSlider({
   loop = true,
   orientation = "horizontal",
   disabled = false,
-  dragThreshold = DEFAULT_DRAG_THRESHOLD,
   velocityThreshold = DEFAULT_VELOCITY_THRESHOLD,
   transitionDuration = DEFAULT_TRANSITION_DURATION,
 }: UseExpoSliderOptions) {
   const safeCount = getSafeCount(count);
   const effectiveLoop = loop && safeCount > 1;
-  const resolvedDragThreshold = clamp(
-    getFiniteNumber(dragThreshold, DEFAULT_DRAG_THRESHOLD),
-    0,
-    1,
-  );
   const resolvedVelocityThreshold = Math.max(
     0,
     getFiniteNumber(velocityThreshold, DEFAULT_VELOCITY_THRESHOLD),
@@ -329,9 +377,9 @@ export function useExpoSlider({
     isAnimating: false,
     shouldTransition: true,
   });
+  const [navigationValue, setNavigationValue] = useState(currentValue);
 
   const currentValueRef = useRef(currentValue);
-  const renderedValueRef = useRef(currentValue);
   const isControlledRef = useRef(isControlled);
   const onValueChangeRef = useRef(onValueChange);
   const optionsRef = useRef({
@@ -339,12 +387,12 @@ export function useExpoSlider({
     loop: effectiveLoop,
     orientation,
     disabled,
-    dragThreshold: resolvedDragThreshold,
     velocityThreshold: resolvedVelocityThreshold,
     transitionDuration: resolvedTransitionDuration,
   });
   const pointerSessionRef = useRef<PointerSession | null>(null);
   const pendingAnimationRef = useRef<PendingAnimation | null>(null);
+  const expectedCommittedValueRef = useRef<ExpectedCommittedValue | null>(null);
   const pendingProgressRef = useRef(0);
   const frameRef = useRef<number | null>(null);
   const transitionRestoreFrameRef = useRef<number | null>(null);
@@ -352,7 +400,6 @@ export function useExpoSlider({
 
   useLayoutEffect(() => {
     currentValueRef.current = currentValue;
-    renderedValueRef.current = currentValue;
     isControlledRef.current = isControlled;
     onValueChangeRef.current = onValueChange;
     optionsRef.current = {
@@ -360,7 +407,6 @@ export function useExpoSlider({
       loop: effectiveLoop,
       orientation,
       disabled,
-      dragThreshold: resolvedDragThreshold,
       velocityThreshold: resolvedVelocityThreshold,
       transitionDuration: resolvedTransitionDuration,
     };
@@ -371,9 +417,8 @@ export function useExpoSlider({
     isControlled,
     onValueChange,
     orientation,
-    resolvedDragThreshold,
-    resolvedTransitionDuration,
     resolvedVelocityThreshold,
+    resolvedTransitionDuration,
     safeCount,
   ]);
 
@@ -491,16 +536,23 @@ export function useExpoSlider({
       cancelTransitionRestore();
       clearFallbackTimer();
       pendingProgressRef.current = 0;
+      const restingWrapDirection =
+        pendingAnimation.kind === "navigation" && !isControlledRef.current
+          ? (-pendingAnimation.direction as ExpoSliderDirection)
+          : 0;
       setMotion({
         progress: 0,
-        wrapDirection: 0,
+        wrapDirection: restingWrapDirection,
         isDragging: false,
         isAnimating: false,
         shouldTransition: false,
       });
       scheduleTransitionRestore();
 
-      if (pendingAnimation.kind === "snap-back") return true;
+      if (pendingAnimation.kind === "snap-back") {
+        setNavigationValue(currentValueRef.current);
+        return true;
+      }
 
       const latestOptions = optionsRef.current;
       const topologyChanged =
@@ -509,17 +561,32 @@ export function useExpoSlider({
       const controlledValueChanged =
         isControlledRef.current &&
         currentValueRef.current !== pendingAnimation.from;
-      if (topologyChanged || controlledValueChanged) return false;
+      if (topologyChanged || controlledValueChanged) {
+        setNavigationValue(currentValueRef.current);
+        return false;
+      }
 
-      if (!isControlledRef.current) {
+      const valueChanged = pendingAnimation.to !== pendingAnimation.from;
+      expectedCommittedValueRef.current = valueChanged
+        ? {
+            value: pendingAnimation.to,
+            wrapDirection: -pendingAnimation.direction as ExpoSliderDirection,
+          }
+        : null;
+      setNavigationValue(
+        isControlledRef.current ? currentValueRef.current : pendingAnimation.to,
+      );
+      if (!isControlledRef.current && valueChanged) {
         currentValueRef.current = pendingAnimation.to;
         setUncontrolledValue(pendingAnimation.to);
       }
-      onValueChangeRef.current?.(pendingAnimation.to, {
-        previousValue: pendingAnimation.from,
-        direction: pendingAnimation.direction,
-        source: pendingAnimation.source,
-      });
+      if (valueChanged) {
+        onValueChangeRef.current?.(pendingAnimation.to, {
+          previousValue: pendingAnimation.from,
+          direction: pendingAnimation.direction,
+          source: pendingAnimation.source,
+        });
+      }
       return true;
     },
     [
@@ -533,69 +600,172 @@ export function useExpoSlider({
   const scheduleAnimationFallback = useCallback(() => {
     clearFallbackTimer();
     const duration = optionsRef.current.transitionDuration;
-
-    if (duration === 0 || prefersReducedMotion()) {
-      queueMicrotask(completeAnimation);
-      return;
-    }
-
     fallbackTimerRef.current = setTimeout(
       completeAnimation,
       duration + ANIMATION_FALLBACK_BUFFER_MS,
     );
   }, [clearFallbackTimer, completeAnimation]);
 
+  const animateToProgress = useCallback(
+    (
+      pendingAnimation: PendingAnimation,
+      startProgress: number,
+      targetProgress: number,
+      direction: ExpoSliderMotionDirection,
+    ) => {
+      cancelFrame();
+      cancelTransitionRestore();
+      clearFallbackTimer();
+
+      const duration = optionsRef.current.transitionDuration;
+      pendingAnimation.duration = duration;
+      pendingAnimation.startedAt = getCurrentTime();
+      pendingProgressRef.current = startProgress;
+      setMotion({
+        progress: startProgress,
+        wrapDirection: direction,
+        isDragging: false,
+        isAnimating: true,
+        shouldTransition: false,
+      });
+
+      const finishImmediately =
+        duration === 0 ||
+        prefersReducedMotion() ||
+        Math.abs(targetProgress - startProgress) <= LOOP_TIE_EPSILON ||
+        typeof requestAnimationFrame !== "function";
+      if (finishImmediately) {
+        pendingProgressRef.current = targetProgress;
+        setMotion({
+          progress: targetProgress,
+          wrapDirection: direction,
+          isDragging: false,
+          isAnimating: true,
+          shouldTransition: false,
+        });
+        queueMicrotask(completeAnimation);
+        return;
+      }
+
+      const startedAt = pendingAnimation.startedAt;
+      const runAnimationFrame = (time: number) => {
+        frameRef.current = null;
+        if (pendingAnimationRef.current !== pendingAnimation) return;
+
+        const elapsed = Math.max(0, time - startedAt);
+        const linearProgress = clamp(elapsed / duration, 0, 1);
+        const easedProgress = getExpoAnimationProgress(linearProgress);
+        const progress =
+          startProgress + (targetProgress - startProgress) * easedProgress;
+        pendingProgressRef.current = progress;
+        setMotion({
+          progress,
+          wrapDirection: direction,
+          isDragging: false,
+          isAnimating: true,
+          shouldTransition: false,
+        });
+
+        if (linearProgress >= 1) {
+          completeAnimation();
+          return;
+        }
+        frameRef.current = requestAnimationFrame(runAnimationFrame);
+      };
+
+      frameRef.current = requestAnimationFrame(runAnimationFrame);
+      scheduleAnimationFallback();
+    },
+    [
+      cancelFrame,
+      cancelTransitionRestore,
+      clearFallbackTimer,
+      completeAnimation,
+      scheduleAnimationFallback,
+    ],
+  );
+
   const beginNavigation = useCallback(
     (
       requestedValue: number,
       source: ExpoSliderChangeSource,
       requestedDirection?: ExpoSliderDirection,
+      requestedDistance?: number,
     ) => {
       const latestOptions = optionsRef.current;
       if (
         latestOptions.disabled ||
         latestOptions.count <= 1 ||
-        pointerSessionRef.current ||
-        pendingAnimationRef.current
+        pointerSessionRef.current
       ) {
         return false;
       }
 
-      const from = currentValueRef.current;
+      expectedCommittedValueRef.current = null;
+
+      if (pendingAnimationRef.current?.kind === "snap-back") {
+        pendingAnimationRef.current = null;
+      }
+
+      const previousNavigation =
+        pendingAnimationRef.current?.kind === "navigation"
+          ? pendingAnimationRef.current
+          : null;
+      const from = previousNavigation?.from ?? currentValueRef.current;
       const to = normalizeExpoSliderValue(
         requestedValue,
         latestOptions.count,
         latestOptions.loop,
       );
-      if (to === from) return false;
 
       const directDistance = to - from;
-      const navigationDistance = requestedDirection
-        ? requestedDirection
-        : latestOptions.loop
-          ? getWrappedDistance(directDistance, latestOptions.count)
-          : directDistance;
-      const direction: ExpoSliderDirection =
-        requestedDirection ?? (navigationDistance > 0 ? 1 : -1);
-      const previousProgress = pendingProgressRef.current;
-      const oppositeIndex =
-        latestOptions.count % 2 === 0
-          ? (from + latestOptions.count / 2) % latestOptions.count
-          : from;
-      const currentWrapDirection =
-        getMotionDirection(previousProgress) ||
-        getMotionDirection(oppositeIndex - from);
-      const shouldPrepareWrap =
+      const referenceProgress = previousNavigation?.distance ?? 0;
+      let navigationDistance = latestOptions.loop
+        ? requestedDistance === undefined
+          ? getLoopDistanceNearProgress(
+              directDistance,
+              latestOptions.count,
+              referenceProgress,
+              requestedDirection ?? referenceProgress,
+            )
+          : Math.trunc(getFiniteNumber(requestedDistance, directDistance))
+        : directDistance;
+      if (
         latestOptions.loop &&
-        latestOptions.count % 2 === 0 &&
-        currentWrapDirection !== direction;
+        normalizeExpoSliderValue(
+          from + navigationDistance,
+          latestOptions.count,
+          true,
+        ) !== to
+      ) {
+        navigationDistance = getLoopDistanceNearProgress(
+          directDistance,
+          latestOptions.count,
+          referenceProgress,
+          requestedDirection ?? referenceProgress,
+        );
+      }
+      if (
+        (!previousNavigation && navigationDistance === 0) ||
+        (previousNavigation?.to === to &&
+          previousNavigation.distance === navigationDistance)
+      ) {
+        return false;
+      }
 
-      cancelFrame();
-      cancelTransitionRestore();
+      const startProgress = pendingProgressRef.current;
+      const motionDirection =
+        getMotionDirection(navigationDistance - startProgress) ||
+        getMotionDirection(navigationDistance) ||
+        requestedDirection ||
+        1;
+      const direction =
+        getMotionDirection(navigationDistance) || motionDirection;
       const pendingNavigation: PendingNavigation = {
         kind: "navigation",
         from,
         to,
+        distance: navigationDistance,
         direction,
         source,
         count: latestOptions.count,
@@ -604,117 +774,148 @@ export function useExpoSlider({
         duration: latestOptions.transitionDuration,
       };
       pendingAnimationRef.current = pendingNavigation;
-      const startNavigationTransition = () => {
-        frameRef.current = null;
-        if (pendingAnimationRef.current !== pendingNavigation) return;
-        pendingNavigation.duration = optionsRef.current.transitionDuration;
-        pendingNavigation.startedAt = getCurrentTime();
-        pendingProgressRef.current = navigationDistance;
-        setMotion({
-          progress: navigationDistance,
-          wrapDirection: direction,
-          isDragging: false,
-          isAnimating: true,
-          shouldTransition: true,
-        });
-        scheduleAnimationFallback();
-      };
-
-      if (shouldPrepareWrap && typeof requestAnimationFrame === "function") {
-        setMotion({
-          progress: previousProgress,
-          wrapDirection: direction,
-          isDragging: false,
-          isAnimating: true,
-          shouldTransition: false,
-        });
-        frameRef.current = requestAnimationFrame(() => {
-          frameRef.current = requestAnimationFrame(startNavigationTransition);
-        });
-      } else {
-        startNavigationTransition();
-      }
+      setNavigationValue(to);
+      animateToProgress(
+        pendingNavigation,
+        startProgress,
+        navigationDistance,
+        motionDirection,
+      );
       return true;
     },
-    [cancelFrame, cancelTransitionRestore, scheduleAnimationFallback],
+    [animateToProgress],
   );
 
   const canNavigate = useCallback(
-    (direction: ExpoSliderDirection) =>
-      !motion.isDragging &&
-      !motion.isAnimating &&
-      canNavigateFromValue(
-        currentValue,
-        direction,
-        safeCount,
-        effectiveLoop,
-        disabled,
-      ),
-    [
-      currentValue,
-      disabled,
-      effectiveLoop,
-      motion.isAnimating,
-      motion.isDragging,
-      safeCount,
-    ],
+    (direction: ExpoSliderDirection) => {
+      const pendingNavigation =
+        pendingAnimationRef.current?.kind === "navigation"
+          ? pendingAnimationRef.current
+          : null;
+      return (
+        !motion.isDragging &&
+        canNavigateFromValue(
+          pendingNavigation?.to ?? currentValueRef.current,
+          direction,
+          optionsRef.current.count,
+          optionsRef.current.loop,
+          optionsRef.current.disabled,
+        )
+      );
+    },
+    [motion.isDragging],
   );
 
   const navigate = useCallback(
     (
       direction: ExpoSliderDirection,
       source: ExpoSliderChangeSource = "programmatic",
-    ) =>
-      beginNavigation(currentValueRef.current + direction, source, direction),
+    ) => {
+      const pendingNavigation =
+        pendingAnimationRef.current?.kind === "navigation"
+          ? pendingAnimationRef.current
+          : null;
+      const targetValue = pendingNavigation?.to ?? currentValueRef.current;
+      const targetDistance = (pendingNavigation?.distance ?? 0) + direction;
+      return beginNavigation(
+        targetValue + direction,
+        source,
+        direction,
+        targetDistance,
+      );
+    },
     [beginNavigation],
   );
 
   const goTo = useCallback(
-    (index: number, source: ExpoSliderChangeSource = "programmatic") =>
-      beginNavigation(index, source),
+    (index: number, source: ExpoSliderChangeSource = "programmatic") => {
+      const latestOptions = optionsRef.current;
+      const pendingNavigation =
+        pendingAnimationRef.current?.kind === "navigation"
+          ? pendingAnimationRef.current
+          : null;
+      const from = pendingNavigation?.from ?? currentValueRef.current;
+      const target = normalizeExpoSliderValue(
+        index,
+        latestOptions.count,
+        latestOptions.loop,
+      );
+      const referenceProgress = pendingNavigation?.distance ?? 0;
+      const targetDelta =
+        target - (pendingNavigation?.to ?? currentValueRef.current);
+      const preferredDirection = latestOptions.loop
+        ? getMotionDirection(
+            getWrappedDistance(targetDelta, latestOptions.count),
+          )
+        : getMotionDirection(targetDelta);
+      const directDistance = target - from;
+      const targetDistance = latestOptions.loop
+        ? getLoopDistanceNearProgress(
+            directDistance,
+            latestOptions.count,
+            referenceProgress,
+            preferredDirection || referenceProgress,
+          )
+        : directDistance;
+      const direction =
+        getMotionDirection(targetDistance - referenceProgress) ||
+        getMotionDirection(targetDistance) ||
+        undefined;
+      return beginNavigation(index, source, direction, targetDistance);
+    },
     [beginNavigation],
   );
 
   const beginSnapBack = useCallback(() => {
     cancelFrame();
-    const hasVisibleProgress = Math.abs(pendingProgressRef.current) > 0.001;
-    const wrapDirection = getMotionDirection(pendingProgressRef.current);
-    pendingProgressRef.current = 0;
+    const startProgress = pendingProgressRef.current;
+    const hasVisibleProgress = Math.abs(startProgress) > 0.001;
+    const wrapDirection = getMotionDirection(startProgress);
 
     if (!hasVisibleProgress) {
       pendingAnimationRef.current = null;
       clearFallbackTimer();
+      setNavigationValue(currentValueRef.current);
       resetMotion();
       return;
     }
 
-    pendingAnimationRef.current = {
+    const pendingSnapBack: PendingSnapBack = {
       kind: "snap-back",
-      startedAt: getCurrentTime(),
+      startedAt: null,
       duration: optionsRef.current.transitionDuration,
     };
-    setMotion({
-      progress: 0,
-      wrapDirection,
-      isDragging: false,
-      isAnimating: true,
-      shouldTransition: true,
-    });
-    scheduleAnimationFallback();
-  }, [cancelFrame, clearFallbackTimer, resetMotion, scheduleAnimationFallback]);
+    pendingAnimationRef.current = pendingSnapBack;
+    setNavigationValue(currentValueRef.current);
+    animateToProgress(pendingSnapBack, startProgress, 0, wrapDirection);
+  }, [animateToProgress, cancelFrame, clearFallbackTimer, resetMotion]);
 
   const getDragProgress = useCallback((session: PointerSession) => {
     const latestOptions = optionsRef.current;
-    let progress = -(session.latestAxis - session.startAxis) / session.extent;
-    progress = clamp(progress, -1.2, 1.2);
+    let progress =
+      session.baseProgress -
+      (session.latestAxis - session.startAxis) / session.extent;
 
     if (!latestOptions.loop) {
       const latestValue = currentValueRef.current;
-      const isPastPreviousEdge = progress < 0 && latestValue === 0;
-      const isPastNextEdge =
-        progress > 0 && latestValue === latestOptions.count - 1;
-      if (isPastPreviousEdge || isPastNextEdge) {
-        progress *= EDGE_RESISTANCE;
+      const minimumProgress = -latestValue;
+      const maximumProgress = latestOptions.count - 1 - latestValue;
+      if (progress < minimumProgress) {
+        progress =
+          minimumProgress +
+          clamp(
+            (progress - minimumProgress) * EDGE_RESISTANCE,
+            -MAX_EDGE_OVERSHOOT,
+            0,
+          );
+      } else if (progress > maximumProgress) {
+        progress =
+          maximumProgress +
+          clamp(
+            (progress - maximumProgress) * EDGE_RESISTANCE,
+            0,
+            MAX_EDGE_OVERSHOOT,
+          );
       }
     }
 
@@ -746,6 +947,27 @@ export function useExpoSlider({
     [commitDragProgress],
   );
 
+  const beginPointerDrag = useCallback(
+    (session: PointerSession) => {
+      const interruptedAnimation = pendingAnimationRef.current;
+      session.baseProgress = pendingProgressRef.current;
+      session.baseIntentProgress =
+        interruptedAnimation?.kind === "navigation"
+          ? interruptedAnimation.distance
+          : 0;
+      session.interruptedAnimation = interruptedAnimation !== null;
+
+      if (interruptedAnimation) {
+        pendingAnimationRef.current = null;
+        cancelFrame();
+        clearFallbackTimer();
+      }
+      cancelTransitionRestore();
+      setNavigationValue(currentValueRef.current);
+    },
+    [cancelFrame, cancelTransitionRestore, clearFallbackTimer],
+  );
+
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const initialOptions = optionsRef.current;
@@ -759,26 +981,15 @@ export function useExpoSlider({
         return;
       }
 
-      const interruptedAnimation = pendingAnimationRef.current;
-      const completedInterruptedAnimation = interruptedAnimation
-        ? completeAnimation()
-        : false;
       const latestOptions = optionsRef.current;
       if (
         latestOptions.disabled ||
         latestOptions.count <= 1 ||
         pointerSessionRef.current ||
-        pendingAnimationRef.current ||
         !event.currentTarget.isConnected
       ) {
         return;
       }
-      const expectedValueAfterInterrupt =
-        completedInterruptedAnimation &&
-        interruptedAnimation?.kind === "navigation" &&
-        renderedValueRef.current !== interruptedAnimation.to
-          ? interruptedAnimation.to
-          : undefined;
 
       const { axis, crossAxis } = getAxisValues(
         event,
@@ -799,16 +1010,17 @@ export function useExpoSlider({
         latestAxis: axis,
         latestCrossAxis: crossAxis,
         extent,
+        baseProgress: 0,
+        baseIntentProgress: 0,
         axis: "pending",
         captured: false,
+        interruptedAnimation: false,
         samples: [{ axis, time: getEventTime(event) }],
-        expectedValueAfterInterrupt,
       };
       pointerSessionRef.current = session;
       capturePointer(session);
-      pendingProgressRef.current = 0;
     },
-    [completeAnimation],
+    [],
   );
 
   const handlePointerMove = useCallback(
@@ -816,9 +1028,9 @@ export function useExpoSlider({
       const session = pointerSessionRef.current;
       if (!session || session.pointerId !== event.pointerId) return;
 
-      if (optionsRef.current.disabled || pendingAnimationRef.current) {
+      if (optionsRef.current.disabled) {
         detachPointerSession(event.pointerId);
-        beginSnapBack();
+        if (session.interruptedAnimation) beginSnapBack();
         return;
       }
 
@@ -839,9 +1051,10 @@ export function useExpoSlider({
         session.axis = crossAxisDistance > axisDistance ? "cross" : "primary";
         if (session.axis === "cross") {
           detachPointerSession(event.pointerId);
-          resetMotion();
+          scheduleTransitionRestore();
           return;
         }
+        beginPointerDrag(session);
         capturePointer(session);
       }
 
@@ -855,11 +1068,12 @@ export function useExpoSlider({
       scheduleDragProgress(getDragProgress(session));
     },
     [
+      beginPointerDrag,
       beginSnapBack,
       detachPointerSession,
       getDragProgress,
-      resetMotion,
       scheduleDragProgress,
+      scheduleTransitionRestore,
     ],
   );
 
@@ -885,11 +1099,11 @@ export function useExpoSlider({
       }
 
       detachPointerSession(event.pointerId);
-      cancelFrame();
       if (session.axis !== "primary") {
-        resetMotion();
+        scheduleTransitionRestore();
         return;
       }
+      cancelFrame();
 
       const dragProgress = getDragProgress(session);
       pendingProgressRef.current = dragProgress;
@@ -902,26 +1116,41 @@ export function useExpoSlider({
         ? (session.latestAxis - oldestSample.axis) / elapsed
         : 0;
       const latestOptions = optionsRef.current;
-      const hasDistance =
-        Math.abs(delta) >= session.extent * latestOptions.dragThreshold;
-      const hasVelocity = Math.abs(velocity) >= latestOptions.velocityThreshold;
-      const projectedDelta = delta + velocity * PROJECTED_MOTION_MS;
-      const directionalDelta = projectedDelta || delta;
-      const direction: ExpoSliderDirection = directionalDelta < 0 ? 1 : -1;
+      const pointerProgress = -delta / session.extent;
+      const rawVelocityProgress =
+        -(velocity * PROJECTED_MOTION_MS) / session.extent;
+      const velocityProgress =
+        Math.abs(velocity) >= latestOptions.velocityThreshold &&
+        getMotionDirection(rawVelocityProgress) ===
+          getMotionDirection(pointerProgress)
+          ? clamp(rawVelocityProgress, -1, 1)
+          : 0;
+      const pointerIntent = pointerProgress + velocityProgress;
+      const direction = getMotionDirection(pointerIntent);
+
+      if (!direction) {
+        beginSnapBack();
+        return;
+      }
+
+      const pointerSteps =
+        direction * Math.max(1, Math.round(Math.abs(pointerIntent)));
+      let navigationDistance = session.baseIntentProgress + pointerSteps;
+      if (!latestOptions.loop) {
+        navigationDistance = clamp(
+          navigationDistance,
+          -currentValueRef.current,
+          latestOptions.count - 1 - currentValueRef.current,
+        );
+      }
 
       if (
-        (hasDistance || hasVelocity) &&
-        canNavigateFromValue(
-          currentValueRef.current,
-          direction,
-          latestOptions.count,
-          latestOptions.loop,
-          latestOptions.disabled,
-        ) &&
+        navigationDistance !== 0 &&
         beginNavigation(
-          currentValueRef.current + direction,
+          currentValueRef.current + navigationDistance,
           "pointer",
           direction,
+          navigationDistance,
         )
       ) {
         return;
@@ -934,7 +1163,7 @@ export function useExpoSlider({
       cancelFrame,
       detachPointerSession,
       getDragProgress,
-      resetMotion,
+      scheduleTransitionRestore,
     ],
   );
 
@@ -942,22 +1171,42 @@ export function useExpoSlider({
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const session = detachPointerSession(event.pointerId);
       if (!session) return;
+      if (session.axis !== "primary") {
+        scheduleTransitionRestore();
+        return;
+      }
       cancelFrame();
       pendingProgressRef.current = getDragProgress(session);
       beginSnapBack();
     },
-    [beginSnapBack, cancelFrame, detachPointerSession, getDragProgress],
+    [
+      beginSnapBack,
+      cancelFrame,
+      detachPointerSession,
+      getDragProgress,
+      scheduleTransitionRestore,
+    ],
   );
 
   const handleLostPointerCapture = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const session = detachPointerSession(event.pointerId, false);
       if (!session) return;
+      if (session.axis !== "primary") {
+        scheduleTransitionRestore();
+        return;
+      }
       cancelFrame();
       pendingProgressRef.current = getDragProgress(session);
       beginSnapBack();
     },
-    [beginSnapBack, cancelFrame, detachPointerSession, getDragProgress],
+    [
+      beginSnapBack,
+      cancelFrame,
+      detachPointerSession,
+      getDragProgress,
+      scheduleTransitionRestore,
+    ],
   );
 
   const handlePointerLeave = useCallback(
@@ -971,18 +1220,31 @@ export function useExpoSlider({
         return;
       }
 
-      detachPointerSession(event.pointerId, false);
-      cancelFrame();
-      resetMotion();
+      const detachedSession = detachPointerSession(event.pointerId, false);
+      if (detachedSession?.axis === "primary") {
+        cancelFrame();
+        pendingProgressRef.current = getDragProgress(detachedSession);
+        beginSnapBack();
+      } else {
+        scheduleTransitionRestore();
+      }
     },
-    [cancelFrame, detachPointerSession, resetMotion],
+    [
+      beginSnapBack,
+      cancelFrame,
+      detachPointerSession,
+      getDragProgress,
+      scheduleTransitionRestore,
+    ],
   );
 
   const cancelActiveInteraction = useCallback(() => {
     detachPointerSession();
     pendingAnimationRef.current = null;
+    expectedCommittedValueRef.current = null;
     cancelFrame();
     clearFallbackTimer();
+    setNavigationValue(currentValueRef.current);
     resetMotionWithoutTransition();
   }, [
     cancelFrame,
@@ -1022,17 +1284,26 @@ export function useExpoSlider({
       disabled,
     };
 
-    const pointerSession = pointerSessionRef.current;
-    const acceptsInterruptedValue =
-      valueChanged &&
-      !structureChanged &&
-      pointerSession?.expectedValueAfterInterrupt === currentValue;
-    if (acceptsInterruptedValue && pointerSession) {
-      pointerSession.expectedValueAfterInterrupt = undefined;
-    }
-
-    if ((valueChanged || structureChanged) && !acceptsInterruptedValue) {
-      if (pointerSessionRef.current || pendingAnimationRef.current) {
+    if (valueChanged || structureChanged) {
+      const expectedCommittedValue = expectedCommittedValueRef.current;
+      const acceptsExpectedCommit =
+        valueChanged &&
+        !structureChanged &&
+        expectedCommittedValue?.value === currentValue;
+      expectedCommittedValueRef.current = null;
+      setNavigationValue(currentValue);
+      if (acceptsExpectedCommit) {
+        cancelTransitionRestore();
+        pendingProgressRef.current = 0;
+        setMotion({
+          progress: 0,
+          wrapDirection: expectedCommittedValue.wrapDirection,
+          isDragging: false,
+          isAnimating: false,
+          shouldTransition: false,
+        });
+        scheduleTransitionRestore();
+      } else if (pointerSessionRef.current || pendingAnimationRef.current) {
         cancelActiveInteraction();
       } else {
         resetMotionWithoutTransition();
@@ -1040,12 +1311,14 @@ export function useExpoSlider({
     }
   }, [
     cancelActiveInteraction,
+    cancelTransitionRestore,
     currentValue,
     disabled,
     effectiveLoop,
     orientation,
     resetMotionWithoutTransition,
     safeCount,
+    scheduleTransitionRestore,
   ]);
 
   useEffect(
@@ -1063,6 +1336,7 @@ export function useExpoSlider({
 
   return {
     currentValue,
+    navigationValue,
     motionProgress: motion.progress,
     wrapDirection: motion.wrapDirection,
     isDragging: motion.isDragging,

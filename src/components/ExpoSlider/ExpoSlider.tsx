@@ -20,6 +20,8 @@ import {
 
 type ExpoSliderApi = ReturnType<typeof useExpoSlider>;
 
+const LOOP_REBASE_FADE_DISTANCE = 0.2;
+
 interface ExpoSliderContextValue
   extends Pick<
     ExpoSliderApi,
@@ -37,6 +39,7 @@ interface ExpoSliderContextValue
     | "isDragging"
     | "motionProgress"
     | "navigate"
+    | "navigationValue"
     | "shouldTransition"
     | "transitionDuration"
     | "wrapDirection"
@@ -109,6 +112,7 @@ export interface ExpoSliderRootProps
   parallax?: number;
   rotation?: number;
   grayscale?: boolean;
+  /** @deprecated Expo Slider now uses threshold-free, distance-based dragging. */
   dragThreshold?: number;
   velocityThreshold?: number;
   transitionDuration?: number;
@@ -163,6 +167,7 @@ export function ExpoSliderRoot({
     () => ({
       count: safeCount,
       currentValue: slider.currentValue,
+      navigationValue: slider.navigationValue,
       motionProgress: slider.motionProgress,
       wrapDirection: slider.wrapDirection,
       isDragging: slider.isDragging,
@@ -216,6 +221,7 @@ export function ExpoSliderRoot({
       slider.isDragging,
       slider.motionProgress,
       slider.navigate,
+      slider.navigationValue,
       slider.shouldTransition,
       slider.transitionDuration,
       slider.wrapDirection,
@@ -265,8 +271,7 @@ export function ExpoSliderViewport({
       event.defaultPrevented ||
       event.target !== event.currentTarget ||
       context.disabled ||
-      context.isDragging ||
-      context.isAnimating
+      context.isDragging
     ) {
       return;
     }
@@ -362,6 +367,33 @@ export function ExpoSliderSlide({
     context.motionProgress,
     context.wrapDirection,
   );
+  const defaultStartProgress = getExpoSliderRelativeProgress(
+    safeIndex,
+    context.currentValue,
+    context.count,
+    context.loop,
+  );
+  const directedStartProgress = getExpoSliderRelativeProgress(
+    safeIndex,
+    context.currentValue,
+    context.count,
+    context.loop,
+    0,
+    context.wrapDirection,
+  );
+  const continuousProgress = directedStartProgress - context.motionProgress;
+  const isLoopRebase =
+    context.loop &&
+    (context.isDragging || context.isAnimating) &&
+    (Math.abs(progress - continuousProgress) > 0.001 ||
+      Math.abs(directedStartProgress - defaultStartProgress) > 0.001);
+  const loopRebaseOpacity = isLoopRebase
+    ? clamp(
+        (context.count / 2 - Math.abs(progress)) / LOOP_REBASE_FADE_DISTANCE,
+        0,
+        1,
+      )
+    : 1;
   const visibleProgress = clamp(progress, -3, 3);
   const axisSize = 100 / context.slidesPerView;
   const positionTransform =
@@ -372,7 +404,7 @@ export function ExpoSliderSlide({
     ...style,
     width: context.orientation === "horizontal" ? `${axisSize}%` : style?.width,
     height: context.orientation === "vertical" ? `${axisSize}%` : style?.height,
-    opacity: Math.abs(progress) > 2.5 ? 0 : 1,
+    opacity: Math.abs(progress) > 2.5 ? 0 : loopRebaseOpacity,
     pointerEvents: isCurrent ? "auto" : "none",
     transform: positionTransform,
     transitionDuration: context.shouldTransition
@@ -619,11 +651,7 @@ export function ExpoSliderPrevious({
   ...props
 }: ExpoSliderControlProps) {
   const context = useExpoSliderContext("ExpoSliderPrevious");
-  const isDisabled =
-    disabled ||
-    context.disabled ||
-    context.isAnimating ||
-    !context.canNavigate(-1);
+  const isDisabled = disabled || context.disabled || !context.canNavigate(-1);
 
   return (
     <button
@@ -650,11 +678,7 @@ export function ExpoSliderNext({
   ...props
 }: ExpoSliderControlProps) {
   const context = useExpoSliderContext("ExpoSliderNext");
-  const isDisabled =
-    disabled ||
-    context.disabled ||
-    context.isAnimating ||
-    !context.canNavigate(1);
+  const isDisabled = disabled || context.disabled || !context.canNavigate(1);
 
   return (
     <button
@@ -709,18 +733,20 @@ export function ExpoSliderPagination({
       className={twMerge(clsx("flex items-center gap-2", className))}
     >
       {Array.from({ length: context.count }, (_, index) => {
-        const isActive = index === context.currentValue;
+        const isCurrent = index === context.currentValue;
+        const isActive = index === context.navigationValue;
         return (
           <button
             key={index}
             type="button"
-            aria-current={isActive ? "true" : undefined}
+            aria-current={isCurrent ? "true" : undefined}
             aria-label={
               getItemLabel?.(index) ??
               `Go to slide ${index + 1} of ${context.count}`
             }
-            disabled={context.disabled || context.isAnimating || isActive}
+            disabled={context.disabled || isActive}
             data-active={isActive ? "" : undefined}
+            data-current={isCurrent ? "" : undefined}
             data-index={index}
             data-slot="expo-slider-pagination-item"
             className={twMerge(
