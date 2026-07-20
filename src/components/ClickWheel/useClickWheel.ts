@@ -27,6 +27,7 @@ export type ClickWheelLongPressHandler = (button: HTMLButtonElement) => void;
 export interface UseClickWheelOptions {
   onRotate?: ClickWheelRotateHandler;
   onLongPress?: ClickWheelLongPressHandler;
+  onRotationStart?: () => void;
   disabled?: boolean;
   sensitivity?: number;
 }
@@ -42,6 +43,7 @@ function normalizeSensitivity(sensitivity: number) {
 export function useClickWheel({
   onRotate,
   onLongPress,
+  onRotationStart,
   disabled = false,
   sensitivity = CLICK_WHEEL_DEFAULT_SENSITIVITY,
 }: UseClickWheelOptions = {}) {
@@ -198,7 +200,10 @@ export function useClickWheel({
         window.clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
-      didDrag.current = true;
+      if (!didDrag.current) {
+        didDrag.current = true;
+        onRotationStart?.();
+      }
       event.preventDefault();
       const direction: ClickWheelDirection =
         accumulatedAngle.current > 0 ? 1 : -1;

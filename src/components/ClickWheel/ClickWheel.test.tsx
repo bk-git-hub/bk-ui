@@ -15,11 +15,143 @@ describe("ClickWheel", () => {
       "type",
       "button",
     );
-    expect(screen.getByRole("button", { name: "Previous" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Select" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Next" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Play or pause" })).toBeVisible();
+    const buttons = [
+      screen.getByRole("button", { name: "Menu" }),
+      screen.getByRole("button", { name: "Previous" }),
+      screen.getByRole("button", { name: "Select" }),
+      screen.getByRole("button", { name: "Next" }),
+      screen.getByRole("button", { name: "Play or pause" }),
+    ];
+
+    buttons.forEach((button) => {
+      expect(button).toBeVisible();
+      expect(button).toHaveClass(
+        "data-pressing:scale-[0.94]",
+        "data-pressing:brightness-90",
+        "data-pressing:shadow-[inset_0_2px_5px_rgba(0,0,0,0.24)]",
+      );
+    });
+
+    const previousIcon = buttons[1].querySelector(
+      '[data-skip-direction="previous"]',
+    );
+    const nextIcon = buttons[3].querySelector('[data-skip-direction="next"]');
+    expect(previousIcon).toHaveAttribute("viewBox", "0 0 113 56");
+    expect(previousIcon?.querySelector("rect")).not.toHaveAttribute("x");
+    expect(nextIcon).toHaveAttribute("viewBox", "0 0 113 56");
+    expect(nextIcon?.querySelector("rect")).toHaveAttribute("x", "113");
     expect(ClientClickWheel).toBe(ClickWheel);
+  });
+
+  it("shows tactile button feedback and clears it after release or rotation", () => {
+    const onRotate = vi.fn();
+    render(<ClickWheel onRotate={onRotate} />);
+
+    const wheel = screen.getByLabelText(/Click wheel/);
+    const buttons = [
+      screen.getByRole("button", { name: "Menu" }),
+      screen.getByRole("button", { name: "Previous" }),
+      screen.getByRole("button", { name: "Select" }),
+      screen.getByRole("button", { name: "Next" }),
+      screen.getByRole("button", { name: "Play or pause" }),
+    ];
+    vi.spyOn(wheel, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 200,
+      width: 200,
+      height: 200,
+      toJSON: () => ({}),
+    });
+
+    buttons.forEach((button, index) => {
+      const pointerId = index + 1;
+      fireEvent.pointerDown(button, {
+        pointerId,
+        pointerType: "mouse",
+        button: 0,
+        clientX: 100,
+        clientY: 20,
+      });
+      expect(button).toHaveAttribute("data-pressing");
+      fireEvent.pointerUp(button, { pointerId, pointerType: "mouse" });
+      expect(button).not.toHaveAttribute("data-pressing");
+    });
+
+    const menu = buttons[0];
+    fireEvent.pointerDown(menu, {
+      pointerId: 20,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 100,
+      clientY: 20,
+    });
+    expect(menu).toHaveAttribute("data-pressing");
+    fireEvent.pointerMove(wheel, {
+      pointerId: 20,
+      pointerType: "mouse",
+      clientX: 122,
+      clientY: 25,
+    });
+    expect(onRotate).toHaveBeenCalledWith(1);
+    expect(menu).not.toHaveAttribute("data-pressing");
+    fireEvent.pointerUp(wheel, { pointerId: 20, pointerType: "mouse" });
+
+    const select = buttons[2];
+    fireEvent.pointerDown(select, {
+      pointerId: 21,
+      pointerType: "touch",
+      clientX: 100,
+      clientY: 100,
+    });
+    expect(select).toHaveAttribute("data-pressing");
+    fireEvent.pointerCancel(wheel, {
+      pointerId: 21,
+      pointerType: "touch",
+    });
+    expect(select).not.toHaveAttribute("data-pressing");
+
+    const next = buttons[3];
+    fireEvent.pointerDown(next, {
+      pointerId: 22,
+      pointerType: "mouse",
+      button: 0,
+    });
+    expect(next).toHaveAttribute("data-pressing");
+    fireEvent.pointerLeave(next, { pointerId: 22, pointerType: "mouse" });
+    expect(next).not.toHaveAttribute("data-pressing");
+  });
+
+  it("mirrors root and native-button keyboard presses without changing toggle aria", () => {
+    render(
+      <ClickWheel buttonProps={{ playPause: { "aria-pressed": true } }} />,
+    );
+
+    const wheel = screen.getByLabelText(/Click wheel/);
+    const shortcuts = [
+      ["Enter", screen.getByRole("button", { name: "Select" })],
+      ["Escape", screen.getByRole("button", { name: "Menu" })],
+      ["Home", screen.getByRole("button", { name: "Menu" })],
+      [" ", screen.getByRole("button", { name: "Play or pause" })],
+    ] as const;
+
+    shortcuts.forEach(([key, button]) => {
+      fireEvent.keyDown(wheel, { key });
+      expect(button).toHaveAttribute("data-pressing");
+      fireEvent.keyUp(wheel, { key });
+      expect(button).not.toHaveAttribute("data-pressing");
+    });
+
+    const playPause = screen.getByRole("button", { name: "Play or pause" });
+    fireEvent.keyDown(playPause, { key: " " });
+    expect(playPause).toHaveAttribute("data-pressing");
+    expect(playPause).toHaveAttribute("aria-pressed", "true");
+    fireEvent.keyUp(playPause, { key: " " });
+    expect(playPause).not.toHaveAttribute("data-pressing");
+    expect(playPause).toHaveAttribute("aria-pressed", "true");
   });
 
   it("customizes every button and composes native and semantic callbacks", () => {
@@ -345,7 +477,14 @@ describe("ClickWheel", () => {
     const wheel = screen.getByLabelText(/Click wheel/);
     expect(wheel).toHaveAttribute("aria-disabled", "true");
     expect(wheel).toHaveAttribute("tabindex", "-1");
-    expect(screen.getByRole("button", { name: "Menu" })).toBeDisabled();
+    const disabledMenu = screen.getByRole("button", { name: "Menu" });
+    expect(disabledMenu).toBeDisabled();
+    fireEvent.pointerDown(disabledMenu, {
+      pointerId: 30,
+      pointerType: "mouse",
+      button: 0,
+    });
+    expect(disabledMenu).not.toHaveAttribute("data-pressing");
     fireEvent.keyDown(wheel, { key: "ArrowDown" });
     fireEvent.wheel(wheel, { deltaY: 10 });
     expect(onRotate).not.toHaveBeenCalled();
