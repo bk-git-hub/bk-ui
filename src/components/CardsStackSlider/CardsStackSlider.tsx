@@ -273,8 +273,8 @@ function getSlideTransform(
     const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
     transform =
       orientation === "horizontal"
-        ? `translate3d(${axisOffset}%, ${trailProgress * 5}px, ${depth}px) rotateY(${-flip}deg) rotateZ(${tilt}deg) scale(${scale})`
-        : `translate3d(${trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${flip}deg) rotateZ(${-tilt}deg) scale(${scale})`;
+        ? `translate3d(${axisOffset}%, ${trailProgress * 5}px, ${depth}px) rotateY(${flip}deg) rotateZ(${tilt}deg) scale(${scale})`
+        : `translate3d(${trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${-flip}deg) rotateZ(${-tilt}deg) scale(${scale})`;
   } else {
     const angle = firstStepProgress * 14 + trailProgress * 5;
     const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
