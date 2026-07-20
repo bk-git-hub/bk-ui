@@ -269,19 +269,19 @@ function getSlideTransform(
   let transform: string;
 
   if (progress >= 0) {
-    const angle = firstStepProgress * 14 + trailProgress * 5;
-    const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
-    transform =
-      orientation === "horizontal"
-        ? `translate3d(${axisOffset}%, ${trailProgress * 5}px, ${depth}px) rotateY(${-angle}deg) rotateZ(${tilt}deg) scale(${scale})`
-        : `translate3d(${trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${angle}deg) rotateZ(${-tilt}deg) scale(${scale})`;
-  } else {
     const flip = firstStepProgress * 180 + trailProgress * 4;
     const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
     transform =
       orientation === "horizontal"
-        ? `translate3d(${axisOffset}%, ${-trailProgress * 5}px, ${depth}px) rotateY(${flip}deg) rotateZ(${-tilt}deg) scale(${scale})`
-        : `translate3d(${-trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${-flip}deg) rotateZ(${tilt}deg) scale(${scale})`;
+        ? `translate3d(${axisOffset}%, ${trailProgress * 5}px, ${depth}px) rotateY(${-flip}deg) rotateZ(${tilt}deg) scale(${scale})`
+        : `translate3d(${trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${flip}deg) rotateZ(${-tilt}deg) scale(${scale})`;
+  } else {
+    const angle = firstStepProgress * 14 + trailProgress * 5;
+    const tilt = Math.min(clampedProgress, visibleCount) * 1.2;
+    transform =
+      orientation === "horizontal"
+        ? `translate3d(${axisOffset}%, ${-trailProgress * 5}px, ${depth}px) rotateY(${angle}deg) rotateZ(${-tilt}deg) scale(${scale})`
+        : `translate3d(${-trailProgress * 5}px, ${axisOffset}%, ${depth}px) rotateX(${-angle}deg) rotateZ(${tilt}deg) scale(${scale})`;
   }
 
   return {
@@ -356,7 +356,7 @@ export function CardsStackItem({
         pointerEvents: isCurrent ? "auto" : "none",
       }}
       onTransitionEnd={
-        isCurrent && context.isAnimating
+        isTopLayer && context.isAnimating
           ? context.handleTransitionEnd
           : undefined
       }

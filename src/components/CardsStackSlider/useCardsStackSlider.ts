@@ -126,7 +126,7 @@ function getCardsStackLayerValue(
   loop: boolean,
 ) {
   return normalizeCardsStackValue(
-    Math.floor(currentValue - progress),
+    Math.ceil(currentValue - progress),
     count,
     loop,
   );
@@ -278,11 +278,7 @@ export function useCardsStackSlider({
   }, []);
 
   const navigateBy = useCallback(
-    (
-      delta: number,
-      source: CardsStackChangeSource,
-      layerValue = currentValueRef.current,
-    ) => {
+    (delta: number, source: CardsStackChangeSource, layerValue?: number) => {
       const integerDelta = Number.isFinite(delta) ? Math.trunc(delta) : 0;
       if (integerDelta === 0) return false;
       const direction: CardsStackDirection = integerDelta > 0 ? 1 : -1;
@@ -309,12 +305,13 @@ export function useCardsStackSlider({
         latestCount,
         latestLoop,
       );
+      const transitionLayerValue = layerValue ?? (boundedDelta > 0 ? to : from);
       pendingNavigationRef.current = { from, to, direction, source };
       setMotion({
         progress: -boundedDelta,
         isDragging: false,
         isAnimating: true,
-        layerValue,
+        layerValue: transitionLayerValue,
       });
 
       if (prefersReducedMotion()) {

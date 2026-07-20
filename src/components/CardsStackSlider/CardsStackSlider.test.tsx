@@ -85,6 +85,14 @@ function getPositioner(index: number) {
   ) as HTMLElement;
 }
 
+function getTopLayerPositioner() {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '[data-slot="cards-stack-item-positioner"]',
+    ),
+  ).find((positioner) => positioner.style.zIndex === "2000") as HTMLElement;
+}
+
 function getHorizontalPrimaryOffset(index: number) {
   return Number(
     getPositioner(index).style.transform.match(
@@ -93,10 +101,14 @@ function getHorizontalPrimaryOffset(index: number) {
   );
 }
 
-function finishTransition() {
+function fireTransformTransition(positioner: HTMLElement) {
   const event = new Event("transitionend", { bubbles: true });
   Object.defineProperty(event, "propertyName", { value: "transform" });
-  fireEvent(getActivePositioner(), event);
+  fireEvent(positioner, event);
+}
+
+function finishTransition() {
+  fireTransformTransition(getTopLayerPositioner());
 }
 
 describe("cards stack utilities", () => {
@@ -180,23 +192,30 @@ describe("CardsStackSlider", () => {
     expect(getPositioner(2).style.transform).toContain("translate3d(0px, -64%");
     expect(getPositioner(0).style.transform).toContain("translate3d(0px, 0%");
     expect(getPositioner(1).style.transform).toContain("translate3d(0px, 64%");
+    expect(getPositioner(1).style.transform).toContain("rotateX(180deg)");
   });
 
   it("moves one card, announces it, and reports the input source once", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
 
+    expect(getPositioner(1).style.transform).toContain("rotateY(-180deg)");
     fireEvent.click(screen.getByRole("button", { name: "Next card" }));
     expect(screen.getByRole("button", { name: "Next card" })).toBeDisabled();
-    expect(getActivePositioner().style.transform).toContain("rotateY(180deg)");
-    expect(Number(getPositioner(0).style.zIndex)).toBeGreaterThan(
-      Number(getPositioner(1).style.zIndex),
+    expect(getPositioner(1).style.transform).toContain("rotateY(0deg)");
+    expect(getPositioner(0).style.transform).toContain("rotateY(14deg)");
+    expect(Number(getPositioner(1).style.zIndex)).toBeGreaterThan(
+      Number(getPositioner(0).style.zIndex),
     );
+    fireTransformTransition(getPositioner(0));
+    expect(getActivePositioner()).toHaveAttribute("data-index", "0");
+    expect(onValueChange).not.toHaveBeenCalled();
     const outgoingTransform = getPositioner(0).style.transform;
     const incomingTransform = getPositioner(1).style.transform;
     const settledStyles = cards.map((_, index) => ({
       transform: getPositioner(index).style.transform,
       opacity: getPositioner(index).style.opacity,
+      zIndex: getPositioner(index).style.zIndex,
     }));
 
     finishTransition();
@@ -212,6 +231,9 @@ describe("CardsStackSlider", () => {
       expect(getPositioner(index).style.opacity).toBe(
         settledStyles[index].opacity,
       );
+      expect(getPositioner(index).style.zIndex).toBe(
+        settledStyles[index].zIndex,
+      );
     });
     expect(screen.getByRole("status")).toHaveTextContent("2 of 3");
     expect(onValueChange).toHaveBeenCalledTimes(1);
@@ -222,11 +244,34 @@ describe("CardsStackSlider", () => {
     });
   });
 
+  it("keeps the outgoing card on top while navigating to a previous index", () => {
+    render(<TestSlider loop={false} defaultValue={1} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous card" }));
+
+    expect(getPositioner(1).style.transform).toContain("rotateY(-180deg)");
+    expect(getPositioner(0).style.transform).toContain("rotateY(0deg)");
+    expect(Number(getPositioner(1).style.zIndex)).toBeGreaterThan(
+      Number(getPositioner(0).style.zIndex),
+    );
+    fireTransformTransition(getPositioner(0));
+    expect(getActivePositioner()).toHaveAttribute("data-index", "1");
+
+    finishTransition();
+
+    expect(getActivePositioner()).toHaveAttribute("data-index", "0");
+    expect(Number(getPositioner(0).style.zIndex)).toBeGreaterThan(
+      Number(getPositioner(1).style.zIndex),
+    );
+  });
+
   it("wraps in both directions when loop is enabled", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Previous card" }));
+    expect(getTopLayerPositioner()).toHaveAttribute("data-index", "0");
+    expect(getPositioner(0).style.transform).toContain("rotateY(-180deg)");
     finishTransition();
 
     expect(getActivePositioner()).toHaveAttribute("data-index", "2");
@@ -237,6 +282,8 @@ describe("CardsStackSlider", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Next card" }));
+    expect(getTopLayerPositioner()).toHaveAttribute("data-index", "0");
+    expect(getPositioner(0).style.transform).toContain("rotateY(0deg)");
     finishTransition();
     expect(getActivePositioner()).toHaveAttribute("data-index", "0");
   });
@@ -374,6 +421,7 @@ describe("CardsStackSlider", () => {
     act(() => vi.advanceTimersByTime(1));
 
     expect(getHorizontalPrimaryOffset(2)).toBeCloseTo(-19.2, 5);
+    expect(getPositioner(3).style.zIndex).toBe("2000");
     expect(Number(getPositioner(2).style.zIndex)).toBeGreaterThan(
       Number(getPositioner(0).style.zIndex),
     );
@@ -385,6 +433,7 @@ describe("CardsStackSlider", () => {
       clientX: -500,
       clientY: 100,
     });
+    expect(getPositioner(3).style.zIndex).toBe("2000");
     finishTransition();
 
     expect(getActivePositioner()).toHaveAttribute("data-index", "2");
