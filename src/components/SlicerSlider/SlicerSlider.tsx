@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentPropsWithRef,
   type CSSProperties,
@@ -34,6 +35,7 @@ interface SlicerSliderContextValue {
   slides: readonly SlicerSliderImage[];
   count: number;
   currentValue: number;
+  plannedValue: number;
   transition: SlicerSliderTransition | null;
   slicesActive: boolean;
   sliceCount: number;
@@ -84,19 +86,33 @@ function useSlicerSliderContext(componentName: string) {
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const preferenceRef = useRef(false);
+  const getPreference = useCallback(() => preferenceRef.current, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = (matches: boolean) => {
+      preferenceRef.current = matches;
+      setPrefersReducedMotion((current) =>
+        current === matches ? current : matches,
+      );
+    };
     const handleChange = (event: MediaQueryListEvent) =>
-      setPrefersReducedMotion(event.matches);
+      updatePreference(event.matches);
 
-    setPrefersReducedMotion(mediaQuery.matches);
+    preferenceRef.current = mediaQuery.matches;
+    const frame = window.requestAnimationFrame(() =>
+      updatePreference(mediaQuery.matches),
+    );
     mediaQuery.addEventListener?.("change", handleChange);
-    return () => mediaQuery.removeEventListener?.("change", handleChange);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      mediaQuery.removeEventListener?.("change", handleChange);
+    };
   }, []);
 
-  return prefersReducedMotion;
+  return [prefersReducedMotion, getPreference] as const;
 }
 
 function clampFinite(
@@ -151,10 +167,14 @@ export function SlicerSliderRoot({
   const safeSliceDuration = clampFinite(sliceDuration, 160, 2400, 680);
   const safeStaggerDelay = clampFinite(staggerDelay, 0, 180, 42);
   const safeExitDistance = clampFinite(exitDistance, 70, 180, 112);
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const [slicesActive, setSlicesActive] = useState(false);
+  const [prefersReducedMotion, getPrefersReducedMotion] =
+    usePrefersReducedMotion();
+  const [activeTransitionId, setActiveTransitionId] = useState<number | null>(
+    null,
+  );
   const {
     currentValue,
+    plannedValue,
     transition,
     isDragging,
     isPointerActive,
@@ -176,18 +196,18 @@ export function SlicerSliderRoot({
     disabled,
     dragThreshold,
     reducedMotion: prefersReducedMotion,
+    getReducedMotion: getPrefersReducedMotion,
   });
+  const slicesActive = transition?.id === activeTransitionId;
 
   useEffect(() => {
-    if (!transition) {
-      setSlicesActive(false);
-      return;
-    }
+    if (!transition) return;
 
-    setSlicesActive(false);
     let secondFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => setSlicesActive(true));
+      secondFrame = window.requestAnimationFrame(() =>
+        setActiveTransitionId(transition.id),
+      );
     });
 
     return () => {
@@ -219,6 +239,7 @@ export function SlicerSliderRoot({
       slides,
       count: slides.length,
       currentValue,
+      plannedValue,
       transition,
       slicesActive,
       sliceCount: safeSliceCount,
@@ -257,6 +278,7 @@ export function SlicerSliderRoot({
       isPointerActive,
       loop,
       navigate,
+      plannedValue,
       prefersReducedMotion,
       safeExitDistance,
       safeSliceCount,
@@ -587,7 +609,7 @@ export function SlicerSliderPagination({
   ...props
 }: SlicerSliderPaginationProps) {
   const context = useSlicerSliderContext("SlicerSliderPagination");
-  const activeValue = context.transition?.to ?? context.currentValue;
+  const activeValue = context.plannedValue;
 
   return (
     <div
@@ -608,7 +630,7 @@ export function SlicerSliderPagination({
               `Go to slide ${index + 1}: ${slide.alt}`
             }
             aria-current={isActive ? "true" : undefined}
-            disabled={context.disabled || context.transition !== null}
+            disabled={context.disabled}
             onClick={() => context.goTo(index, "pagination")}
             data-slot="slicer-slider-pagination-item"
             data-active={isActive || undefined}

@@ -3,6 +3,7 @@ import {
   cleanup,
   fireEvent,
   render,
+  renderHook,
   screen,
 } from "@testing-library/react";
 import type { ComponentProps } from "react";
@@ -20,6 +21,7 @@ import {
 import {
   getSlicerSliderTarget,
   normalizeSlicerSliderValue,
+  useSlicerSlider,
 } from "./useSlicerSlider";
 import * as clientEntry from "./client";
 
@@ -194,7 +196,7 @@ describe("SlicerSlider", () => {
     slices.forEach((slice) => {
       expect(slice).toHaveAttribute("aria-hidden", "true");
     });
-    expect(next).toBeDisabled();
+    expect(next).toBeEnabled();
     expect(getActiveSlide()).toHaveAttribute("data-state", "outgoing");
     expect(screen.getByRole("status")).toHaveTextContent("1 of 3");
     expect(onValueChange).not.toHaveBeenCalled();
@@ -213,6 +215,215 @@ describe("SlicerSlider", () => {
     expect(onValueChange).toHaveBeenCalledOnce();
     expect(onValueChange).toHaveBeenCalledWith(1, {
       previousValue: 0,
+      direction: 1,
+      source: "next",
+    });
+  });
+
+  it("coalesces repeated relative controls against the queued target", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+
+    const next = screen.getByRole("button", { name: "Next slide" });
+    fireEvent.click(next);
+    fireEvent.click(next);
+    fireEvent.click(next);
+
+    expect(getSlides()[0]).toHaveAttribute("data-state", "outgoing");
+    expect(getSlides()[1]).toHaveAttribute("data-state", "incoming");
+    expect(screen.getByRole("status")).toHaveTextContent("1 of 3");
+
+    finishLatestSliceTransition();
+
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange).toHaveBeenLastCalledWith(1, {
+      previousValue: 0,
+      direction: 1,
+      source: "next",
+    });
+    expect(getSlides()[1]).toHaveAttribute("data-state", "outgoing");
+    expect(getSlides()[0]).toHaveAttribute("data-state", "incoming");
+
+    finishLatestSliceTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "0");
+    expect(onValueChange).toHaveBeenCalledTimes(2);
+    expect(onValueChange).toHaveBeenLastCalledWith(0, {
+      previousValue: 1,
+      direction: 1,
+      source: "next",
+    });
+  });
+
+  it("lets an opposite relative control cancel the queued movement", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
+    finishLatestSliceTransition();
+
+    expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
+    fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
+    finishLatestSliceTransition();
+
+    expect(getSlides()[1]).toHaveAttribute("data-state", "incoming");
+    finishLatestSliceTransition();
+
+    expect(getSlices()).toHaveLength(0);
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(onValueChange.mock.calls.map(([nextValue]) => nextValue)).toEqual([
+      1, 2, 1,
+    ]);
+    expect(onValueChange).toHaveBeenLastCalledWith(1, {
+      previousValue: 2,
+      direction: -1,
+      source: "previous",
+    });
+  });
+
+  it("derives bounded control availability from the queued target", () => {
+    render(<TestSlider loop={false} />);
+
+    const previous = screen.getByRole("button", { name: "Previous slide" });
+    const next = screen.getByRole("button", { name: "Next slide" });
+    fireEvent.click(next);
+
+    expect(previous).toBeEnabled();
+    expect(next).toBeEnabled();
+    fireEvent.click(next);
+
+    expect(previous).toBeEnabled();
+    expect(next).toBeDisabled();
+  });
+
+  it("lets an absolute pagination target replace queued relative input", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
+    const thirdPaginationItem = screen.getByRole("button", {
+      name: "Go to slide 3: Third abstract scene",
+    });
+    expect(thirdPaginationItem).toBeEnabled();
+    fireEvent.click(thirdPaginationItem);
+
+    expect(getSlides()[1]).toHaveAttribute("data-state", "incoming");
+    finishLatestSliceTransition();
+    expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
+    finishLatestSliceTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenCalledTimes(2);
+    expect(onValueChange).toHaveBeenLastCalledWith(2, {
+      previousValue: 1,
+      direction: 1,
+      source: "pagination",
+    });
+  });
+
+  it.each([
+    [
+      "keyboard",
+      (viewport: HTMLElement) =>
+        fireEvent.keyDown(viewport, { key: "ArrowRight" }),
+    ],
+    [
+      "pointer",
+      (viewport: HTMLElement) => {
+        fireEvent.pointerDown(viewport, {
+          pointerId: 11,
+          pointerType: "touch",
+          clientX: 180,
+          clientY: 120,
+        });
+        fireEvent.pointerMove(viewport, {
+          pointerId: 11,
+          pointerType: "touch",
+          clientX: 90,
+          clientY: 122,
+        });
+        fireEvent.pointerUp(viewport, {
+          pointerId: 11,
+          pointerType: "touch",
+          clientX: 90,
+          clientY: 122,
+        });
+      },
+    ],
+  ] as const)(
+    "accepts %s input while a transition is active",
+    (source, queue) => {
+      const onValueChange = vi.fn();
+      render(<TestSlider onValueChange={onValueChange} />);
+      const viewport = screen.getByTestId("viewport");
+
+      fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
+      queue(viewport);
+      finishLatestSliceTransition();
+
+      expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
+      finishLatestSliceTransition();
+      expect(onValueChange).toHaveBeenLastCalledWith(2, {
+        previousValue: 1,
+        direction: 1,
+        source,
+      });
+    },
+  );
+
+  it("ignores a stale completion after starting the queued transition", () => {
+    const onValueChange = vi.fn();
+    const { result } = renderHook(() =>
+      useSlicerSlider({ count: 3, onValueChange }),
+    );
+
+    act(() => {
+      result.current.navigate(1, "next");
+      result.current.navigate(1, "next");
+    });
+    const firstTransitionId = result.current.transition?.id;
+    expect(firstTransitionId).toBeTypeOf("number");
+
+    act(() => {
+      result.current.completeTransition(firstTransitionId!);
+    });
+    const queuedTransitionId = result.current.transition?.id;
+    expect(queuedTransitionId).toBeTypeOf("number");
+    expect(queuedTransitionId).not.toBe(firstTransitionId);
+
+    let staleCompletion = true;
+    act(() => {
+      staleCompletion = result.current.completeTransition(firstTransitionId!);
+    });
+
+    expect(staleCompletion).toBe(false);
+    expect(result.current.transition?.id).toBe(queuedTransitionId);
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for controlled value approval before running queued input", () => {
+    const onValueChange = vi.fn();
+    const { rerender } = render(
+      <TestSlider value={0} onValueChange={onValueChange} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
+    finishLatestSliceTransition();
+
+    expect(getSlices()).toHaveLength(0);
+    expect(getActiveSlide()).toHaveAttribute("data-index", "0");
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+
+    rerender(<TestSlider value={1} onValueChange={onValueChange} />);
+
+    expect(getSlides()[1]).toHaveAttribute("data-state", "outgoing");
+    expect(getSlides()[2]).toHaveAttribute("data-state", "incoming");
+    finishLatestSliceTransition();
+    expect(onValueChange).toHaveBeenLastCalledWith(2, {
+      previousValue: 1,
       direction: 1,
       source: "next",
     });

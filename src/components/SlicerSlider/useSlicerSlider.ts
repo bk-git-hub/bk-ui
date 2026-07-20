@@ -40,6 +40,7 @@ export interface UseSlicerSliderOptions {
   disabled?: boolean;
   dragThreshold?: number;
   reducedMotion?: boolean;
+  getReducedMotion?: () => boolean;
 }
 
 interface PointerSession {
@@ -49,6 +50,17 @@ interface PointerSession {
   startY: number;
   latestX: number;
   axis: "pending" | "horizontal" | "vertical";
+}
+
+interface SlicerSliderNavigationRequest {
+  to: number;
+  direction: SlicerSliderDirection;
+  source: SlicerSliderChangeSource;
+}
+
+interface AwaitingControlledValue {
+  from: number;
+  to: number;
 }
 
 const INTERACTIVE_SELECTOR =
@@ -89,6 +101,7 @@ export function useSlicerSlider({
   disabled = false,
   dragThreshold = 48,
   reducedMotion = false,
+  getReducedMotion,
 }: UseSlicerSliderOptions) {
   const safeCount = Math.max(0, Math.trunc(count));
   const isControlled = value !== undefined;
@@ -104,17 +117,115 @@ export function useSlicerSlider({
   const [transition, setTransition] = useState<SlicerSliderTransition | null>(
     null,
   );
+  const [queuedNavigation, setQueuedNavigation] =
+    useState<SlicerSliderNavigationRequest | null>(null);
+  const [awaitingControlledValue, setAwaitingControlledValue] = useState<
+    number | null
+  >(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isPointerActive, setIsPointerActive] = useState(false);
   const transitionRef = useRef<SlicerSliderTransition | null>(null);
+  const queuedNavigationRef = useRef<SlicerSliderNavigationRequest | null>(
+    null,
+  );
+  const awaitingControlledValueRef = useRef<AwaitingControlledValue | null>(
+    null,
+  );
   const transitionIdRef = useRef(0);
   const pointerSessionRef = useRef<PointerSession | null>(null);
+
+  const clearQueuedNavigation = useCallback(() => {
+    queuedNavigationRef.current = null;
+    setQueuedNavigation(null);
+  }, []);
+
+  const queueNavigation = useCallback(
+    (request: SlicerSliderNavigationRequest) => {
+      queuedNavigationRef.current = request;
+      setQueuedNavigation(request);
+    },
+    [],
+  );
+
+  const takeQueuedNavigation = useCallback(() => {
+    const queued = queuedNavigationRef.current;
+    queuedNavigationRef.current = null;
+    setQueuedNavigation(null);
+    return queued;
+  }, []);
+
+  const clearAwaitingControlledValue = useCallback(() => {
+    awaitingControlledValueRef.current = null;
+    setAwaitingControlledValue(null);
+  }, []);
+
+  const waitForControlledValue = useCallback((from: number, to: number) => {
+    awaitingControlledValueRef.current = { from, to };
+    setAwaitingControlledValue(to);
+  }, []);
+
+  const startTransition = useCallback(
+    (from: number, request: SlicerSliderNavigationRequest) => {
+      if (request.to === from) return false;
+
+      const nextTransition: SlicerSliderTransition = {
+        id: ++transitionIdRef.current,
+        from,
+        to: request.to,
+        previousValue: from,
+        direction: request.direction,
+        source: request.source,
+      };
+
+      transitionRef.current = nextTransition;
+      setRenderedValue(from);
+      setTransition(nextTransition);
+      setIsDragging(false);
+      return true;
+    },
+    [],
+  );
+
+  const runNavigation = useCallback(
+    (from: number, request: SlicerSliderNavigationRequest) => {
+      if (request.to === from) return false;
+
+      if (getReducedMotion?.() ?? reducedMotion) {
+        if (isControlled) {
+          waitForControlledValue(from, request.to);
+          setRenderedValue(settledValue);
+        } else {
+          setUncontrolledValue(request.to);
+          setRenderedValue(request.to);
+        }
+        onValueChange?.(request.to, {
+          previousValue: from,
+          direction: request.direction,
+          source: request.source,
+        });
+        return true;
+      }
+
+      return startTransition(from, request);
+    },
+    [
+      getReducedMotion,
+      isControlled,
+      onValueChange,
+      reducedMotion,
+      settledValue,
+      startTransition,
+      waitForControlledValue,
+    ],
+  );
 
   useEffect(() => {
     const pending = transitionRef.current;
     if (pending && isControlled && settledValue !== pending.from) {
       transitionRef.current = null;
       setTransition(null);
+      clearQueuedNavigation();
+      clearAwaitingControlledValue();
       setRenderedValue(settledValue);
       return;
     }
@@ -124,18 +235,77 @@ export function useSlicerSlider({
         currentValue === settledValue ? currentValue : settledValue,
       );
     }
-  }, [isControlled, settledValue]);
+  }, [
+    clearAwaitingControlledValue,
+    clearQueuedNavigation,
+    isControlled,
+    settledValue,
+  ]);
 
   useEffect(() => {
     const pending = transitionRef.current;
-    if (!pending || (pending.from < safeCount && pending.to < safeCount)) {
-      return;
+    const queued = queuedNavigationRef.current;
+    const awaiting = awaitingControlledValueRef.current;
+
+    if (queued && queued.to >= safeCount) {
+      clearQueuedNavigation();
     }
+    if (awaiting && (awaiting.from >= safeCount || awaiting.to >= safeCount)) {
+      clearAwaitingControlledValue();
+      clearQueuedNavigation();
+    }
+    if (!pending || (pending.from < safeCount && pending.to < safeCount))
+      return;
 
     transitionRef.current = null;
     setTransition(null);
+    clearQueuedNavigation();
+    clearAwaitingControlledValue();
     setRenderedValue(settledValue);
-  }, [safeCount, settledValue]);
+  }, [
+    clearAwaitingControlledValue,
+    clearQueuedNavigation,
+    safeCount,
+    settledValue,
+  ]);
+
+  useEffect(() => {
+    if (disabled) clearQueuedNavigation();
+  }, [clearQueuedNavigation, disabled]);
+
+  useEffect(() => {
+    const awaiting = awaitingControlledValueRef.current;
+    if (!awaiting) return;
+
+    if (!isControlled) {
+      clearAwaitingControlledValue();
+      clearQueuedNavigation();
+      return;
+    }
+
+    if (settledValue === awaiting.to) {
+      clearAwaitingControlledValue();
+      setRenderedValue(settledValue);
+      const queued = takeQueuedNavigation();
+      if (queued && queued.to !== settledValue) {
+        runNavigation(settledValue, queued);
+      }
+      return;
+    }
+
+    if (settledValue !== awaiting.from) {
+      clearAwaitingControlledValue();
+      clearQueuedNavigation();
+      setRenderedValue(settledValue);
+    }
+  }, [
+    clearAwaitingControlledValue,
+    clearQueuedNavigation,
+    isControlled,
+    runNavigation,
+    settledValue,
+    takeQueuedNavigation,
+  ]);
 
   const goTo = useCallback(
     (
@@ -143,74 +313,86 @@ export function useSlicerSlider({
       source: SlicerSliderChangeSource,
       requestedDirection?: SlicerSliderDirection,
     ) => {
-      if (disabled || safeCount <= 1 || transitionRef.current) return false;
+      if (disabled || safeCount <= 1) return false;
 
       const targetValue = normalizeSlicerSliderValue(
         requestedValue,
         safeCount,
         loop,
       );
+      const activeTransition = transitionRef.current;
+      const awaiting = awaitingControlledValueRef.current;
+      const queued = queuedNavigationRef.current;
+      const plannedFrom = activeTransition?.to ?? awaiting?.to ?? renderedValue;
+      const currentPlannedValue = queued?.to ?? plannedFrom;
+      if (targetValue === currentPlannedValue) return false;
+
+      if (activeTransition || awaiting) {
+        if (targetValue === plannedFrom) {
+          if (!queued) return false;
+          clearQueuedNavigation();
+          return true;
+        }
+
+        queueNavigation({
+          to: targetValue,
+          direction: requestedDirection ?? (targetValue > plannedFrom ? 1 : -1),
+          source,
+        });
+        return true;
+      }
+
       if (targetValue === renderedValue) return false;
 
       const direction =
         requestedDirection ?? (targetValue > renderedValue ? 1 : -1);
-      const detail: SlicerSliderValueChangeDetail = {
-        previousValue: renderedValue,
+      return runNavigation(renderedValue, {
+        to: targetValue,
         direction,
         source,
-      };
-
-      if (reducedMotion) {
-        if (!isControlled) {
-          setUncontrolledValue(targetValue);
-          setRenderedValue(targetValue);
-        }
-        onValueChange?.(targetValue, detail);
-        return true;
-      }
-
-      const nextTransition: SlicerSliderTransition = {
-        id: ++transitionIdRef.current,
-        from: renderedValue,
-        to: targetValue,
-        ...detail,
-      };
-
-      transitionRef.current = nextTransition;
-      setTransition(nextTransition);
-      setIsDragging(false);
-      return true;
+      });
     },
     [
+      clearQueuedNavigation,
       disabled,
-      isControlled,
       loop,
-      onValueChange,
-      reducedMotion,
+      queueNavigation,
       renderedValue,
+      runNavigation,
       safeCount,
     ],
   );
 
   const navigate = useCallback(
-    (direction: SlicerSliderDirection, source: SlicerSliderChangeSource) =>
-      goTo(
-        getSlicerSliderTarget(renderedValue, direction, safeCount, loop),
+    (direction: SlicerSliderDirection, source: SlicerSliderChangeSource) => {
+      const plannedValue =
+        queuedNavigationRef.current?.to ??
+        transitionRef.current?.to ??
+        awaitingControlledValueRef.current?.to ??
+        renderedValue;
+      return goTo(
+        getSlicerSliderTarget(plannedValue, direction, safeCount, loop),
         source,
         direction,
-      ),
+      );
+    },
     [goTo, loop, renderedValue, safeCount],
   );
+
+  const plannedValue =
+    queuedNavigation?.to ??
+    transition?.to ??
+    awaitingControlledValue ??
+    renderedValue;
 
   const canNavigate = useCallback(
     (direction: SlicerSliderDirection) =>
       !disabled &&
       !isPointerActive &&
-      transitionRef.current === null &&
       safeCount > 1 &&
-      getSlicerSliderTarget(renderedValue, direction, safeCount, loop) !==
-        renderedValue,
-    [disabled, isPointerActive, loop, renderedValue, safeCount],
+      getSlicerSliderTarget(plannedValue, direction, safeCount, loop) !==
+        plannedValue,
+    [disabled, isPointerActive, loop, plannedValue, safeCount],
   );
 
   const completeTransition = useCallback(
@@ -220,20 +402,33 @@ export function useSlicerSlider({
 
       transitionRef.current = null;
       setTransition(null);
-      if (!isControlled) {
-        setUncontrolledValue(pending.to);
-        setRenderedValue(pending.to);
-      } else {
-        setRenderedValue(settledValue);
-      }
       onValueChange?.(pending.to, {
         previousValue: pending.previousValue,
         direction: pending.direction,
         source: pending.source,
       });
+
+      if (isControlled) {
+        setRenderedValue(settledValue);
+        waitForControlledValue(pending.from, pending.to);
+      } else {
+        setUncontrolledValue(pending.to);
+        setRenderedValue(pending.to);
+        const queued = takeQueuedNavigation();
+        if (queued && queued.to !== pending.to) {
+          runNavigation(pending.to, queued);
+        }
+      }
       return true;
     },
-    [isControlled, onValueChange, settledValue],
+    [
+      isControlled,
+      onValueChange,
+      runNavigation,
+      settledValue,
+      takeQueuedNavigation,
+      waitForControlledValue,
+    ],
   );
 
   const releasePointerSession = useCallback((pointerId?: number) => {
@@ -262,7 +457,7 @@ export function useSlicerSlider({
       if (
         disabled ||
         safeCount <= 1 ||
-        transitionRef.current ||
+        pointerSessionRef.current ||
         (event.pointerType === "mouse" && event.button !== 0)
       ) {
         return;
@@ -343,6 +538,7 @@ export function useSlicerSlider({
 
   return {
     currentValue: renderedValue,
+    plannedValue,
     transition,
     isDragging,
     isPointerActive,
