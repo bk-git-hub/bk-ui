@@ -1,6 +1,9 @@
 "use client";
 
-import { ClickWheel as ClickWheelPrimitive } from "@/components/ClickWheel";
+import {
+  ClickWheel as ClickWheelPrimitive,
+  useClickWheelController,
+} from "@/components/ClickWheel";
 import { useReactPod } from "./ReactPodContext";
 
 export interface ReactPodClickWheelProps {
@@ -20,18 +23,21 @@ export function ReactPodClickWheel({ sensitivity }: ReactPodClickWheelProps) {
   } = useReactPod();
   const isBrowsingPhotos =
     state.screen === "photo-grid" || state.screen === "photo-viewer";
+  const wheelBindings = useClickWheelController({
+    navigate: rotate,
+    back,
+    home: goToMainMenu,
+    previous,
+    select,
+    next,
+    playPause: togglePlay,
+  });
 
   return (
     <div className="flex h-[55%] items-center justify-center bg-zinc-200">
       <ClickWheelPrimitive
+        {...wheelBindings}
         sensitivity={sensitivity}
-        onRotate={rotate}
-        onMenu={back}
-        onMenuLongPress={goToMainMenu}
-        onPrevious={previous}
-        onSelect={select}
-        onNext={next}
-        onPlayPause={togglePlay}
         aria-label="Click wheel. Drag or use arrow keys to navigate. Escape returns to the previous menu; Home opens the main menu."
         buttonProps={{
           menu: {

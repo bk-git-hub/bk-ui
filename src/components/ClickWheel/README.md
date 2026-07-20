@@ -1,6 +1,6 @@
 # ClickWheel
 
-`ClickWheel`은 ReactPod의 원형 입력부만 분리한 React + Tailwind 컴포넌트입니다. React 상태와 Pointer Events만 사용하며, Next.js 런타임이나 별도 제스처 라이브러리에 의존하지 않습니다. MENU, 이전, 가운데 선택, 다음, 재생/일시정지 버튼은 각각 내용·ARIA·클래스·HTML 속성과 이벤트를 바꿀 수 있습니다.
+`ClickWheel`은 ReactPod의 원형 입력부만 분리한 React + Tailwind 컴포넌트입니다. React 상태와 Pointer Events만 사용하며, Next.js 런타임이나 별도 제스처 라이브러리에 의존하지 않습니다. `useClickWheelController`로 메뉴, 슬라이더, 갤러리, 미디어 UI의 명령을 같은 입력 계약에 연결할 수 있습니다. MENU, 이전, 가운데 선택, 다음, 재생/일시정지 버튼은 각각 내용·ARIA·클래스·HTML 속성과 이벤트를 바꿀 수 있습니다.
 
 ## 일반 React / Vite
 
@@ -8,21 +8,24 @@
 
 ```tsx
 import { useState } from "react";
-import { ClickWheel } from "@/components/ClickWheel";
+import { ClickWheel, useClickWheelController } from "@/components/ClickWheel";
 
 export function PlayerControls() {
   const [value, setValue] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const wheelBindings = useClickWheelController({
+    navigate: (direction) =>
+      setValue((current) => Math.max(0, Math.min(9, current + direction))),
+    back: () => setValue(0),
+    home: () => setValue(0),
+    select: () => console.log("selected", value),
+    playPause: () => setPlaying((current) => !current),
+  });
 
   return (
     <ClickWheel
+      {...wheelBindings}
       sensitivity={1.25}
-      onRotate={(direction) => setValue((current) => current + direction)}
-      onMenu={() => setValue(0)}
-      onPrevious={() => setValue((current) => current - 1)}
-      onSelect={() => console.log("selected", value)}
-      onNext={() => setValue((current) => current + 1)}
-      onPlayPause={() => setPlaying((current) => !current)}
       buttonProps={{
         menu: {
           children: "BACK",
@@ -45,6 +48,10 @@ export function PlayerControls() {
 }
 ```
 
+`navigate(direction, detail)`은 원형 회전, 방향키, 마우스 휠을 `-1 | 1` 명령으로 통합합니다. `previous`와 `next`를 생략하면 해당 버튼도 기본적으로 `navigate(-1)`과 `navigate(1)`을 사용합니다. 트랙 건너뛰기처럼 의미가 다르면 controller의 `previous`와 `next`를 별도로 지정하면 됩니다. `detail.source`는 `rotate | previous | next` 중 하나입니다.
+
+controller는 현재 인덱스, loop, clamp, debounce, 애니메이션 queue를 소유하지 않습니다. 이 정책은 연결되는 메뉴나 슬라이더가 결정하므로 서로 다른 UI를 같은 ClickWheel에 연결해도 고유 동작이 유지됩니다. `disabled`를 controller에 전달하면 반환된 모든 binding이 입력을 무시하고 ClickWheel도 비활성화됩니다. 기존의 `onRotate`, `onMenu` 등 저수준 callback을 직접 전달하는 방식도 그대로 지원합니다.
+
 루트에는 `div`의 표준 속성과 이벤트를 전달할 수 있습니다. `buttonProps`의 각 항목에는 `button` 속성, `children`, `className`, `aria-*`, `data-*`, `ref`, 네이티브 이벤트를 전달할 수 있습니다. 버튼의 `onClick`이 `preventDefault()`를 호출하면 대응하는 의미 callback은 실행하지 않습니다. `wheelDrag`를 사용하면 해당 버튼에서 시작한 포인터 이동을 휠 회전으로 처리할지 선택할 수 있습니다.
 
 포인터나 키보드로 누르는 동안 해당 버튼에는 `data-pressing`이 설정되어 기본 축소·밝기·inset shadow 피드백이 적용됩니다. MENU·재생 버튼에서 회전 드래그가 시작되면 눌림 상태는 즉시 해제되며, 소비자는 `buttonProps.*.className`의 `data-pressing:*` Tailwind 클래스로 깊이와 색상을 덮어쓸 수 있습니다. 이 순간 상태는 재생 여부를 나타내는 `aria-pressed`와 독립적입니다.
@@ -60,18 +67,20 @@ export function PlayerControls() {
 "use client";
 
 import { useState } from "react";
-import { ClickWheel } from "@/components/ClickWheel/client";
+import {
+  ClickWheel,
+  useClickWheelController,
+} from "@/components/ClickWheel/client";
 
 export function PlayerWheel() {
   const [index, setIndex] = useState(0);
+  const wheelBindings = useClickWheelController({
+    navigate: (direction) => setIndex((current) => current + direction),
+    back: () => setIndex(0),
+    select: () => console.log(index),
+  });
 
-  return (
-    <ClickWheel
-      onRotate={(direction) => setIndex((current) => current + direction)}
-      onMenu={() => setIndex(0)}
-      onSelect={() => console.log(index)}
-    />
-  );
+  return <ClickWheel {...wheelBindings} />;
 }
 ```
 

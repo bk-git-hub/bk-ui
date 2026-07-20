@@ -17,3 +17,13 @@ export {
   type ClickWheelRotateHandler,
   type UseClickWheelOptions,
 } from "./useClickWheel";
+export {
+  getClickWheelControllerBindings,
+  useClickWheelController,
+  type ClickWheelActionHandler,
+  type ClickWheelController,
+  type ClickWheelControllerBindings,
+  type ClickWheelNavigateHandler,
+  type ClickWheelNavigationDetail,
+  type ClickWheelNavigationSource,
+} from "./useClickWheelController";
