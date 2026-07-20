@@ -3,7 +3,7 @@ import type { ComponentViewerCodeTab } from "@/components/layout/component-viewe
 export const reactPodReactExport: ComponentViewerCodeTab = {
   language: "React TSX",
   description:
-    "Copy the ReactPod, ClickWheel, and Coverflow runtime files into your React/Vite source tree. Native MP3 playback uses the browser audio element; the shared core needs no media, Next.js, or animation library.",
+    "Copy the ReactPod, ClickWheel, Coverflow, and three slider runtimes into your React/Vite source tree. The framework-neutral core connects every interaction through React state and browser APIs without a media, Next.js, or animation library.",
   code: `// React / Vite export
 //
 // Required runtime files:
@@ -14,11 +14,14 @@ export const reactPodReactExport: ComponentViewerCodeTab = {
 //   src/components/ReactPod/Display.tsx
 //   src/components/ReactPod/ClickWheel.tsx
 //   src/components/ReactPod/ReactPodCoverflow.tsx
+//   src/components/ReactPod/ReactPodSliderScreens.tsx
+//   src/components/ReactPod/ReactPodActiveScreenController.ts
 //   src/components/ReactPod/ReactPodIcons.tsx
 //   src/components/ReactPod/reactPodState.ts
 //   src/components/ClickWheel/index.ts
 //   src/components/ClickWheel/ClickWheel.tsx
 //   src/components/ClickWheel/useClickWheel.ts
+//   src/components/ClickWheel/useClickWheelController.ts
 //   src/components/Coverflow/index.ts
 //   src/components/Coverflow/coverflow.tsx
 //   src/components/Coverflow/coverflow-item.tsx
@@ -28,6 +31,15 @@ export const reactPodReactExport: ComponentViewerCodeTab = {
 //   src/components/Coverflow/use-drag.ts
 //   src/components/Coverflow/use-key-navigation.ts
 //   src/components/Coverflow/use-wheel-event.ts
+//   src/components/SlicerSlider/index.ts
+//   src/components/SlicerSlider/SlicerSlider.tsx
+//   src/components/SlicerSlider/useSlicerSlider.ts
+//   src/components/ExpoSlider/index.ts
+//   src/components/ExpoSlider/ExpoSlider.tsx
+//   src/components/ExpoSlider/useExpoSlider.ts
+//   src/components/CardsStackSlider/index.ts
+//   src/components/CardsStackSlider/CardsStackSlider.tsx
+//   src/components/CardsStackSlider/useCardsStackSlider.ts
 //
 // Runtime helpers used by the current core:
 //   pnpm add clsx tailwind-merge
@@ -70,6 +82,7 @@ import {
   ReactPod,
   type ReactPodCoverflowAlbum,
   type ReactPodMenuItem,
+  type ReactPodSliderItem,
   type ReactPodTrack,
 } from "@/components/ReactPod";
 
@@ -77,11 +90,15 @@ const menuItems = [
   { id: "songs", label: "Library" },
   { id: "now-playing", label: "Now Playing" },
   { id: "coverflow", label: "Coverflow" },
+  { id: "slicer-slider", label: "Slicer Slider" },
+  { id: "expo-slider", label: "Expo Slider" },
+  { id: "cards-stack-slider", label: "Cards Stack" },
   { id: "about", label: "About This Pod" },
 ] satisfies readonly ReactPodMenuItem[];
 
 // Put the referenced MP3 in public/audio/streetlights.mp3 and its cover in
-// public/albums/night-drive.webp. Only the active track is loaded.
+// public/albums/night-drive.webp. Put the slider images referenced below in
+// public/slider. Only the active audio track is loaded.
 const tracks = [
   {
     id: "streetlights",
@@ -108,6 +125,24 @@ const coverflowAlbums = [
   },
 ] satisfies readonly ReactPodCoverflowAlbum[];
 
+const sliderItems = [
+  {
+    id: "platform-blue",
+    title: "Platform Blue",
+    description: "A quiet platform opening onto the East Sea.",
+    imageSrc: "/slider/platform-blue.webp",
+    imageAlt: "An empty railway platform facing a bright blue sea",
+    imageObjectPosition: "center 48%",
+  },
+  {
+    id: "after-rain",
+    title: "After Rain",
+    description: "Neon reflected through a narrow city alley.",
+    imageSrc: "/slider/after-rain.webp",
+    imageAlt: "A bicycle beside a neon-lit alley after rain",
+  },
+] satisfies readonly ReactPodSliderItem[];
+
 export default function App() {
   return (
     <main className="grid min-h-screen place-items-center bg-slate-100 p-6">
@@ -116,6 +151,7 @@ export default function App() {
         menuItems={menuItems}
         tracks={tracks}
         coverflowAlbums={coverflowAlbums}
+        sliderItems={sliderItems}
         wheelSensitivity={1.25}
       />
     </main>
@@ -132,6 +168,9 @@ export default function App() {
 // @source "../node_modules/@your-scope/bk-ui/src/components/ReactPod";
 // @source "../node_modules/@your-scope/bk-ui/src/components/ClickWheel";
 // @source "../node_modules/@your-scope/bk-ui/src/components/Coverflow";
+// @source "../node_modules/@your-scope/bk-ui/src/components/SlicerSlider";
+// @source "../node_modules/@your-scope/bk-ui/src/components/ExpoSlider";
+// @source "../node_modules/@your-scope/bk-ui/src/components/CardsStackSlider";
 
 // Tailwind CSS v3
 // Merge these paths into the existing content array.
@@ -143,6 +182,9 @@ export default function App() {
 //   "./node_modules/@your-scope/bk-ui/src/components/ReactPod/**/*.{js,ts,jsx,tsx}",
 //   "./node_modules/@your-scope/bk-ui/src/components/ClickWheel/**/*.{js,ts,jsx,tsx}",
 //   "./node_modules/@your-scope/bk-ui/src/components/Coverflow/**/*.{js,ts,jsx,tsx}",
+//   "./node_modules/@your-scope/bk-ui/src/components/SlicerSlider/**/*.{js,ts,jsx,tsx}",
+//   "./node_modules/@your-scope/bk-ui/src/components/ExpoSlider/**/*.{js,ts,jsx,tsx}",
+//   "./node_modules/@your-scope/bk-ui/src/components/CardsStackSlider/**/*.{js,ts,jsx,tsx}",
 // ];
 `,
 };

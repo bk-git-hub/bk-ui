@@ -23,6 +23,9 @@ export function ReactPodClickWheel({ sensitivity }: ReactPodClickWheelProps) {
   } = useReactPod();
   const isBrowsingPhotos =
     state.screen === "photo-grid" || state.screen === "photo-viewer";
+  const isBrowsingSlider =
+    state.screen === "slicer-slider" || state.screen === "expo-slider";
+  const isBrowsingCards = state.screen === "cards-stack-slider";
   const wheelBindings = useClickWheelController({
     navigate: rotate,
     back,
@@ -47,10 +50,26 @@ export function ReactPodClickWheel({ sensitivity }: ReactPodClickWheelProps) {
           previous: {
             "aria-label": isBrowsingPhotos
               ? "Previous photo"
-              : "Previous track",
+              : isBrowsingCards
+                ? "Previous card"
+                : isBrowsingSlider
+                  ? "Previous slide"
+                  : "Previous track",
+          },
+          select: {
+            "aria-label":
+              isBrowsingSlider || isBrowsingCards
+                ? "Toggle item details"
+                : "Select",
           },
           next: {
-            "aria-label": isBrowsingPhotos ? "Next photo" : "Next track",
+            "aria-label": isBrowsingPhotos
+              ? "Next photo"
+              : isBrowsingCards
+                ? "Next card"
+                : isBrowsingSlider
+                  ? "Next slide"
+                  : "Next track",
           },
           playPause: {
             "aria-label": state.isPlaying ? "Pause" : "Play",

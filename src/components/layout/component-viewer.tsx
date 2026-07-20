@@ -41,6 +41,13 @@ export interface ComponentViewerCodeTab {
   description?: ReactNode;
 }
 
+export interface ComponentViewerUsageExample extends ComponentViewerCodeTab {
+  id: string;
+  label: string;
+}
+
+const EMPTY_USAGE_EXAMPLES: readonly ComponentViewerUsageExample[] = [];
+
 export interface ComponentViewerProps {
   title: string;
   description: string;
@@ -48,6 +55,7 @@ export interface ComponentViewerProps {
   component: ReactNode;
   referenceCode?: string;
   referenceCodeLanguage?: string;
+  usageExamples?: readonly ComponentViewerUsageExample[];
   reactExport?: ComponentViewerCodeTab;
   nextJsExport?: ComponentViewerCodeTab;
   installDescriptor?: ComponentInstallDescriptor;
@@ -82,6 +90,7 @@ export default function ComponentViewer({
   component,
   referenceCode,
   referenceCodeLanguage = "TSX",
+  usageExamples = EMPTY_USAGE_EXAMPLES,
   reactExport,
   nextJsExport,
   installDescriptor,
@@ -94,12 +103,23 @@ export default function ComponentViewer({
   onResetCode,
 }: ComponentViewerProps) {
   const [activeTab, setActiveTab] = useState<ComponentViewerTabId>("preview");
+  const [activeUsageExampleId, setActiveUsageExampleId] = useState<
+    string | null
+  >(() => usageExamples[0]?.id ?? null);
   const [copiedTab, setCopiedTab] = useState<ComponentViewerTabId | null>(null);
   const tabRefs = useRef<
     Partial<Record<ComponentViewerTabId, HTMLButtonElement | null>>
   >({});
   const isEditable = onUsageCodeChange !== undefined;
-  const hasUsageTab = referenceCode !== undefined;
+  const activeUsageExample =
+    usageExamples.find((example) => example.id === activeUsageExampleId) ??
+    usageExamples[0];
+  const usageContent =
+    activeUsageExample ??
+    (referenceCode !== undefined
+      ? { code: referenceCode, language: referenceCodeLanguage }
+      : undefined);
+  const hasUsageTab = usageContent !== undefined;
   const hasReactExportTab = showExportTabs && reactExport !== undefined;
   const hasNextJsExportTab = showExportTabs && nextJsExport !== undefined;
   const githubUrl = getComponentGitHubUrl(title);
@@ -115,11 +135,11 @@ export default function ComponentViewer({
     },
   ];
 
-  if (referenceCode !== undefined) {
+  if (hasUsageTab) {
     tabs.push({
       id: "usage",
       label: "Usage",
-      content: { code: referenceCode, language: referenceCodeLanguage },
+      content: usageContent,
     });
   }
 
@@ -161,6 +181,18 @@ export default function ComponentViewer({
     }
   }, [activeTab, hasNextJsExportTab, hasReactExportTab, hasUsageTab]);
 
+  useEffect(() => {
+    if (usageExamples.length === 0) {
+      if (activeUsageExampleId !== null) setActiveUsageExampleId(null);
+      return;
+    }
+
+    if (!usageExamples.some((example) => example.id === activeUsageExampleId)) {
+      setActiveUsageExampleId(usageExamples[0]?.id ?? null);
+      setCopiedTab(null);
+    }
+  }, [activeUsageExampleId, usageExamples]);
+
   const activateTab = (tabId: ComponentViewerTabId, moveFocus = false) => {
     setActiveTab(tabId);
     setCopiedTab(null);
@@ -196,6 +228,11 @@ export default function ComponentViewer({
     window.setTimeout(() => {
       setCopiedTab((currentTab) => (currentTab === tabId ? null : currentTab));
     }, 2000);
+  };
+
+  const activateUsageExample = (exampleId: string) => {
+    setActiveUsageExampleId(exampleId);
+    setCopiedTab(null);
   };
 
   return (
@@ -373,6 +410,35 @@ export default function ComponentViewer({
                       </button>
                     </div>
                   </div>
+
+                  {tab.id === "usage" && usageExamples.length > 1 && (
+                    <div
+                      role="group"
+                      aria-label={`${title} usage examples`}
+                      className="flex shrink-0 gap-2 overflow-x-auto border-b border-slate-700 bg-slate-950 px-4 py-2"
+                    >
+                      {usageExamples.map((example) => {
+                        const isSelected =
+                          example.id === activeUsageExample?.id;
+
+                        return (
+                          <button
+                            key={example.id}
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() => activateUsageExample(example.id)}
+                            className={`shrink-0 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+                              isSelected
+                                ? "border-sky-400 bg-sky-400/15 text-sky-200"
+                                : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-white"
+                            }`}
+                          >
+                            {example.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {source.description && (
                     <div

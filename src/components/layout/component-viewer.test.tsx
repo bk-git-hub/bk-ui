@@ -243,6 +243,73 @@ describe("ComponentViewer", () => {
     );
   });
 
+  it("switches between multiple usage examples and copies the selected code", async () => {
+    const publicUsage = {
+      id: "public-api",
+      label: "Public API",
+      code: "  export function PublicExample() { return <ReactPod />; }  ",
+      language: "Public TSX",
+      description: "Use the stable public ReactPod API.",
+    };
+    const internalUsage = {
+      id: "internal-composition",
+      label: "Internal composition",
+      code: "  export function InternalExample() { return <Coverflow />; }  ",
+      language: "Internal TSX",
+      description: "See how ReactPod composes its menu screens.",
+    };
+
+    render(
+      <ComponentViewer
+        title="Multi example"
+        description="Multiple usage sources"
+        usageCode="const configuration = true;"
+        component={<div>Preview content</div>}
+        usageExamples={[publicUsage, internalUsage]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Usage" }));
+
+    const examplePicker = screen.getByRole("group", {
+      name: "Multi example usage examples",
+    });
+    const publicButton = within(examplePicker).getByRole("button", {
+      name: "Public API",
+    });
+    const internalButton = within(examplePicker).getByRole("button", {
+      name: "Internal composition",
+    });
+
+    expect(publicButton).toHaveAttribute("aria-pressed", "true");
+    expect(internalButton).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.getByRole("region", { name: "Public TSX source code" }),
+    ).toHaveTextContent("export function PublicExample()");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Use the stable public ReactPod API.",
+    );
+
+    fireEvent.click(internalButton);
+
+    expect(publicButton).toHaveAttribute("aria-pressed", "false");
+    expect(internalButton).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("region", { name: "Internal TSX source code" }),
+    ).toHaveTextContent("export function InternalExample()");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "See how ReactPod composes its menu screens.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        "export function InternalExample() { return <Coverflow />; }",
+      );
+    });
+  });
+
   it("can render an updating preview beside editable code", () => {
     function LiveExample() {
       const [code, setCode] = useState("Jennifer");

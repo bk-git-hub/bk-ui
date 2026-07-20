@@ -638,7 +638,7 @@ describe("ReactPod", () => {
     render(<ReactPod coverflowAlbums={COVERFLOW_ALBUMS} />);
 
     const menu = screen.getByRole("listbox", { name: "Main menu" });
-    expect(within(menu).getAllByRole("option")).toHaveLength(6);
+    expect(within(menu).getAllByRole("option")).toHaveLength(9);
 
     const wheel = screen.getByLabelText(/Click wheel/);
     fireEvent.wheel(wheel, { deltaY: 1 });

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { reactPodCompositionUsageCode } from "@/snippets/reactPodCompositionUsageCode";
 import { reactPodNextJsExport } from "@/snippets/reactPodNextExportCode";
 import { reactPodReactExport } from "@/snippets/reactPodReactExportCode";
 import ReactPodPage from "./ReactPodPage";
@@ -23,6 +24,18 @@ describe("ReactPodPage", () => {
     render(<ReactPodPage />);
 
     fireEvent.click(screen.getByRole("tab", { name: "Usage" }));
+    const usageExamples = screen.getByRole("group", {
+      name: "ReactPod usage examples",
+    });
+    const publicApiButton = within(usageExamples).getByRole("button", {
+      name: "Public API",
+    });
+    const internalCompositionButton = within(usageExamples).getByRole(
+      "button",
+      { name: "Internal composition" },
+    );
+    expect(publicApiButton).toHaveAttribute("aria-pressed", "true");
+    expect(internalCompositionButton).toHaveAttribute("aria-pressed", "false");
     expect(
       await screen.findByRole("region", { name: "TSX source code" }),
     ).toHaveTextContent('from "@/components/ReactPod"');
@@ -31,6 +44,31 @@ describe("ReactPodPage", () => {
     );
     expect(screen.getByRole("tabpanel", { name: "Usage" })).toHaveTextContent(
       "coverflowAlbums={coverflowAlbums}",
+    );
+    expect(screen.getByRole("tabpanel", { name: "Usage" })).toHaveTextContent(
+      "sliderItems={sliderItems}",
+    );
+    expect(screen.getByRole("tabpanel", { name: "Usage" })).toHaveTextContent(
+      '{ id: "slicer-slider", label: "Slicer Slider" }',
+    );
+
+    fireEvent.click(internalCompositionButton);
+    expect(publicApiButton).toHaveAttribute("aria-pressed", "false");
+    expect(internalCompositionButton).toHaveAttribute("aria-pressed", "true");
+    const usagePanel = screen.getByRole("tabpanel", { name: "Usage" });
+    expect(usagePanel).toHaveTextContent("function DisplayScreens()");
+    expect(usagePanel).toHaveTextContent(
+      'state.screen === "coverflow" && <ReactPodCoverflow />',
+    );
+    expect(usagePanel).toHaveTextContent(
+      "useReactPodScreenController(screen, controller)",
+    );
+    expect(usagePanel).toHaveTextContent('"slicer-slider"');
+    expect(usagePanel).toHaveTextContent("<ExpoSliderRoot");
+    expect(usagePanel).toHaveTextContent("<CardsStackRoot");
+    fireEvent.click(within(usagePanel).getByRole("button", { name: "Copy" }));
+    expect(writeText).toHaveBeenLastCalledWith(
+      reactPodCompositionUsageCode.trim(),
     );
 
     fireEvent.click(screen.getByRole("tab", { name: "React Export" }));
@@ -47,6 +85,12 @@ describe("ReactPodPage", () => {
     );
     expect(reactExportPanel).toHaveTextContent(
       "src/components/Coverflow/coverflow.tsx",
+    );
+    expect(reactExportPanel).toHaveTextContent(
+      "src/components/ReactPod/ReactPodSliderScreens.tsx",
+    );
+    expect(reactExportPanel).toHaveTextContent(
+      "src/components/ClickWheel/useClickWheelController.ts",
     );
     expect(reactExportPanel).toHaveTextContent("Tailwind CSS v4");
     fireEvent.click(
@@ -68,6 +112,7 @@ describe("ReactPodPage", () => {
     expect(nextExportPanel).toHaveTextContent(
       "coverflowAlbums={coverflowAlbums}",
     );
+    expect(nextExportPanel).toHaveTextContent("sliderItems={sliderItems}");
     expect(nextExportPanel).toHaveTextContent("@source");
     fireEvent.click(
       within(nextExportPanel).getByRole("button", { name: "Copy" }),

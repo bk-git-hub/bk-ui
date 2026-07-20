@@ -6,6 +6,9 @@ export type ReactPodScreen =
   | "photo-grid"
   | "photo-viewer"
   | "coverflow"
+  | "slicer-slider"
+  | "expo-slider"
+  | "cards-stack-slider"
   | "about";
 
 export type ReactPodMenuItemId =
@@ -13,6 +16,9 @@ export type ReactPodMenuItemId =
   | "songs"
   | "photos"
   | "coverflow"
+  | "slicer-slider"
+  | "expo-slider"
+  | "cards-stack-slider"
   | "shuffle"
   | "about";
 
@@ -59,6 +65,15 @@ export interface ReactPodCoverflowAlbum {
   coverSrc: string;
   coverAlt: string;
   tracks: readonly ReactPodCoverflowTrack[];
+}
+
+export interface ReactPodSliderItem {
+  id: string | number;
+  title: string;
+  description?: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageObjectPosition?: string;
 }
 
 export const TRACKS: Track[] = [
@@ -109,6 +124,9 @@ export const MAIN_MENU_ITEMS: readonly ReactPodMenuItem[] = [
   { id: "songs", label: "Songs" },
   { id: "photos", label: "Photos" },
   { id: "coverflow", label: "Coverflow" },
+  { id: "slicer-slider", label: "Slicer Slider" },
+  { id: "expo-slider", label: "Expo Slider" },
+  { id: "cards-stack-slider", label: "Cards Stack" },
   { id: "shuffle", label: "Shuffle Songs" },
   { id: "about", label: "About" },
 ];
@@ -121,6 +139,9 @@ export interface ReactPodState {
   albumIndex: number;
   photoIndex: number;
   coverflowIndex: number;
+  slicerSliderIndex: number;
+  expoSliderIndex: number;
+  cardsStackSliderIndex: number;
   currentTrackIndex: number;
   isPlaying: boolean;
   progress: number;
@@ -136,6 +157,9 @@ export const initialReactPodState: ReactPodState = {
   albumIndex: 0,
   photoIndex: 0,
   coverflowIndex: 0,
+  slicerSliderIndex: 0,
+  expoSliderIndex: 0,
+  cardsStackSliderIndex: 0,
   currentTrackIndex: 0,
   isPlaying: false,
   progress: 0,
@@ -157,6 +181,12 @@ export type ReactPodAction =
   | { type: "SYNC_PHOTO_ALBUMS" }
   | { type: "SET_COVERFLOW_INDEX"; index: number }
   | { type: "SYNC_COVERFLOW_ALBUMS" }
+  | {
+      type: "SET_SLIDER_INDEX";
+      screen: "slicer-slider" | "expo-slider" | "cards-stack-slider";
+      index: number;
+    }
+  | { type: "SYNC_SLIDER_ITEMS"; itemCount: number }
   | { type: "SET_PLAYING"; isPlaying: boolean }
   | { type: "SET_PROGRESS"; progress: number }
   | { type: "SYNC_TRACKS" };
@@ -399,6 +429,13 @@ export function reactPodReducer(
           ),
         });
       }
+      if (
+        selectedItem.id === "slicer-slider" ||
+        selectedItem.id === "expo-slider" ||
+        selectedItem.id === "cards-stack-slider"
+      ) {
+        return navigateTo(state, selectedItem.id);
+      }
       if (selectedItem.id === "shuffle") {
         if (tracks.length === 0) return state;
         return navigateTo(state, "now-playing", {
@@ -510,6 +547,43 @@ export function reactPodReducer(
       return coverflowIndex === state.coverflowIndex
         ? state
         : { ...state, coverflowIndex };
+    }
+
+    case "SET_SLIDER_INDEX": {
+      const key =
+        action.screen === "slicer-slider"
+          ? "slicerSliderIndex"
+          : action.screen === "expo-slider"
+            ? "expoSliderIndex"
+            : "cardsStackSliderIndex";
+      const index = Math.max(0, Math.round(action.index));
+      return state[key] === index ? state : { ...state, [key]: index };
+    }
+
+    case "SYNC_SLIDER_ITEMS": {
+      const slicerSliderIndex = clampIndex(
+        state.slicerSliderIndex,
+        action.itemCount,
+      );
+      const expoSliderIndex = clampIndex(
+        state.expoSliderIndex,
+        action.itemCount,
+      );
+      const cardsStackSliderIndex = clampIndex(
+        state.cardsStackSliderIndex,
+        action.itemCount,
+      );
+
+      return slicerSliderIndex === state.slicerSliderIndex &&
+        expoSliderIndex === state.expoSliderIndex &&
+        cardsStackSliderIndex === state.cardsStackSliderIndex
+        ? state
+        : {
+            ...state,
+            slicerSliderIndex,
+            expoSliderIndex,
+            cardsStackSliderIndex,
+          };
     }
 
     case "SET_PLAYING": {

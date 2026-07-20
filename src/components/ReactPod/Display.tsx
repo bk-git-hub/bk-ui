@@ -7,6 +7,11 @@ import {
   ShuffleIcon,
 } from "./ReactPodIcons";
 import ReactPodCoverflow from "./ReactPodCoverflow";
+import {
+  ReactPodCardsStackSlider,
+  ReactPodExpoSlider,
+  ReactPodSlicerSlider,
+} from "./ReactPodSliderScreens";
 
 function formatTime(seconds: number) {
   const wholeSeconds = Number.isFinite(seconds)
@@ -21,14 +26,19 @@ function StatusBar() {
   const albumTitle = photoAlbums[state.albumIndex]?.title;
   const coverflowTitle =
     menuItems.find((item) => item.id === "coverflow")?.label ?? "Coverflow";
+  const sliderTitle = menuItems.find((item) => item.id === state.screen)?.label;
   const title =
     state.screen === "coverflow"
       ? coverflowTitle
-      : state.screen === "photo-albums"
-        ? "Photos"
-        : state.screen === "photo-grid" || state.screen === "photo-viewer"
-          ? (albumTitle ?? deviceName)
-          : deviceName;
+      : state.screen === "slicer-slider" ||
+          state.screen === "expo-slider" ||
+          state.screen === "cards-stack-slider"
+        ? (sliderTitle ?? deviceName)
+        : state.screen === "photo-albums"
+          ? "Photos"
+          : state.screen === "photo-grid" || state.screen === "photo-viewer"
+            ? (albumTitle ?? deviceName)
+            : deviceName;
 
   return (
     <div className="flex h-7 shrink-0 items-center justify-between border-b border-slate-400 bg-gradient-to-b from-white to-slate-300 px-2 text-[11px] font-semibold text-slate-800">
@@ -49,10 +59,20 @@ function StatusBar() {
 }
 
 function MainMenu() {
-  const { coverflowAlbums, menuItems, photoAlbums, state, tracks } =
-    useReactPod();
+  const {
+    coverflowAlbums,
+    menuItems,
+    photoAlbums,
+    sliderItems,
+    state,
+    tracks,
+  } = useReactPod();
   const isPhotosSelected = menuItems[state.menuIndex]?.id === "photos";
   const isCoverflowSelected = menuItems[state.menuIndex]?.id === "coverflow";
+  const isSliderSelected =
+    menuItems[state.menuIndex]?.id === "slicer-slider" ||
+    menuItems[state.menuIndex]?.id === "expo-slider" ||
+    menuItems[state.menuIndex]?.id === "cards-stack-slider";
   const photoCovers = photoAlbums
     .flatMap((album) => {
       const photo = album.photos[0];
@@ -68,6 +88,10 @@ function MainMenu() {
       track.artworkSrc ? [{ id: String(track.id), src: track.artworkSrc }] : [],
     )
     .slice(0, 2);
+  const sliderCovers = sliderItems.slice(0, 2).map((item) => ({
+    id: String(item.id),
+    src: item.imageSrc,
+  }));
   const previewCovers = isPhotosSelected
     ? photoCovers.map(({ albumId, photo }) => ({
         id: albumId,
@@ -75,34 +99,53 @@ function MainMenu() {
       }))
     : isCoverflowSelected
       ? coverflowCovers
-      : musicCovers;
+      : isSliderSelected
+        ? sliderCovers
+        : musicCovers;
   const previewLabel = isPhotosSelected
     ? "PHOTOS"
     : isCoverflowSelected
       ? "COVERS"
-      : "MUSIC";
+      : isSliderSelected
+        ? "SLIDES"
+        : "MUSIC";
+  const visibleItemCount = 6;
+  const menuStart = Math.max(
+    0,
+    Math.min(
+      state.menuIndex - 2,
+      Math.max(0, menuItems.length - visibleItemCount),
+    ),
+  );
 
   return (
     <div className="grid h-full grid-cols-[62%_38%] bg-white">
-      <div className="py-1" role="listbox" aria-label="Main menu">
-        {menuItems.map((item, index) => {
-          const isSelected = index === state.menuIndex;
-          return (
-            <div
-              key={`${item.id}-${index}`}
-              role="option"
-              aria-selected={isSelected}
-              className={`flex h-7 items-center justify-between px-2 text-[11px] font-semibold ${
-                isSelected
-                  ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
-                  : "text-slate-900"
-              }`}
-            >
-              <span className="min-w-0 truncate">{item.label}</span>
-              {isSelected && <ChevronRightIcon className="h-4 w-4 shrink-0" />}
-            </div>
-          );
-        })}
+      <div className="overflow-hidden" role="listbox" aria-label="Main menu">
+        <div
+          className="py-1 transition-transform duration-150 motion-reduce:transition-none"
+          style={{ transform: `translateY(-${menuStart * 28}px)` }}
+        >
+          {menuItems.map((item, index) => {
+            const isSelected = index === state.menuIndex;
+            return (
+              <div
+                key={`${item.id}-${index}`}
+                role="option"
+                aria-selected={isSelected}
+                className={`flex h-7 items-center justify-between px-2 text-[11px] font-semibold ${
+                  isSelected
+                    ? "bg-gradient-to-b from-blue-400 to-blue-700 text-white"
+                    : "text-slate-900"
+                }`}
+              >
+                <span className="min-w-0 truncate">{item.label}</span>
+                {isSelected && (
+                  <ChevronRightIcon className="h-4 w-4 shrink-0" />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
       <div
         className={`relative overflow-hidden ${
@@ -515,6 +558,9 @@ export default function Display() {
         {state.screen === "photo-grid" && <PhotoGrid />}
         {state.screen === "photo-viewer" && <PhotoViewer />}
         {state.screen === "coverflow" && <ReactPodCoverflow />}
+        {state.screen === "slicer-slider" && <ReactPodSlicerSlider />}
+        {state.screen === "expo-slider" && <ReactPodExpoSlider />}
+        {state.screen === "cards-stack-slider" && <ReactPodCardsStackSlider />}
         {state.screen === "about" && <About />}
       </div>
     </div>

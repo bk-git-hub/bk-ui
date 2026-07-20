@@ -9,6 +9,7 @@ export type {
   ReactPodPhoto,
   ReactPodPhotoAlbum,
   ReactPodScreen,
+  ReactPodSliderItem,
   ReactPodState,
   ReactPodTrack,
   Track,

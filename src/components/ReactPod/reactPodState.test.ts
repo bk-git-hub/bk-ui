@@ -155,6 +155,61 @@ describe("reactPodReducer", () => {
     });
   });
 
+  it.each(["slicer-slider", "expo-slider", "cards-stack-slider"] as const)(
+    "enters the %s screen through the menu",
+    (screen) => {
+      const menuIndex = MAIN_MENU_ITEMS.findIndex((item) => item.id === screen);
+      const selected = reactPodReducer(
+        { ...initialReactPodState, menuIndex },
+        { type: "SELECT" },
+      );
+
+      expect(selected).toMatchObject({
+        screen,
+        navigationHistory: ["menu"],
+      });
+      expect(reactPodReducer(selected, { type: "BACK" })).toMatchObject({
+        screen: "menu",
+        navigationHistory: [],
+        menuIndex,
+      });
+    },
+  );
+
+  it("persists and clamps the three slider indexes", () => {
+    let state = reactPodReducer(initialReactPodState, {
+      type: "SET_SLIDER_INDEX",
+      screen: "slicer-slider",
+      index: 3,
+    });
+    state = reactPodReducer(state, {
+      type: "SET_SLIDER_INDEX",
+      screen: "expo-slider",
+      index: 2,
+    });
+    state = reactPodReducer(state, {
+      type: "SET_SLIDER_INDEX",
+      screen: "cards-stack-slider",
+      index: 4,
+    });
+
+    expect(state).toMatchObject({
+      slicerSliderIndex: 3,
+      expoSliderIndex: 2,
+      cardsStackSliderIndex: 4,
+    });
+
+    state = reactPodReducer(state, {
+      type: "SYNC_SLIDER_ITEMS",
+      itemCount: 2,
+    });
+    expect(state).toMatchObject({
+      slicerSliderIndex: 1,
+      expoSliderIndex: 1,
+      cardsStackSliderIndex: 1,
+    });
+  });
+
   it("moves and synchronizes the Coverflow index without wrapping", () => {
     let state: ReactPodState = {
       ...initialReactPodState,

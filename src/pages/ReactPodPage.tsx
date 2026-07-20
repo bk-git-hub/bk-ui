@@ -4,10 +4,13 @@ import {
   CLICK_WHEEL_MIN_SENSITIVITY,
 } from "@/components/ClickWheel";
 import { ReactPod } from "@/components/ReactPod";
-import ComponentViewer from "@/components/layout/component-viewer";
+import ComponentViewer, {
+  type ComponentViewerUsageExample,
+} from "@/components/layout/component-viewer";
 import { REACT_POD_DEMO_TRACKS } from "@/components/previews/react-pod-audio-tracks";
 import { REACT_POD_DEMO_COVERFLOW_ALBUMS } from "@/components/previews/react-pod-coverflow-albums";
 import { REACT_POD_DEMO_PHOTO_ALBUMS } from "@/components/previews/react-pod-photo-albums";
+import { REACT_POD_DEMO_SLIDER_ITEMS } from "@/components/previews/react-pod-slider-items";
 import {
   DEFAULT_REACT_POD_DEMO_CODE,
   DEFAULT_REACT_POD_DEMO_CONFIG,
@@ -15,8 +18,28 @@ import {
   type ReactPodDemoConfig,
 } from "@/components/previews/react-pod-demo.util";
 import { reactPodNextJsExport } from "@/snippets/reactPodNextExportCode";
+import { reactPodCompositionUsageCode } from "@/snippets/reactPodCompositionUsageCode";
 import { reactPodReactExport } from "@/snippets/reactPodReactExportCode";
 import { reactPodUsageCode } from "@/snippets/reactPodUsageCode";
+
+const REACT_POD_USAGE_EXAMPLES = [
+  {
+    id: "public-api",
+    label: "Public API",
+    code: reactPodUsageCode,
+    language: "TSX",
+    description:
+      "Copyable consumer code using the stable ReactPod props and public entry point.",
+  },
+  {
+    id: "internal-composition",
+    label: "Internal composition",
+    code: reactPodCompositionUsageCode,
+    language: "TSX",
+    description:
+      "An architecture excerpt showing how every menu screen and the shared ClickWheel controller compose the existing BK-UI components.",
+  },
+] satisfies readonly ComponentViewerUsageExample[];
 
 export default function ReactPodPage() {
   const sensitivityId = useId();
@@ -96,6 +119,7 @@ export default function ReactPodPage() {
             menuItems={config.menuItems}
             photoAlbums={REACT_POD_DEMO_PHOTO_ALBUMS}
             coverflowAlbums={REACT_POD_DEMO_COVERFLOW_ALBUMS}
+            sliderItems={REACT_POD_DEMO_SLIDER_ITEMS}
             tracks={REACT_POD_DEMO_TRACKS}
             coverflowAriaLabel="ReactPod album coverflow"
             wheelSensitivity={config.wheelSensitivity}
@@ -103,7 +127,7 @@ export default function ReactPodPage() {
         </div>
       }
       usageCode={code}
-      referenceCode={reactPodUsageCode}
+      usageExamples={REACT_POD_USAGE_EXAMPLES}
       reactExport={reactPodReactExport}
       nextJsExport={reactPodNextJsExport}
       codeLanguage="LIVE JSON"

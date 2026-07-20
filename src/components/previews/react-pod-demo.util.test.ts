@@ -3,6 +3,7 @@ import {
   DEFAULT_REACT_POD_DEMO_CODE,
   parseReactPodDemoCode,
 } from "./react-pod-demo.util";
+import { REACT_POD_DEMO_SLIDER_ITEMS } from "./react-pod-slider-items";
 
 describe("parseReactPodDemoCode", () => {
   it("parses an editable ReactPod configuration", () => {
@@ -19,6 +20,13 @@ describe("parseReactPodDemoCode", () => {
       id: "coverflow",
       label: "Coverflow",
     });
+    expect(result.config?.menuItems).toEqual(
+      expect.arrayContaining([
+        { id: "slicer-slider", label: "Slicer Slider" },
+        { id: "expo-slider", label: "Expo Slider" },
+        { id: "cards-stack-slider", label: "Cards Stack" },
+      ]),
+    );
   });
 
   it("preserves a valid wheel sensitivity and defaults a missing value", () => {
@@ -73,5 +81,36 @@ describe("parseReactPodDemoCode", () => {
     expect(result.config?.menuItems).toEqual([
       { id: "coverflow", label: "Album Browser" },
     ]);
+  });
+
+  it.each([
+    ["slicer-slider", "Slicer Slider"],
+    ["expo-slider", "Expo Slider"],
+    ["cards-stack-slider", "Cards Stack"],
+  ] as const)("accepts %s as a configurable menu id", (id, label) => {
+    const result = parseReactPodDemoCode(
+      JSON.stringify({
+        deviceName: "Slider Pod",
+        menuItems: [{ id, label }],
+      }),
+    );
+
+    expect(result.error).toBeNull();
+    expect(result.config?.menuItems).toEqual([{ id, label }]);
+  });
+});
+
+describe("ReactPod slider preview data", () => {
+  it("provides typed, reusable image data for all three slider screens", () => {
+    expect(REACT_POD_DEMO_SLIDER_ITEMS).toHaveLength(4);
+    expect(
+      new Set(REACT_POD_DEMO_SLIDER_ITEMS.map((item) => item.id)).size,
+    ).toBe(REACT_POD_DEMO_SLIDER_ITEMS.length);
+
+    for (const item of REACT_POD_DEMO_SLIDER_ITEMS) {
+      expect(item.title).toBeTruthy();
+      expect(item.imageSrc).toMatch(/^\/reactpod\/photos\/.+\.webp$/);
+      expect(item.imageAlt).toBeTruthy();
+    }
   });
 });

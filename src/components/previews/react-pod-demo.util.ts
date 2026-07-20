@@ -22,6 +22,9 @@ export const DEFAULT_REACT_POD_DEMO_CONFIG: ReactPodDemoConfig = {
     { id: "songs", label: "Songs" },
     { id: "photos", label: "Photos" },
     { id: "coverflow", label: "Coverflow" },
+    { id: "slicer-slider", label: "Slicer Slider" },
+    { id: "expo-slider", label: "Expo Slider" },
+    { id: "cards-stack-slider", label: "Cards Stack" },
     { id: "shuffle", label: "Shuffle Songs" },
     { id: "about", label: "About" },
   ],
@@ -39,6 +42,9 @@ const MENU_ITEM_IDS = new Set<ReactPodMenuItemId>([
   "shuffle",
   "photos",
   "coverflow",
+  "slicer-slider",
+  "expo-slider",
+  "cards-stack-slider",
   "about",
 ]);
 
@@ -107,7 +113,7 @@ export function parseReactPodDemoCode(source: string): ParseResult {
       return {
         config: null,
         error:
-          "Menu ids must be now-playing, songs, photos, coverflow, shuffle, or about.",
+          "Menu ids must be now-playing, songs, photos, coverflow, slicer-slider, expo-slider, cards-stack-slider, shuffle, or about.",
       };
     }
 

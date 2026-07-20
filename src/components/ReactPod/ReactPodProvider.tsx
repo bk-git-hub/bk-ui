@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ReactNode } from "react";
 import { ReactPodContext } from "./ReactPodContext";
 import {
+  createReactPodScreenControllerRegistry,
+  routeReactPodScreenAction,
+  routeReactPodScreenNavigation,
+} from "./ReactPodActiveScreenController";
+import {
   getNextTrackIndex,
   initialReactPodState,
   reactPodReducer,
@@ -11,6 +16,7 @@ import type {
   ReactPodCoverflowAlbum,
   ReactPodMenuItem,
   ReactPodPhotoAlbum,
+  ReactPodSliderItem,
   ReactPodState,
   ReactPodTrack,
 } from "./reactPodState";
@@ -21,6 +27,7 @@ interface ReactPodProviderProps {
   menuItems: readonly ReactPodMenuItem[];
   photoAlbums: readonly ReactPodPhotoAlbum[];
   coverflowAlbums: readonly ReactPodCoverflowAlbum[];
+  sliderItems: readonly ReactPodSliderItem[];
   tracks: readonly ReactPodTrack[];
   coverflowAriaLabel: string;
 }
@@ -31,10 +38,19 @@ export function ReactPodProvider({
   menuItems,
   photoAlbums,
   coverflowAlbums,
+  sliderItems,
   tracks,
   coverflowAriaLabel,
 }: ReactPodProviderProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const screenControllerRegistryRef = useRef<ReturnType<
+    typeof createReactPodScreenControllerRegistry
+  > | null>(null);
+  if (screenControllerRegistryRef.current === null) {
+    screenControllerRegistryRef.current =
+      createReactPodScreenControllerRegistry();
+  }
+  const screenControllerRegistry = screenControllerRegistryRef.current;
   const reducer = useCallback(
     (state: ReactPodState, action: ReactPodAction) =>
       reactPodReducer(
@@ -60,6 +76,10 @@ export function ReactPodProvider({
   useEffect(() => {
     dispatch({ type: "SYNC_COVERFLOW_ALBUMS" });
   }, [coverflowAlbums]);
+
+  useEffect(() => {
+    dispatch({ type: "SYNC_SLIDER_ITEMS", itemCount: sliderItems.length });
+  }, [sliderItems.length]);
 
   useEffect(() => {
     dispatch({ type: "SYNC_TRACKS" });
@@ -88,15 +108,47 @@ export function ReactPodProvider({
     [tracks],
   );
 
-  const rotate = useCallback((direction: -1 | 1) => {
-    dispatch({ type: "ROTATE", direction });
-  }, []);
+  const rotate = useCallback(
+    (direction: -1 | 1) => {
+      if (
+        routeReactPodScreenNavigation(
+          screenControllerRegistry.get(state.screen),
+          direction,
+          "rotate",
+        )
+      ) {
+        return;
+      }
+
+      dispatch({ type: "ROTATE", direction });
+    },
+    [screenControllerRegistry, state.screen],
+  );
 
   const setCoverflowIndex = useCallback((index: number) => {
     dispatch({ type: "SET_COVERFLOW_INDEX", index });
   }, []);
 
+  const setSliderIndex = useCallback(
+    (
+      screen: "slicer-slider" | "expo-slider" | "cards-stack-slider",
+      index: number,
+    ) => {
+      dispatch({ type: "SET_SLIDER_INDEX", screen, index });
+    },
+    [],
+  );
+
   const select = useCallback(() => {
+    if (
+      routeReactPodScreenAction(
+        screenControllerRegistry.get(state.screen),
+        "select",
+      )
+    ) {
+      return;
+    }
+
     const shuffledTrackIndex =
       tracks.length === 0
         ? undefined
@@ -116,7 +168,13 @@ export function ReactPodProvider({
     if (playbackTrackIndex !== undefined) {
       requestTrackPlayback(playbackTrackIndex);
     }
-  }, [menuItems, requestTrackPlayback, state, tracks.length]);
+  }, [
+    menuItems,
+    requestTrackPlayback,
+    screenControllerRegistry,
+    state,
+    tracks.length,
+  ]);
 
   const back = useCallback(() => dispatch({ type: "BACK" }), []);
   const goToMainMenu = useCallback(
@@ -124,6 +182,15 @@ export function ReactPodProvider({
     [],
   );
   const togglePlay = useCallback(() => {
+    if (
+      routeReactPodScreenAction(
+        screenControllerRegistry.get(state.screen),
+        "playPause",
+      )
+    ) {
+      return;
+    }
+
     const currentTrack = tracks[state.currentTrackIndex];
     const audio = audioRef.current;
     if (!currentTrack?.src || !audio) {
@@ -139,9 +206,26 @@ export function ReactPodProvider({
 
     dispatch({ type: "SET_PLAYING", isPlaying: true });
     requestTrackPlayback(state.currentTrackIndex);
-  }, [requestTrackPlayback, state.currentTrackIndex, state.isPlaying, tracks]);
+  }, [
+    requestTrackPlayback,
+    screenControllerRegistry,
+    state.currentTrackIndex,
+    state.isPlaying,
+    state.screen,
+    tracks,
+  ]);
 
   const previous = useCallback(() => {
+    if (
+      routeReactPodScreenNavigation(
+        screenControllerRegistry.get(state.screen),
+        -1,
+        "previous",
+      )
+    ) {
+      return;
+    }
+
     if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
       dispatch({ type: "PREVIOUS" });
       return;
@@ -160,9 +244,19 @@ export function ReactPodProvider({
     const previousTrackIndex =
       (state.currentTrackIndex - 1 + tracks.length) % tracks.length;
     requestTrackPlayback(previousTrackIndex);
-  }, [requestTrackPlayback, state, tracks.length]);
+  }, [requestTrackPlayback, screenControllerRegistry, state, tracks.length]);
 
   const next = useCallback(() => {
+    if (
+      routeReactPodScreenNavigation(
+        screenControllerRegistry.get(state.screen),
+        1,
+        "next",
+      )
+    ) {
+      return;
+    }
+
     if (state.screen === "photo-grid" || state.screen === "photo-viewer") {
       dispatch({ type: "NEXT", trackIndex: 0 });
       return;
@@ -172,7 +266,9 @@ export function ReactPodProvider({
     const trackIndex = getNextTrackIndex(state, Math.random(), tracks.length);
     dispatch({ type: "NEXT", trackIndex });
     requestTrackPlayback(trackIndex);
-  }, [requestTrackPlayback, state, tracks.length]);
+  }, [requestTrackPlayback, screenControllerRegistry, state, tracks.length]);
+
+  const registerScreenController = screenControllerRegistry.register;
 
   const currentTrack = tracks[state.currentTrackIndex];
 
@@ -227,16 +323,19 @@ export function ReactPodProvider({
       menuItems,
       photoAlbums,
       coverflowAlbums,
+      sliderItems,
       tracks,
       coverflowAriaLabel,
       rotate,
       setCoverflowIndex,
+      setSliderIndex,
       select,
       back,
       goToMainMenu,
       togglePlay,
       next,
       previous,
+      registerScreenController,
     }),
     [
       state,
@@ -244,16 +343,19 @@ export function ReactPodProvider({
       menuItems,
       photoAlbums,
       coverflowAlbums,
+      sliderItems,
       tracks,
       coverflowAriaLabel,
       rotate,
       setCoverflowIndex,
+      setSliderIndex,
       select,
       back,
       goToMainMenu,
       togglePlay,
       next,
       previous,
+      registerScreenController,
     ],
   );
 

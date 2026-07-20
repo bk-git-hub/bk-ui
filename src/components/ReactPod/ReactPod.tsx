@@ -11,6 +11,7 @@ import type {
   ReactPodCoverflowAlbum,
   ReactPodMenuItem,
   ReactPodPhotoAlbum,
+  ReactPodSliderItem,
   ReactPodTrack,
 } from "./reactPodState";
 
@@ -21,11 +22,13 @@ export type {
   ReactPodCoverflowTrack,
   ReactPodPhoto,
   ReactPodPhotoAlbum,
+  ReactPodSliderItem,
   ReactPodTrack,
 } from "./reactPodState";
 
 const EMPTY_PHOTO_ALBUMS: readonly ReactPodPhotoAlbum[] = [];
 const EMPTY_COVERFLOW_ALBUMS: readonly ReactPodCoverflowAlbum[] = [];
+const EMPTY_SLIDER_ITEMS: readonly ReactPodSliderItem[] = [];
 
 export interface ReactPodProps
   extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
@@ -33,6 +36,7 @@ export interface ReactPodProps
   menuItems?: readonly ReactPodMenuItem[];
   photoAlbums?: readonly ReactPodPhotoAlbum[];
   coverflowAlbums?: readonly ReactPodCoverflowAlbum[];
+  sliderItems?: readonly ReactPodSliderItem[];
   tracks?: readonly ReactPodTrack[];
   coverflowAriaLabel?: string;
   wheelSensitivity?: number;
@@ -43,6 +47,7 @@ export function ReactPod({
   menuItems = MAIN_MENU_ITEMS,
   photoAlbums = EMPTY_PHOTO_ALBUMS,
   coverflowAlbums = EMPTY_COVERFLOW_ALBUMS,
+  sliderItems = EMPTY_SLIDER_ITEMS,
   tracks = TRACKS,
   coverflowAriaLabel = "Album coverflow",
   wheelSensitivity,
@@ -55,6 +60,7 @@ export function ReactPod({
       menuItems={menuItems}
       photoAlbums={photoAlbums}
       coverflowAlbums={coverflowAlbums}
+      sliderItems={sliderItems}
       tracks={tracks}
       coverflowAriaLabel={coverflowAriaLabel}
     >
