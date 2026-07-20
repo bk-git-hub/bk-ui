@@ -567,6 +567,7 @@ export function ShutterSliderViewport({
         })}
         {outgoingImage && context.transition && (
           <ShutterStrips
+            key={context.transition.id}
             image={outgoingImage}
             transition={context.transition}
           />
@@ -667,10 +668,7 @@ function ShutterSliderControl({
 }) {
   const context = useShutterSliderContext("ShutterSliderControl");
   const isDisabled =
-    disabled ||
-    context.disabled ||
-    context.transition !== null ||
-    !context.canNavigate(direction);
+    disabled || context.disabled || !context.canNavigate(direction);
 
   return (
     <button
@@ -725,7 +723,8 @@ export function ShutterSliderPagination({
   ...props
 }: ShutterSliderPaginationProps) {
   const context = useShutterSliderContext("ShutterSliderPagination");
-  const controlsDisabled = context.disabled || context.transition !== null;
+  const controlsDisabled = context.disabled;
+  const navigationValue = context.transition?.to ?? context.currentValue;
 
   return (
     <div
@@ -736,26 +735,30 @@ export function ShutterSliderPagination({
       className={twMerge(clsx("flex items-center gap-2", className))}
     >
       {context.slides.map((slide, index) => {
-        const isActive = index === context.currentValue;
+        const isCurrent = index === context.currentValue;
+        const isNavigationTarget = index === navigationValue;
         return (
           <button
             key={`${slide.src}-${index}`}
             type="button"
-            aria-current={isActive ? "true" : undefined}
+            aria-current={isCurrent ? "true" : undefined}
             aria-label={
               getLabel?.(index, slide) ??
               `Go to slide ${index + 1}: ${slide.alt}`
             }
-            disabled={controlsDisabled || isActive}
-            data-active={isActive ? "" : undefined}
+            disabled={
+              controlsDisabled ||
+              (context.transition ? isNavigationTarget : isCurrent)
+            }
+            data-active={isCurrent ? "" : undefined}
             data-index={index}
             className={clsx(
               "h-1.5 rounded-full bg-current transition-[width,opacity] outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-default motion-reduce:transition-none",
-              isActive ? "w-9 opacity-100" : "w-3 opacity-35 hover:opacity-75",
+              isCurrent ? "w-9 opacity-100" : "w-3 opacity-35 hover:opacity-75",
             )}
             onClick={() => {
               const direction: ShutterSliderDirection =
-                index > context.currentValue ? 1 : -1;
+                index > navigationValue ? 1 : -1;
               context.goTo(index, "pagination", direction);
             }}
           />

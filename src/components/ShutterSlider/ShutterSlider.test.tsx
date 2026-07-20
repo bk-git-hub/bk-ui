@@ -5,7 +5,7 @@ import {
   render,
   screen,
 } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -147,6 +147,37 @@ function dispatchTransitionEnd(element: Element, propertyName = "transform") {
 
 function finishTransition() {
   dispatchTransitionEnd(getTerminalPanel());
+}
+
+function getSlideInState(state: "incoming" | "outgoing") {
+  const slide = document.querySelector<HTMLElement>(
+    `[data-slot="shutter-slider-slide"][data-state="${state}"]`,
+  );
+  expect(slide).not.toBeNull();
+  return slide as HTMLElement;
+}
+
+function swipeLeft(viewport: HTMLElement, pointerId: number) {
+  fireEvent.pointerDown(viewport, {
+    pointerId,
+    pointerType: "touch",
+    clientX: 180,
+    clientY: 100,
+  });
+  expect(
+    fireEvent.pointerMove(viewport, {
+      pointerId,
+      pointerType: "touch",
+      clientX: 80,
+      clientY: 102,
+    }),
+  ).toBe(false);
+  fireEvent.pointerUp(viewport, {
+    pointerId,
+    pointerType: "touch",
+    clientX: 80,
+    clientY: 102,
+  });
 }
 
 describe("shutter slider utilities", () => {
@@ -392,6 +423,32 @@ describe("ShutterSlider", () => {
     });
   });
 
+  it("keeps controls available for immediate transition retargeting", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+    const next = getSlot<HTMLButtonElement>("shutter-slider-next");
+
+    fireEvent.click(next);
+    expect(next).toBeEnabled();
+    fireEvent.click(next);
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "2");
+    const fourth = getSlot("shutter-slider-pagination").querySelector(
+      'button[data-index="3"]',
+    ) as HTMLButtonElement;
+    expect(fourth).toBeEnabled();
+    fireEvent.click(fourth);
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "3");
+    finishTransition();
+    expect(getActiveSlide()).toHaveAttribute("data-index", "3");
+    expect(onValueChange.mock.calls.map(([, detail]) => detail.source)).toEqual(
+      ["next", "next", "pagination"],
+    );
+  });
+
   it("handles Arrow, Home, and End on the viewport but ignores child input keys", () => {
     const onValueChange = vi.fn();
     render(<TestSlider defaultValue={1} onValueChange={onValueChange} />);
@@ -434,6 +491,243 @@ describe("ShutterSlider", () => {
     expect(onValueChange).toHaveBeenCalledTimes(callCount);
   });
 
+  it("restarts immediately from each pending target for repeated Arrow keys", () => {
+    const onValueChange = vi.fn();
+    render(
+      <TestSlider
+        transitionDuration={100}
+        stagger={0}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = getViewport();
+
+    expect(fireEvent.keyDown(viewport, { key: "ArrowRight" })).toBe(false);
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "1");
+    act(() => vi.advanceTimersByTime(32));
+    expect(getRoot()).toHaveAttribute("data-state", "animating");
+    const firstTerminalPanel = getTerminalPanel();
+
+    expect(
+      fireEvent.keyDown(viewport, { key: "ArrowRight", repeat: true }),
+    ).toBe(false);
+    expect(firstTerminalPanel).not.toBeInTheDocument();
+    expect(getRoot()).toHaveAttribute("data-state", "primed");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "2");
+
+    expect(
+      fireEvent.keyDown(viewport, { key: "ArrowRight", repeat: true }),
+    ).toBe(false);
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "3");
+    finishTransition();
+
+    expect(getRoot()).toHaveAttribute("data-state", "idle");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "3");
+    expect(onValueChange.mock.calls).toEqual([
+      [
+        1,
+        {
+          previousValue: 0,
+          direction: 1,
+          source: "keyboard",
+        },
+      ],
+      [
+        2,
+        {
+          previousValue: 1,
+          direction: 1,
+          source: "keyboard",
+        },
+      ],
+      [
+        3,
+        {
+          previousValue: 2,
+          direction: 1,
+          source: "keyboard",
+        },
+      ],
+    ]);
+  });
+
+  it("uses the pending target as the origin when repeated keys reverse direction", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+    const viewport = getViewport();
+
+    fireEvent.keyDown(viewport, { key: "ArrowRight" });
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "1");
+
+    expect(fireEvent.keyDown(viewport, { key: "ArrowLeft" })).toBe(false);
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "0");
+    expect(getSlot("shutter-slider-strips")).toHaveAttribute(
+      "data-direction",
+      "-1",
+    );
+    finishTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "0");
+    expect(onValueChange.mock.calls).toEqual([
+      [
+        1,
+        {
+          previousValue: 0,
+          direction: 1,
+          source: "keyboard",
+        },
+      ],
+      [
+        0,
+        {
+          previousValue: 1,
+          direction: -1,
+          source: "keyboard",
+        },
+      ],
+    ]);
+  });
+
+  it("keeps rapid navigation aligned with a controlled owner", () => {
+    const onValueChange = vi.fn();
+
+    function ControlledSlider() {
+      const [value, setValue] = useState(0);
+      return (
+        <TestSlider
+          value={value}
+          onValueChange={(nextValue, detail) => {
+            onValueChange(nextValue, detail);
+            setValue(nextValue);
+          }}
+        />
+      );
+    }
+
+    render(<ControlledSlider />);
+    const viewport = getViewport();
+
+    fireEvent.keyDown(viewport, { key: "ArrowRight" });
+    fireEvent.keyDown(viewport, { key: "ArrowRight", repeat: true });
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    finishTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(onValueChange.mock.calls).toEqual([
+      [
+        1,
+        {
+          previousValue: 0,
+          direction: 1,
+          source: "keyboard",
+        },
+      ],
+      [
+        2,
+        {
+          previousValue: 1,
+          direction: 1,
+          source: "keyboard",
+        },
+      ],
+    ]);
+  });
+
+  it("lets a controlled owner veto a rapid sequence by retaining its value", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider value={0} onValueChange={onValueChange} />);
+    const viewport = getViewport();
+
+    fireEvent.keyDown(viewport, { key: "ArrowRight" });
+    fireEvent.keyDown(viewport, { key: "ArrowRight", repeat: true });
+    act(() => vi.runAllTimers());
+
+    expect(getRoot()).toHaveAttribute("data-state", "idle");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "0");
+    expect(onValueChange).toHaveBeenCalledOnce();
+    expect(onValueChange).toHaveBeenCalledWith(1, {
+      previousValue: 0,
+      direction: 1,
+      source: "keyboard",
+    });
+  });
+
+  it("does not let an interrupted transition timeout finish its replacement", () => {
+    const onValueChange = vi.fn();
+    render(
+      <TestSlider
+        transitionDuration={100}
+        stagger={0}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = getViewport();
+
+    fireEvent.keyDown(viewport, { key: "ArrowRight" });
+    act(() => vi.advanceTimersByTime(32));
+    fireEvent.keyDown(viewport, { key: "ArrowRight", repeat: true });
+
+    act(() => vi.advanceTimersByTime(168));
+    expect(getRoot()).toHaveAttribute("data-state", "animating");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+
+    act(() => vi.advanceTimersByTime(32));
+    expect(getRoot()).toHaveAttribute("data-state", "idle");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(onValueChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a bounded transition running when later input has no new target", () => {
+    const onValueChange = vi.fn();
+    render(
+      <TestSlider
+        defaultValue={2}
+        loop={false}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = getViewport();
+
+    fireEvent.keyDown(viewport, { key: "ArrowRight" });
+    const terminalPanel = getTerminalPanel();
+    expect(fireEvent.keyDown(viewport, { key: "ArrowRight" })).toBe(true);
+    expect(getTerminalPanel()).toBe(terminalPanel);
+
+    fireEvent.pointerDown(viewport, {
+      pointerId: 20,
+      pointerType: "touch",
+      clientX: 180,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(viewport, {
+      pointerId: 20,
+      pointerType: "touch",
+      clientX: 160,
+      clientY: 101,
+    });
+    fireEvent.pointerUp(viewport, {
+      pointerId: 20,
+      pointerType: "touch",
+      clientX: 160,
+      clientY: 101,
+    });
+
+    expect(getTerminalPanel()).toBe(terminalPanel);
+    expect(getRoot()).toHaveAttribute("data-transitioning");
+    expect(onValueChange).not.toHaveBeenCalled();
+    finishTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "3");
+    expect(onValueChange).toHaveBeenCalledOnce();
+  });
+
   it("navigates with pagination and updates its active state", () => {
     const onValueChange = vi.fn();
     render(<TestSlider onValueChange={onValueChange} />);
@@ -459,6 +753,56 @@ describe("ShutterSlider", () => {
       direction: 1,
       source: "pagination",
     });
+  });
+
+  it("retargets pagination from the pending destination", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+    const pagination = getSlot("shutter-slider-pagination");
+    const first = pagination.querySelector(
+      'button[data-index="0"]',
+    ) as HTMLButtonElement;
+    const second = pagination.querySelector(
+      'button[data-index="1"]',
+    ) as HTMLButtonElement;
+    const fourth = pagination.querySelector(
+      'button[data-index="3"]',
+    ) as HTMLButtonElement;
+
+    fireEvent.click(fourth);
+    expect(first).toHaveAttribute("aria-current", "true");
+    expect(first).toBeEnabled();
+    expect(fourth).not.toHaveAttribute("aria-current");
+    expect(fourth).toBeDisabled();
+    expect(second).toBeEnabled();
+    fireEvent.click(second);
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "3");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "1");
+    expect(getSlot("shutter-slider-strips")).toHaveAttribute(
+      "data-direction",
+      "-1",
+    );
+    finishTransition();
+
+    expect(onValueChange.mock.calls).toEqual([
+      [
+        3,
+        {
+          previousValue: 0,
+          direction: 1,
+          source: "pagination",
+        },
+      ],
+      [
+        1,
+        {
+          previousValue: 3,
+          direction: -1,
+          source: "pagination",
+        },
+      ],
+    ]);
   });
 
   it("keeps the active slide when a controlled consumer does not update value", () => {
@@ -566,6 +910,88 @@ describe("ShutterSlider", () => {
       direction: 1,
       source: "pointer",
     });
+  });
+
+  it("accepts another swipe while the previous shutter is still animating", () => {
+    const onValueChange = vi.fn();
+    render(
+      <TestSlider
+        transitionDuration={100}
+        stagger={0}
+        onValueChange={onValueChange}
+      />,
+    );
+    const viewport = getViewport();
+
+    swipeLeft(viewport, 21);
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "1");
+    act(() => vi.advanceTimersByTime(32));
+    expect(getRoot()).toHaveAttribute("data-state", "animating");
+
+    swipeLeft(viewport, 22);
+
+    expect(getRoot()).not.toHaveAttribute("data-dragging");
+    expect(getRoot()).toHaveAttribute("data-transitioning");
+    expect(getActiveSlide()).toHaveAttribute("data-index", "1");
+    expect(getSlideInState("incoming")).toHaveAttribute("data-index", "2");
+    finishTransition();
+
+    expect(getActiveSlide()).toHaveAttribute("data-index", "2");
+    expect(onValueChange.mock.calls).toEqual([
+      [
+        1,
+        {
+          previousValue: 0,
+          direction: 1,
+          source: "pointer",
+        },
+      ],
+      [
+        2,
+        {
+          previousValue: 1,
+          direction: 1,
+          source: "pointer",
+        },
+      ],
+    ]);
+  });
+
+  it("keeps the current shutter running when a follow-up drag is cancelled", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+    const viewport = getViewport();
+
+    swipeLeft(viewport, 23);
+    act(() => vi.advanceTimersByTime(32));
+    const terminalPanel = getTerminalPanel();
+
+    fireEvent.pointerDown(viewport, {
+      pointerId: 24,
+      pointerType: "touch",
+      clientX: 180,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(viewport, {
+      pointerId: 24,
+      pointerType: "touch",
+      clientX: 80,
+      clientY: 102,
+    });
+    expect(getRoot()).toHaveAttribute("data-dragging");
+    fireEvent.pointerCancel(viewport, {
+      pointerId: 24,
+      pointerType: "touch",
+      clientX: 80,
+      clientY: 102,
+    });
+
+    expect(getRoot()).not.toHaveAttribute("data-dragging");
+    expect(getTerminalPanel()).toBe(terminalPanel);
+    expect(getRoot()).toHaveAttribute("data-transitioning");
+    expect(onValueChange).not.toHaveBeenCalled();
+    finishTransition();
+    expect(onValueChange).toHaveBeenCalledOnce();
   });
 
   it("releases cross-axis gestures without navigating", () => {

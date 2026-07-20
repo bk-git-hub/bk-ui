@@ -305,6 +305,27 @@ export function useShutterSlider({
     [],
   );
 
+  const commitTransition = useCallback(
+    (pending: ShutterSliderTransition, committedValue: number) => {
+      if (transitionRef.current?.id !== pending.id) return false;
+
+      transitionRef.current = null;
+      transitionTopologyRef.current = null;
+      invalidatedTransitionIdRef.current = null;
+      setTransition((current) => (current?.id === pending.id ? null : current));
+      currentValueRef.current = committedValue;
+      setRenderedValue(committedValue);
+      if (!isControlledRef.current) setUncontrolledValue(pending.to);
+      onValueChangeRef.current?.(pending.to, {
+        previousValue: pending.previousValue,
+        direction: pending.direction,
+        source: pending.source,
+      });
+      return true;
+    },
+    [],
+  );
+
   const goTo = useCallback(
     (
       requestedValue: number,
@@ -315,19 +336,25 @@ export function useShutterSlider({
       if (
         latestOptions.disabled ||
         latestOptions.count <= 1 ||
-        transitionRef.current ||
         pointerSessionRef.current
       ) {
         return false;
       }
 
-      const from = currentValueRef.current;
+      const pending = transitionRef.current;
+      if (pending && invalidatedTransitionIdRef.current === pending.id) {
+        return false;
+      }
+
+      const from = pending?.to ?? currentValueRef.current;
       const to = normalizeShutterSliderValue(
         requestedValue,
         latestOptions.count,
         latestOptions.loop,
       );
       if (to === from) return false;
+
+      if (pending) commitTransition(pending, pending.to);
 
       const direction = requestedDirection ?? (to > from ? 1 : -1);
       const nextTransition: ShutterSliderTransition = {
@@ -349,15 +376,20 @@ export function useShutterSlider({
       setIsDragging(false);
       return true;
     },
-    [],
+    [commitTransition],
   );
 
   const navigate = useCallback(
     (direction: ShutterSliderDirection, source: ShutterSliderChangeSource) => {
       const latestOptions = optionsRef.current;
+      const pending = transitionRef.current;
+      const from =
+        pending && invalidatedTransitionIdRef.current !== pending.id
+          ? pending.to
+          : currentValueRef.current;
       return goTo(
         getShutterSliderTarget(
-          currentValueRef.current,
+          from,
           direction,
           latestOptions.count,
           latestOptions.loop,
@@ -371,42 +403,38 @@ export function useShutterSlider({
 
   const canNavigate = useCallback((direction: ShutterSliderDirection) => {
     const latestOptions = optionsRef.current;
+    const pending = transitionRef.current;
+    const from =
+      pending && invalidatedTransitionIdRef.current !== pending.id
+        ? pending.to
+        : currentValueRef.current;
     return (
       !latestOptions.disabled &&
       latestOptions.count > 1 &&
-      transitionRef.current === null &&
       pointerSessionRef.current === null &&
       getShutterSliderTarget(
-        currentValueRef.current,
+        from,
         direction,
         latestOptions.count,
         latestOptions.loop,
-      ) !== currentValueRef.current
+      ) !== from
     );
   }, []);
 
-  const completeTransition = useCallback((transitionId: number) => {
-    if (invalidatedTransitionIdRef.current === transitionId) return;
+  const completeTransition = useCallback(
+    (transitionId: number) => {
+      if (invalidatedTransitionIdRef.current === transitionId) return;
 
-    const pending = transitionRef.current;
-    if (!pending || pending.id !== transitionId) return;
+      const pending = transitionRef.current;
+      if (!pending || pending.id !== transitionId) return;
 
-    transitionRef.current = null;
-    transitionTopologyRef.current = null;
-    invalidatedTransitionIdRef.current = null;
-    setTransition(null);
-    const committedValue = isControlledRef.current
-      ? settledValueRef.current
-      : pending.to;
-    currentValueRef.current = committedValue;
-    setRenderedValue(committedValue);
-    if (!isControlledRef.current) setUncontrolledValue(pending.to);
-    onValueChangeRef.current?.(pending.to, {
-      previousValue: pending.previousValue,
-      direction: pending.direction,
-      source: pending.source,
-    });
-  }, []);
+      const committedValue = isControlledRef.current
+        ? settledValueRef.current
+        : pending.to;
+      commitTransition(pending, committedValue);
+    },
+    [commitTransition],
+  );
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -414,7 +442,6 @@ export function useShutterSlider({
       if (
         latestOptions.disabled ||
         latestOptions.count <= 1 ||
-        transitionRef.current ||
         pointerSessionRef.current ||
         (event.pointerType === "mouse" && event.button !== 0) ||
         isInteractiveTarget(event.target)
@@ -440,7 +467,7 @@ export function useShutterSlider({
       const session = pointerSessionRef.current;
       if (!session || session.pointerId !== event.pointerId) return;
 
-      if (optionsRef.current.disabled || transitionRef.current) {
+      if (optionsRef.current.disabled) {
         releasePointerSession(event.pointerId);
         return;
       }
