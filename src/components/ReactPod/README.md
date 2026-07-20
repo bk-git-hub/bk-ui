@@ -164,14 +164,3 @@ ReactPod 데모의 Usage 탭은 여러 TSX 예제를 받을 수 있으며 현재
 - `Internal composition`: Display가 모든 메뉴 화면을 선택하고, Coverflow의 controlled index와 세 slider의 Previous/Next primitive를 공통 ClickWheel controller에 연결하는 현재 구조
 
 추가 예제가 필요하면 `ReactPodPage`의 `usageExamples` 배열에 고유한 `id`, 표시할 `label`, `code`, `language`, `description`을 가진 항목을 더합니다.
-
-## 남은 작업
-
-- ReactPod과 독립 공개 컴포넌트 ClickWheel의 component manifest, Registry JSON, React/Next ZIP, Copy for AI, install descriptor 및 깨끗한 Vite/Next fixture를 아직 만들지 않았습니다. release gate가 끝날 때까지 npm·shadcn 설치 명령이나 배포 URL을 노출하지 않습니다.
-- ClickWheel 독립 showcase page·route·navigation과 자체 Preview / Code / Usage / React Export / Next.js Export 구성도 아직 없습니다. 현재는 ReactPod과 ClickWheel README에서 공개 entry를 확인할 수 있습니다.
-- ReactPod artifact는 ClickWheel, Coverflow, Slicer Slider, Expo Slider, Cards Stack Slider를 중복 복사하지 않고 component-to-component dependency로 표현해야 합니다. 공유 artifact contract가 확정된 뒤 scoped manifest 명령으로만 생성·검증해야 합니다.
-- 공용 viewer 정책으로 두 번째 탭이 현재 `Customize`로 표시됩니다. 이전 요구사항의 정확한 `Code` 명칭을 유지해야 하는지는 다른 컴포넌트에도 영향을 주므로 공용 viewer 차원의 결정이 남아 있습니다.
-- 세 slider는 현재 primitive·controller·ReactPod 통합 테스트와 수동 preview 확인을 통과했지만, 실제 터치 장치와 여러 브라우저에서 `직접 드래그 → ClickWheel 연속 조작` 시나리오를 추가 확인해야 합니다.
-- Cards Stack은 자체 애니메이션 중 들어온 빠른 추가 입력을 소비합니다. 연속 휠 입력을 반드시 보존해야 한다면 Cards Stack adapter에만 한 단계 queue를 추가하는 후속 설계가 필요합니다.
-- 번들·렌더·입력 지연의 정량 성능 수치는 아직 측정하지 않았습니다. 동일 조건 반복 측정 전에는 개선 비율을 표기하지 않습니다.
-- YouTube 같은 외부 player 연동은 아직 구현하지 않았습니다. 추후 screen controller adapter와 provider API를 별도 설계하되 ReactPod 코어에 특정 서비스 SDK를 고정하지 않는 방향이 필요합니다.
