@@ -32,6 +32,7 @@ interface TestSliderProps {
   defaultValue?: number;
   loop?: boolean;
   orientation?: "horizontal" | "vertical";
+  disabled?: boolean;
   onValueChange?: CardsStackValueChangeHandler;
   onViewportLostPointerCapture?: CardsStackViewportProps["onLostPointerCapture"];
 }
@@ -42,6 +43,7 @@ function TestSlider({
   defaultValue,
   loop = true,
   orientation = "horizontal",
+  disabled = false,
   onValueChange,
   onViewportLostPointerCapture,
 }: TestSliderProps) {
@@ -52,6 +54,7 @@ function TestSlider({
       defaultValue={defaultValue}
       loop={loop}
       orientation={orientation}
+      disabled={disabled}
       onValueChange={onValueChange}
       aria-label="Test cards"
     >
@@ -91,6 +94,12 @@ function getTopLayerPositioner() {
       '[data-slot="cards-stack-item-positioner"]',
     ),
   ).find((positioner) => positioner.style.zIndex === "2000") as HTMLElement;
+}
+
+function getDragSurface() {
+  return document.querySelector(
+    '[data-slot="cards-stack-drag-surface"]',
+  ) as HTMLElement;
 }
 
 function getHorizontalPrimaryOffset(index: number) {
@@ -184,6 +193,8 @@ describe("CardsStackSlider", () => {
     expect(getPositioner(2).style.transform).toContain("translate3d(-64%");
     expect(getPositioner(0).style.transform).toContain("translate3d(0%");
     expect(getPositioner(1).style.transform).toContain("translate3d(64%");
+    expect(getDragSurface().style.left).toBe("-64%");
+    expect(getDragSurface().style.right).toBe("-64%");
   });
 
   it("places adjacent cards above and below in vertical mode", () => {
@@ -193,6 +204,61 @@ describe("CardsStackSlider", () => {
     expect(getPositioner(0).style.transform).toContain("translate3d(0px, 0%");
     expect(getPositioner(1).style.transform).toContain("translate3d(0px, 64%");
     expect(getPositioner(1).style.transform).toContain("rotateX(-180deg)");
+    expect(getDragSurface().style.top).toBe("-64%");
+    expect(getDragSurface().style.bottom).toBe("-64%");
+  });
+
+  it("starts a drag from the exposed adjacent-card surface", () => {
+    const onValueChange = vi.fn();
+    render(<TestSlider onValueChange={onValueChange} />);
+    const viewport = screen.getByTestId("viewport");
+    const dragSurface = getDragSurface();
+    vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 400,
+      bottom: 240,
+      width: 400,
+      height: 240,
+      toJSON: () => ({}),
+    });
+
+    expect(dragSurface).toHaveAttribute("aria-hidden", "true");
+    expect(dragSurface.style.pointerEvents).toBe("auto");
+    fireEvent.pointerDown(dragSurface, {
+      pointerId: 21,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 520,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(dragSurface, {
+      pointerId: 21,
+      pointerType: "mouse",
+      clientX: 400,
+      clientY: 100,
+    });
+    fireEvent.pointerUp(dragSurface, {
+      pointerId: 21,
+      pointerType: "mouse",
+      clientX: 400,
+      clientY: 100,
+    });
+    finishTransition();
+
+    expect(onValueChange).toHaveBeenCalledWith(1, {
+      previousValue: 0,
+      direction: 1,
+      source: "pointer",
+    });
+  });
+
+  it("does not intercept the expanded drag area when disabled", () => {
+    render(<TestSlider disabled />);
+
+    expect(getDragSurface().style.pointerEvents).toBe("none");
   });
 
   it("moves one card, announces it, and reports the input source once", () => {

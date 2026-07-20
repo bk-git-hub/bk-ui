@@ -164,6 +164,7 @@ export type CardsStackViewportProps = ComponentPropsWithRef<"div">;
 
 export function CardsStackViewport({
   className,
+  children,
   tabIndex,
   onKeyDown,
   onPointerDown,
@@ -240,7 +241,31 @@ export function CardsStackViewport({
         onLostPointerCapture?.(event);
         context.handleLostPointerCapture(event);
       }}
-    />
+    >
+      <div
+        aria-hidden="true"
+        data-slot="cards-stack-drag-surface"
+        className="absolute"
+        style={{
+          ...(context.orientation === "horizontal"
+            ? {
+                top: 0,
+                right: `-${context.sideOffset}%`,
+                bottom: 0,
+                left: `-${context.sideOffset}%`,
+              }
+            : {
+                top: `-${context.sideOffset}%`,
+                right: 0,
+                bottom: `-${context.sideOffset}%`,
+                left: 0,
+              }),
+          zIndex: 0,
+          pointerEvents: context.disabled ? "none" : "auto",
+        }}
+      />
+      {children}
+    </div>
   );
 }
 
