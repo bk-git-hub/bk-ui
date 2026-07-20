@@ -48,6 +48,7 @@ export default function TinderDemoPage() {
       reactExport={tinderReactExport}
       nextJsExport={tinderNextJsExport}
       installDescriptor={tinderInstallDescriptor}
+      previewClassName="flex flex-col"
       showPreviewAlongsideCode
     />
   );
