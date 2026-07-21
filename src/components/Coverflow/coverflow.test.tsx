@@ -215,6 +215,8 @@ describe("Coverflow 통합 테스트", () => {
     fireEvent.mouseUp(window, { clientX: 500 });
     fireEvent.click(card3Wrapper);
 
+    expect(card3Wrapper.style.transition).toBe("transform 0.3s ease-out");
+
     act(() => {
       vi.runAllTimers();
     });
@@ -227,15 +229,9 @@ describe("Coverflow 통합 테스트", () => {
     const onActiveIndexChange = vi.fn();
     render(
       <Coverflow onActiveIndexChange={onActiveIndexChange}>
-        <CoverflowItem backContent={<span>Back 1</span>}>
-          Card 1
-        </CoverflowItem>
-        <CoverflowItem backContent={<span>Back 2</span>}>
-          Card 2
-        </CoverflowItem>
-        <CoverflowItem backContent={<span>Back 3</span>}>
-          Card 3
-        </CoverflowItem>
+        <CoverflowItem backContent={<span>Back 1</span>}>Card 1</CoverflowItem>
+        <CoverflowItem backContent={<span>Back 2</span>}>Card 2</CoverflowItem>
+        <CoverflowItem backContent={<span>Back 3</span>}>Card 3</CoverflowItem>
       </Coverflow>,
     );
 

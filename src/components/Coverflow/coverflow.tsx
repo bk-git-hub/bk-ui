@@ -52,6 +52,26 @@ const normalizeIndex = (index: number, maxIndex: number) =>
     ? Math.max(0, Math.min(Math.round(index), maxIndex))
     : 0;
 
+interface CoverflowCardProps extends HTMLAttributes<HTMLDivElement> {
+  itemIndex: number;
+  // The base ESLint rule treats type-only callback parameters as runtime values.
+  // eslint-disable-next-line no-unused-vars
+  registerItem: (itemIndex: number, item: HTMLDivElement | null) => void;
+}
+
+const CoverflowCard = ({
+  itemIndex,
+  registerItem,
+  ...props
+}: CoverflowCardProps) => {
+  const setCardRef = useCallback(
+    (item: HTMLDivElement | null) => registerItem(itemIndex, item),
+    [itemIndex, registerItem],
+  );
+
+  return <div {...props} ref={setCardRef} />;
+};
+
 export const Coverflow = ({
   children,
   className,
@@ -419,11 +439,12 @@ export const Coverflow = ({
                 consumePendingClick: consumeDragClick,
               }}
             >
-              <div
+              <CoverflowCard
+                itemIndex={itemIndex}
+                registerItem={registerItem}
                 data-slot="coverflow-card"
                 data-active={isActive}
                 data-flipped={isFlipped}
-                ref={(item) => registerItem(itemIndex, item)}
                 className="absolute top-1/2 left-1/2 cursor-pointer"
                 style={{
                   width: size,
@@ -434,7 +455,7 @@ export const Coverflow = ({
                 onClick={() => centerItem(itemIndex)}
               >
                 {child}
-              </div>
+              </CoverflowCard>
             </CoverflowInteractionContext.Provider>
           );
         })}
