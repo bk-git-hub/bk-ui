@@ -210,7 +210,9 @@ describe("Coverflow 통합 테스트", () => {
     // 초기에는 zIndex가 낮음
     expect(card3Wrapper.style.zIndex).not.toBe("3");
 
-    // 클릭
+    // 실제 브라우저 클릭 순서
+    fireEvent.mouseDown(card3Wrapper, { clientX: 500 });
+    fireEvent.mouseUp(window, { clientX: 500 });
     fireEvent.click(card3Wrapper);
 
     act(() => {
@@ -219,6 +221,46 @@ describe("Coverflow 통합 테스트", () => {
 
     // 클릭 후 최상위로 올라옴
     expect(card3Wrapper.style.zIndex).toBe("3");
+  });
+
+  it("4-1. 실제 마우스 클릭 순서 뒤에도 사이드 카드가 이전 인덱스로 되돌아가지 않아야 한다", () => {
+    const onActiveIndexChange = vi.fn();
+    render(
+      <Coverflow onActiveIndexChange={onActiveIndexChange}>
+        <CoverflowItem backContent={<span>Back 1</span>}>
+          Card 1
+        </CoverflowItem>
+        <CoverflowItem backContent={<span>Back 2</span>}>
+          Card 2
+        </CoverflowItem>
+        <CoverflowItem backContent={<span>Back 3</span>}>
+          Card 3
+        </CoverflowItem>
+      </Coverflow>,
+    );
+
+    const firstCard = getCoverflowCard("Card 1");
+    const secondItem = getCoverflowItem("Card 2");
+    const secondCard = getCoverflowCard("Card 2");
+
+    fireEvent.mouseDown(secondItem, { clientX: 500 });
+    fireEvent.mouseUp(window, { clientX: 500 });
+    fireEvent.click(secondItem);
+
+    act(() => {
+      vi.runAllTimers();
+    });
+
+    expect(firstCard).toHaveAttribute("data-active", "false");
+    expect(secondCard).toHaveAttribute("data-active", "true");
+    expect(secondCard).toHaveAttribute("data-flipped", "false");
+    expect(secondCard.style.zIndex).toBe("3");
+    expect(secondCard.style.transform).toBe(
+      "translateX(0px) scale(1) rotateY(0deg)",
+    );
+    expect(
+      onActiveIndexChange.mock.calls.map(([nextIndex]) => nextIndex),
+    ).toEqual([1]);
   });
 
   it("5. [키보드] 방향키로 이동이 가능해야 한다", () => {

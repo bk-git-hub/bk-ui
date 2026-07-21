@@ -306,6 +306,7 @@ export const Coverflow = ({
   const activateItem = useCallback(
     (itemIndex: number, itemKey: React.Key) => {
       cancelWheel();
+      cancelMotion();
       const currentIndex = Math.max(
         0,
         Math.min(Math.round(positionRef.current), maxIndex),
@@ -319,7 +320,7 @@ export const Coverflow = ({
       navigateTo(itemIndex);
       setFlippedKey((currentKey) => (currentKey === itemKey ? null : itemKey));
     },
-    [cancelWheel, maxIndex, navigateTo],
+    [cancelMotion, cancelWheel, maxIndex, navigateTo],
   );
 
   const centerItem = useCallback(
@@ -327,6 +328,7 @@ export const Coverflow = ({
       if (consumeDragClick()) return;
 
       cancelWheel();
+      cancelMotion();
       const currentIndex = Math.max(
         0,
         Math.min(Math.round(positionRef.current), maxIndex),
@@ -334,7 +336,7 @@ export const Coverflow = ({
       if (itemIndex !== currentIndex) setFlippedKey(null);
       navigateTo(itemIndex);
     },
-    [cancelWheel, consumeDragClick, maxIndex, navigateTo],
+    [cancelMotion, cancelWheel, consumeDragClick, maxIndex, navigateTo],
   );
 
   const setKeyboardTarget = useCallback(
